@@ -1,9 +1,17 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Lib
     ( someFunc
     ) where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
+
+import Control.Monad
+
+import System.Exit
+import System.Process
+
+import Debug.Trace
 
 
 mkButton :: String -> String -> UI (Element, Element)
@@ -35,7 +43,12 @@ onElementId
     -> UI ()
 onElementId elid event handler = do
     window   <- askWindow
-    exported <- ffiExport (helloWorld >>= (\b -> runUI window (handler b)) >> return ())
+    exported <- ffiExport $ do
+        b <- helloWorld
+        (exitcode, stdout, stderr) <- myProcess
+        traceShowM stdout
+        runUI window (handler b)
+        return ()
     runFunction $ ffi "$(%1).on(%2,%3)" ("#"++elid) event exported
 
 
@@ -43,6 +56,10 @@ helloWorld :: IO Bool
 helloWorld = do
     putStrLn "Lol"
     return False
+
+myProcess :: IO (ExitCode, String, String)
+myProcess = 
+    readCreateProcessWithExitCode ((shell "photoShake-exe") {cwd = Just "/home/magnus/Documents/projects/photoShake/" }) ""
 
 
 someFunc :: IO ()
