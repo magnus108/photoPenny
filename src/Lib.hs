@@ -17,14 +17,12 @@ import Debug.Trace
 mkButton :: String -> String -> UI (Element, Element)
 mkButton title id = do
     button <- UI.button #. "button" # set UI.id_ id #+ [string title]
-    view   <- UI.p #+ [element button]
+    view <- UI.p #+ [element button]
     return (button, view)
 
 
 setup :: Window -> UI ()
 setup w = do
-    return w # set title "App"
-    
     (button, view) <- mkButton "Run build" "thisId"
 
     msg <- UI.span # set UI.text "Some text"
@@ -34,33 +32,29 @@ setup w = do
     body <- getBody w
      
     onElementId "thisId" "click" $ do
-        (\b -> if b then element msg # set text "Clicked" else element msg # set text "error")
+        element msg # set text "Clicked"
 
-onElementId
-    :: String   -- ID attribute of the element
-    -> String   -- name of the DOM event to register the handler at
-    -> (Bool -> UI void) -- handler to fire whenever the event happens
-    -> UI ()
+
+onElementId :: String -> String -> UI void -> UI ()
 onElementId elid event handler = do
     window   <- askWindow
     exported <- ffiExport $ do
-        b <- helloWorld
         (exitcode, stdout, stderr) <- myProcess
-        traceShowM stdout
-        runUI window (handler b)
+        runUI window handler
         return ()
     runFunction $ ffi "$(%1).on(%2,%3)" ("#"++elid) event exported
 
 
-helloWorld :: IO Bool 
-helloWorld = do
-    putStrLn "Lol"
-    return False
-
 myProcess :: IO (ExitCode, String, String)
 myProcess = 
-    readCreateProcessWithExitCode ((shell "photoShake-exe") {cwd = Just "/home/magnus/Documents/projects/photoShake/" }) ""
+    readCreateProcessWithExitCode 
+        ((shell "photoShake-exe") 
+            {cwd = Just "/home/magnus/Documents/projects/photoShake/" }) ""
 
 
 someFunc :: IO ()
-someFunc = startGUI defaultConfig setup
+someFunc =
+    startGUI
+        defaultConfig { jsCustomHTML = Just "index.html"
+                      , jsStatic = Just "static" } 
+        setup
