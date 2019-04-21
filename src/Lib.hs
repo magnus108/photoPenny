@@ -69,9 +69,11 @@ onElementId elid event handler err = do
 --            {cwd = Just "/home/magnus/Documents/projects/photoShake/" }) ""
 
 
-someFunc :: IO ()
-someFunc =
+someFunc :: Int -> IO ()
+someFunc port =
     startGUI
         defaultConfig { jsCustomHTML = Just "index.html"
-                      , jsStatic = Just "static" } 
+                      , jsStatic = Just "static"
+                      , jsPort = Just port
+                      } 
         setup
