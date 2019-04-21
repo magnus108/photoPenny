@@ -2,3 +2,5 @@
 photoPenny.cabal
 *~
 _build/
+build/
+node_modules/
