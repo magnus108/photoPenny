@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - threepenny-gui >= 0.8 && < 0.9
 - process >= 1.6 && < 1.7
+- photoShake
 
 library:
   source-dirs: src
