@@ -6,7 +6,11 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
+import System.Directory
+
 import qualified PhotoShake as PS
+
+import Development.Shake
 
 import Control.Monad
 import Control.Exception
@@ -14,66 +18,112 @@ import Control.Exception
 import System.Exit
 import System.Process
 
+import Data.HashMap.Lazy
+import Development.Shake.FilePath
+
 import Debug.Trace
+
+someFunc :: Int -> IO ()
+someFunc port = do
+    config <- PS.readConfigFile "config.cfg"
+    dirs <- listDirectory $ PS._dumpDir config
+    startGUI
+        defaultConfig { jsCustomHTML = Just "index.html"
+                      , jsStatic = Just "static"
+                      , jsPort = Just port
+                      } 
+        (setup config dirs)
 
 
 mkButton :: String -> String -> UI (Element, Element)
 mkButton title id = do
     button <- UI.button #. "button" # set UI.id_ id #+ [string title]
-    view <- UI.p #+ [element button]
+    view <- UI.div #. "control" #+ [element button]
     return (button, view)
 
 
-setup :: Window -> UI ()
-setup w = do
-    (button, view) <- mkButton "Run build" "thisId"
+mkSection :: [UI Element] -> UI Element
+mkSection xs =
+    UI.div #. "section" #+ 
+        [UI.div #. "container is-fluid" #+ xs]
 
-    input <- 
-        UI.div #. "column is-one-third" #+
-            [ UI.div #. "field" #+ 
-                [ UI.label #. "label" # set text "Path"
-                , UI.div #. "control" #+ [ UI.input #. "input" # set UI.type_ "text" ]
-                ]
+mkLabel :: String -> UI Element
+mkLabel s =
+    UI.p #. "has-text-info has-text-weight-bold is-size-5" # set UI.text s
+
+
+setup :: PS.Config -> [FilePath] -> Window -> UI ()
+setup config dirs w = do
+    (button, view) <- mkButton "Run build" "thisId"
+    (button1, view1) <- mkButton "Select folder" "thisId1"
+
+    dump <- mkSection
+        [ mkLabel "dumpDir"
+        , UI.p # set UI.text (PS._dumpDir config)
+        ]
+
+    out <- mkSection
+        [ mkLabel "outDir"
+        , UI.p # set UI.text (PS._outDir config)
+        , UI.p # set UI.text (head dirs)
+        ]
+
+    location <- mkSection
+        [ mkLabel "location"
+        , UI.p # set UI.text (PS._location config)
+        ]
+
+    photoConfig <- mkSection 
+        [ mkLabel "photographeeId"
+        , UI.p # set UI.text "not sat"
+        ]
+
+    section <- mkSection [element view1, element view
+            , element dump
+            , element out
+            , element location
+            , element photoConfig
             ]
 
-    msg <- UI.span # set UI.text "Some text"
-
-    wrap <- UI.div #. "container" #. "is-fluid" #+ [element view, element msg, UI.div #. "columns" #+ [element input]]
-    section <- UI.div #. "section" #+ [element wrap]
-
-    getBody w #+ [element section]
+    getBody w #+ [element section] 
+         
+   -- onElementId "thisId" "click"
+    --    (element msg # set text "Clicked")
+     --   msg
+     --
+    --selectFolder "thisId1" "click" $ \x -> do
+    --    putStrLn "lol"
+    --    return ()
+    --on UI.click button1 $ \_ -> do
+    --    runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: ['openDirectory']}, (folder) => { console.log(folder)})"
     
-     
-    onElementId "thisId" "click"
-        (element msg # set text "Clicked")
-        msg
+    on UI.click button1 $ \_ -> do
+        callback <- ffiExport $ \folder -> do
+            putStrLn folder
+            return ()
+
+        runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: ['openDirectory']}, %1)" callback
+    --
+    --on UI.click button $ \_ -> do 
+      --  runFunction $ ffi "require('electron').shell.openItem('/home/magnus/Downloads/fetmule.jpg')"
+
+
+selectFolder :: String -> String -> (FilePath -> IO ()) -> UI ()
+selectFolder elid event complete = do
+    callback <- ffiExport complete
+    runFunction $ ffi "$(%1).on(%2,require('electron').remote.dialog.showOpenDialog({properties: ['openDirectory']}, %3))" ("#"++elid) event callback
 
 
 onElementId :: String -> String -> UI void -> Element -> UI ()
 onElementId elid event handler err = do
     window   <- askWindow
     exported <- ffiExport $ do
-        --(exitcode, stdout, stderr) <- myProcess
-        lol <- PS.someFunc2 "config.cfg"
+        lol <- try PS.someFunc :: IO (Either ShakeException ())
+
         case lol of
-            Left x -> runUI window (element err # set text (displayException x)) >> return ()
+            Left x -> runUI window (element err # set text (displayException (shakeExceptionInner x))) >> return ()
             Right _ -> runUI window handler >> return ()
-        --someFunc2 :: FilePath -> IO (Either SomeException (IO ()))
+   
     runFunction $ ffi "$(%1).on(%2,%3)" ("#"++elid) event exported
 
 
---myProcess :: IO (ExitCode, String, String)
---myProcess = 
---    readCreateProcessWithExitCode 
---        ((shell "photoShake-exe") 
---            {cwd = Just "/home/magnus/Documents/projects/photoShake/" }) ""
-
-
-someFunc :: Int -> IO ()
-someFunc port =
-    startGUI
-        defaultConfig { jsCustomHTML = Just "index.html"
-                      , jsStatic = Just "static"
-                      , jsPort = Just port
-                      } 
-        setup

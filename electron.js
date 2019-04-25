@@ -27,13 +27,14 @@ freeport((err, port) => {
     win = new BrowserWindow({
       width: 800,
       height: 600,
-      webPreferences: { nodeIntegration: false },
+      //webPreferences: { nodeIntegration: false },
+      webPreferences: { nodeIntegration: true },
     });
 
     console.log(`Loading URL: ${url}`);
     win.loadURL(url);
 
-    win.setMenuBarVisibility(false);
+    //win.setMenuBarVisibility(false);
 
     // Emitted when the window is closed.
     win.on('closed', () => {
