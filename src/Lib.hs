@@ -21,19 +21,38 @@ import System.Process
 import Data.HashMap.Lazy
 import Development.Shake.FilePath
 
+import System.FSNotify hiding (defaultConfig)
+import Control.Concurrent (newChan, readChan, dupChan, forkIO, getChanContents)
+import Control.Monad (forever)
+
 import Debug.Trace
 
 someFunc :: Int -> IO ()
 someFunc port = do
     config <- PS.readConfigFile "config.cfg"
     dirs <- listDirectory $ PS._dumpDir config
-    startGUI
-        defaultConfig { jsCustomHTML = Just "index.html"
+    withManager $ \mgr -> do
+        -- start a watching job (in the background)
+        outChan <- newChan
+        dumpChan <- newChan
+        watchDirChan
+            mgr
+            "/home/magnus/Documents/projects/photoPenny/out"
+            (const True)
+            outChan
+
+        watchDirChan
+            mgr          -- manager
+            "/home/magnus/Documents/projects/photoPenny/dump"
+            (const True) -- predicate
+            dumpChan
+
+        startGUI
+            defaultConfig { jsCustomHTML = Just "index.html"
                       , jsStatic = Just "static"
                       , jsPort = Just port
                       } 
-        (setup config dirs)
-
+            (setup config dirs dumpChan)
 
 mkButton :: String -> String -> UI (Element, Element)
 mkButton title id = do
@@ -52,20 +71,23 @@ mkLabel s =
     UI.p #. "has-text-info has-text-weight-bold is-size-5" # set UI.text s
 
 
-setup :: PS.Config -> [FilePath] -> Window -> UI ()
-setup config dirs w = do
+setup :: PS.Config -> [FilePath] -> EventChannel -> Window -> UI ()
+setup config dumps dumpChan w = do
     (button, view) <- mkButton "Run build" "thisId"
     (button1, view1) <- mkButton "Select folder" "thisId1"
+ 
+    dumpChanges <- UI.p
 
     dump <- mkSection
         [ mkLabel "dumpDir"
         , UI.p # set UI.text (PS._dumpDir config)
+        , UI.p # set UI.text (head dumps)
+        , element dumpChanges
         ]
 
     out <- mkSection
         [ mkLabel "outDir"
         , UI.p # set UI.text (PS._outDir config)
-        , UI.p # set UI.text (head dirs)
         ]
 
     location <- mkSection
@@ -103,9 +125,22 @@ setup config dirs w = do
             return ()
 
         runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: ['openDirectory']}, %1)" callback
+
+    dumpChan' <- liftIO $ dupChan dumpChan
+
+    void $ liftIO $ forkIO $ receiveDumps w dumpChan' dumpChanges
     --
     --on UI.click button $ \_ -> do 
       --  runFunction $ ffi "require('electron').shell.openItem('/home/magnus/Downloads/fetmule.jpg')"
+
+
+receiveDumps :: Window -> EventChannel -> Element -> IO ()
+receiveDumps w events dumpFiles = do
+    messages <- getChanContents events
+    forM_ messages $ \msg -> do
+        runUI w $ do
+          element dumpFiles #+ [UI.p # set UI.text (show msg)]
+          flushCallBuffer
 
 
 selectFolder :: String -> String -> (FilePath -> IO ()) -> UI ()
