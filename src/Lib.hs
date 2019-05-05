@@ -6,59 +6,56 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import System.Directory
 
 import PhotoShake
 import Photographee
 import PhotoShake.ShakeConfig
 
-import Control.Monad
 
 
 import Development.Shake
 import Control.Exception
-import Development.Shake.FilePath
 
-import System.FSNotify hiding (defaultConfig)
-import Control.Concurrent 
+--import System.FSNotify hiding (defaultConfig)
+--import Control.Concurrent 
 
 
 
 someFunc :: Int -> IO ()
 someFunc port = do
     config <- toShakeConfig "config.cfg"
-    dirs <- listDirectory $ _dumpDir config
-    withManager $ \mgr -> do
+    startGUI
+        defaultConfig { jsStatic = Just "static"
+                      , jsPort = Just port
+                      } 
+            (setup config)
+    --dirs <- listDirectory $ _dumpDir config
+   -- withManager $ \mgr -> do
         -- start a watching job (in the background)
-        msgChan <- newChan
-        outChan <- newChan
-        dumpChan <- newChan
-        locationChan <- newChan
-        _ <- watchDirChan
-            mgr
-            "/home/magnus/Documents/projects/photoPenny/out"
-            (const True)
-            outChan
+     --   msgChan <- newChan
+      --  outChan <- newChan
+       -- dumpChan <- newChan
+       -- locationChan <- newChan
+      --  _ <- watchDirChan
+        --    mgr
+         --   "/home/magnus/Documents/projects/photoPenny/out"
+          --  (const True)
+           -- outChan
 
-        _ <- watchDirChan
-            mgr
-            "/home/magnus/Documents/projects/photoPenny/dump"
-            (\x -> case x of
-                Added _ _ _ -> True
-                _ -> False)
-            dumpChan
+       -- _ <- watchDirChan
+        --    mgr
+         --   "/home/magnus/Documents/projects/photoPenny/dump"
+        --    (\x -> case x of
+          --      Added _ _ _ -> True
+           --     _ -> False)
+       --     dumpChan
         
-        _ <- watchDirChan
-            mgr
-            "/home/magnus/Documents/projects/photoPenny/locations"
-            (const True)
-            locationChan
+     --   _ <- watchDirChan
+      --      mgr
+       --     "/home/magnus/Documents/projects/photoPenny/locations"
+        --    (const True)
+         --   locationChan
 
-        startGUI
-            defaultConfig { jsStatic = Just "static"
-                          , jsPort = Just port
-                          } 
-            (setup config dirs dumpChan locationChan msgChan)
 
 mkButton :: String -> String -> UI (Element, Element)
 mkButton titl ident = do
@@ -77,27 +74,29 @@ mkLabel s =
     UI.p #. "has-text-info has-text-weight-bold is-size-5" # set UI.text s
 
 
-mkInput :: Chan String -> String -> UI (Element, Element)
-mkInput chan s = do
-    input <- UI.input #. "input" # set UI.type_ "text" 
-    view <- UI.div #. "field is-horizontal" #+
-        [ UI.div #. "field-label is-normal" #+
-            [ UI.label #. "label" # set UI.text s ]
-        , UI.div #. "field-body" #+
-            [ UI.div #. "field" #+
-                [ UI.p #. "control" #+ [ element input ] ]
-            ]
-        ]
+--mkInput :: Chan String -> String -> UI (Element, Element)
+--mkInput chan s = do
+--    input <- UI.input #. "input" # set UI.type_ "text" 
+--    view <- UI.div #. "field is-horizontal" #+
+--        [ UI.div #. "field-label is-normal" #+
+--            [ UI.label #. "label" # set UI.text s ]
+--        , UI.div #. "field-body" #+
+--            [ UI.div #. "field" #+
+--                [ UI.p #. "control" #+ [ element input ] ]
+--            ]
+--        ]
 
-    on UI.keyup input $ \_ -> do
-        val <- get value input
-        liftIO $ writeChan chan val
+--    on UI.keyup input $ \_ -> do
+--        val <- get value input
+--        liftIO $ writeChan chan val
         
-    return (input, view)
+--    return (input, view)
 
 
-setup :: ShakeConfig -> [FilePath] -> EventChannel -> EventChannel -> Chan String -> Window -> UI ()
-setup config dumps dumpChan locationChan msgChan w = do
+--setup :: ShakeConfig -> [FilePath] -> EventChannel -> EventChannel -> Chan String -> Window -> UI ()
+--setup config dumps dumpChan locationChan msgChan w = do
+setup :: ShakeConfig -> Window -> UI ()
+setup config w = do
     _ <- UI.addStyleSheet w "bulma.min.css"
 
     (_, view) <- mkButton "Run build" "thisId"
@@ -107,8 +106,8 @@ setup config dumps dumpChan locationChan msgChan w = do
 
     dump <- mkSection
         [ mkLabel "DumpDir"
-        , UI.p # set UI.text (_dumpDir config)
-        , UI.p # set UI.text (head dumps)
+        --, UI.p # set UI.text (_dumpDir config)
+        --, UI.p # set UI.text (head dumps)
         , element dumpChanges
         ]
 
@@ -131,14 +130,14 @@ setup config dumps dumpChan locationChan msgChan w = do
             ]
         ]
 
-    (_, inputView) <- mkInput msgChan "id" 
+    --(_, inputView) <- mkInput msgChan "id" 
     
     ident <- UI.p
 
     photoConfig <- mkSection 
         [ mkLabel "PhotographeeId"
         , element ident
-        , element inputView
+        --, element inputView
         ]
 
     msg <- UI.p
@@ -173,20 +172,20 @@ setup config dumps dumpChan locationChan msgChan w = do
         runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: ['openDirectory']}, %1)" callback
 
 
-    dumpChan' <- liftIO $ dupChan dumpChan
-    void $ liftIO $ forkIO $ receiveDumps w dumpChan' dumpChanges
+    --dumpChan' <- liftIO $ dupChan dumpChan
+    --void $ liftIO $ forkIO $ receiveDumps w dumpChan' dumpChanges
 
-    locationChan' <- liftIO $ dupChan locationChan
-    void $ liftIO $ forkIO $ receiveLocations w locationChan' locationChanges
+    --locationChan' <- liftIO $ dupChan locationChan
+    --void $ liftIO $ forkIO $ receiveLocations w locationChan' locationChanges
 
-    msgChan' <- liftIO $ dupChan msgChan
-    void $ liftIO $ forkIO $ receiveMsg w msgChan' ident
+    --msgChan' <- liftIO $ dupChan msgChan
+    --void $ liftIO $ forkIO $ receiveMsg w msgChan' ident
     
     --
     --on UI.click button $ \_ -> do 
       --  runFunction $ ffi "require('electron').shell.openItem('/home/magnus/Downloads/fetmule.jpg')"
 
-
+{-
 receiveDumps :: Window -> EventChannel -> Element -> IO ()
 receiveDumps w events dumpFiles = do
     messages <- getChanContents events
@@ -210,7 +209,7 @@ receiveMsg w events ident = do
         runUI w $ do
           _ <- element ident # set UI.text msg
           flushCallBuffer
-
+-}
 
 --selectFolder :: String -> String -> (FilePath -> IO ()) -> UI ()
 --selectFolder elid event complete = do

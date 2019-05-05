@@ -34,11 +34,14 @@ resolver: lts-13.17
 #  - wai
 packages:
 - .
-- /home/magnus/Documents/projects/photoShake
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
-# extra-deps: []
+extra-deps:
+- git: https://github.com/magnus108/photoShake.git
+  commit: 73a6149508f71a3cd234366eda4771973787f828
+
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
