@@ -55,10 +55,9 @@ someFunc port = do
             locationChan
 
         startGUI
-            defaultConfig { jsCustomHTML = Just "index.html"
-                      , jsStatic = Just "static"
-                      , jsPort = Just port
-                      } 
+            defaultConfig { jsStatic = Just "static"
+                          , jsPort = Just port
+                          } 
             (setup config dirs dumpChan locationChan msgChan)
 
 mkButton :: String -> String -> UI (Element, Element)
@@ -99,6 +98,8 @@ mkInput chan s = do
 
 setup :: ShakeConfig -> [FilePath] -> EventChannel -> EventChannel -> Chan String -> Window -> UI ()
 setup config dumps dumpChan locationChan msgChan w = do
+    _ <- UI.addStyleSheet w "bulma.min.css"
+
     (_, view) <- mkButton "Run build" "thisId"
     (button1, view1) <- mkButton "Select folder" "thisId1"
  
