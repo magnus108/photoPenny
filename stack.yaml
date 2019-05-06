@@ -40,8 +40,7 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - git: https://github.com/magnus108/photoShake.git
-  commit: 73a6149508f71a3cd234366eda4771973787f828
-
+  commit: c25c355525104aa995c81f4e8dc5971348b294c8
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
