@@ -23,12 +23,19 @@ import Control.Exception
 
 someFunc :: Int -> IO ()
 someFunc port = do
-    config <- toShakeConfig "config.cfg"
-    startGUI
-        defaultConfig { jsStatic = Just "static"
-                      , jsPort = Just port
-                      } 
-            (setup config)
+    config <- try $ toShakeConfig "config.cfg" :: IO (Either ShakeException ShakeConfig)
+    case config of 
+        Right c -> 
+            startGUI
+                defaultConfig { jsStatic = Just "static"
+                              , jsPort = Just port
+                              } (setup c)
+        Left _ -> 
+            startGUI
+                defaultConfig { jsStatic = Just "static"
+                              , jsPort = Just port
+                              } missingConf
+            
     --dirs <- listDirectory $ _dumpDir config
    -- withManager $ \mgr -> do
         -- start a watching job (in the background)
@@ -93,6 +100,66 @@ mkLabel s =
 --    return (input, view)
 
 
+missingConf :: Window -> UI ()
+missingConf w = do
+    _ <- UI.addStyleSheet w "bulma.min.css"
+
+    (_, view) <- mkButton "Run build" "thisId"
+    (_, view1) <- mkButton "Select folder" "thisId1"
+ 
+    dumpChanges <- UI.p
+
+    dump <- mkSection
+        [ mkLabel "DumpDir"
+        --, UI.p # set UI.text (_dumpDir config)
+        --, UI.p # set UI.text (head dumps)
+        , element dumpChanges
+        ]
+
+    out <- mkSection
+        [ mkLabel "OutDir"
+        --, UI.p # set UI.text (_outDir config)
+        ]
+
+    locationChanges <- UI.select
+
+    location <- mkSection
+        [ mkLabel "Location"
+        --, UI.p # set UI.text (_location config)
+        , UI.div #. "field" #+ 
+            [ UI.div #. "control" #+
+                [ UI.div #. "select" #+ 
+                    [ element locationChanges
+                    ]
+                ]
+            ]
+        ]
+
+    --(_, inputView) <- mkInput msgChan "id" 
+    
+    ident <- UI.p
+
+    photoConfig <- mkSection 
+        [ mkLabel "PhotographeeId"
+        , element ident
+        --, element inputView
+        ]
+
+    msg <- UI.p
+    section <- mkSection [
+             element view1
+            , element view
+            , element msg
+            , element dump
+            , element out
+            , element location
+            , element photoConfig
+            ]
+
+    _ <- getBody w #+ [element section] 
+         
+    return ()
+    
 --setup :: ShakeConfig -> [FilePath] -> EventChannel -> EventChannel -> Chan String -> Window -> UI ()
 --setup config dumps dumpChan locationChan msgChan w = do
 setup :: ShakeConfig -> Window -> UI ()
