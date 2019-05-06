@@ -23,7 +23,7 @@ import Control.Exception
 
 someFunc :: Int -> IO ()
 someFunc port = do
-    config <- try $ toShakeConfig "config.cfg" :: IO (Either ShakeException ShakeConfig)
+    config <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
     case config of 
         Right c -> 
             startGUI
