@@ -28,7 +28,7 @@ freeport((err, port) => {
       width: 800,
       height: 600,
       //webPreferences: { nodeIntegration: false },
-      webPreferences: { nodeIntegration: true },
+      webPreferences: { nodeIntegration: true }
     });
 
     console.log(`Loading URL: ${url}`);
