@@ -17,7 +17,8 @@ import Development.Shake
 
 
 ---import System.FSNotify hiding (defaultConfig)
---import Control.Concurrent 
+
+import Data.IORef
 
 
 someFunc :: Int -> IO ()
@@ -41,10 +42,11 @@ missingConf w = do
     return ()
     
 
-funci :: ShakeConfig -> Window -> Element -> Element -> IO ()
-funci config w err msg = do
+funci :: ShakeConfig -> (IORef String) -> Window -> Element -> Element -> IO ()
+funci config idd w err msg = do
     -- have to look this up from config
-    let photographee = Photographee "test" "test" "12sads"
+    idd2 <- readIORef idd
+    let photographee = Photographee "test" "test" idd2
     build <- try $ myShake config photographee :: IO (Either ShakeException ())
     let ans = case build of
             Left _ -> element err # set text "Der skete en fejl"  
@@ -60,7 +62,11 @@ setup config w = do
     err <- UI.p
     msg <- UI.p
 
-    callback <- ffiExport $ funci config w err msg
+    input <- UI.input 
+    idd <- liftIO $ newIORef ""
+    on UI.keyup input $ \_ -> liftIO . writeIORef idd =<< get value input
+
+    callback <- ffiExport $ funci config idd w err msg
     let click = "click" :: String
     runFunction $ ffi "$(%1).on(%2,%3)" button click callback
 
@@ -70,11 +76,15 @@ setup config w = do
     on UI.click button1 $ \_ -> do 
         runFunction $ ffi "require('electron').shell.openItem('config.cfg')"
 
+
+
+
     section <- mkSection
             [ element view
             , element msg
             , element err
             , element view1
+            , element input
             ]
 
     _ <- getBody w #+ [element section] 
