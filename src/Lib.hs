@@ -11,43 +11,58 @@ import PhotoShake
 import Photographee
 import PhotoShake.ShakeConfig
 
+import Development.Shake.FilePath
+
+import Control.Monad 
 
 import Control.Exception
 import Development.Shake
 
-
----import System.FSNotify hiding (defaultConfig)
-
+import System.FSNotify hiding (defaultConfig)
+import Control.Concurrent
 import Data.IORef
 
 
 someFunc :: Int -> IO ()
 someFunc port = do
     config <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
-    let view = case config of 
-            Right c -> setup c
-            Left _ -> missingConf
+    msgChan <- newChan
+    withManager $ \mgr -> do
+            _ <- watchDirChan
+                    mgr
+                    "."
+                    (\x -> takeFileName (eventPath x) == "config.cfg") -- need a better check
+                    msgChan
 
-    startGUI
-        defaultConfig { jsStatic = Just "static"
-                      , jsPort = Just port
-                      } view
+            view <- case config of 
+                    Right c -> do
+                        conf <- newIORef c
+                        return $ setup conf msgChan
+                    Left _ -> return missingConf
+
+            startGUI
+                defaultConfig { jsStatic = Just "static"
+                              , jsPort = Just port
+                              } view
             
 
 missingConf :: Window -> UI ()
 missingConf w = do
     _ <- UI.addStyleSheet w "bulma.min.css"
-    section <- mkSection [UI.p # set UI.text "Der skete en fejl"]
+    section <- mkSection [UI.p # set UI.text "Mangler måske config"]
     _ <- getBody w #+ [element section] 
     return ()
     
 
-funci :: ShakeConfig -> (IORef String) -> Window -> Element -> Element -> IO ()
+funci :: (IORef ShakeConfig) -> (IORef String) -> Window -> Element -> Element -> IO ()
 funci config idd w err msg = do
     -- have to look this up from config
     idd2 <- readIORef idd
+
+    conf <- readIORef config
+
     let photographee = Photographee "test" "test" idd2
-    build <- try $ myShake config photographee :: IO (Either ShakeException ())
+    build <- try $ myShake conf photographee :: IO (Either ShakeException ())
     let ans = case build of
             Left _ -> element err # set text "Der skete en fejl"  
             Right _ -> element msg # set text "Byg færdigt"
@@ -55,8 +70,8 @@ funci config idd w err msg = do
     return ()
 
 
-setup :: ShakeConfig -> Window -> UI ()
-setup config w = do
+setup :: (IORef ShakeConfig) -> EventChannel -> Window -> UI ()
+setup config msgChan w = do
     _ <- UI.addStyleSheet w "bulma.min.css"
     (button, view) <- mkButton "kør by"
     err <- UI.p
@@ -77,6 +92,9 @@ setup config w = do
         runFunction $ ffi "require('electron').shell.openItem('config.cfg')"
 
 
+    msgChanges <- UI.p
+    msgChan' <- liftIO $ dupChan msgChan
+    void $ liftIO $ forkIO $ receiveMsg w msgChan' config msgChanges
 
 
     section <- mkSection
@@ -85,11 +103,27 @@ setup config w = do
             , element err
             , element view1
             , element input
+            , element msgChanges
             ]
 
     _ <- getBody w #+ [element section] 
 
     return () 
+
+
+receiveMsg :: Window -> EventChannel -> (IORef ShakeConfig) -> Element -> IO ()
+receiveMsg w events config ident = do
+    messages <- getChanContents events
+    forM_ messages $ \msg -> do 
+        -- handle more gracefully pls
+        config' <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
+        _ <- case config' of 
+                Right c -> modifyIORef config (\_ -> c)
+                Left _ -> fail "ERROR"
+
+        runUI w $ do
+          _ <- element ident # set UI.text (show msg)
+          flushCallBuffer
 
 
 mkSection :: [UI Element] -> UI Element
