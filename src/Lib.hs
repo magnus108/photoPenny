@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Lib
     ( someFunc
@@ -6,6 +7,7 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
+import Debug.Trace
 
 import PhotoShake
 import Photographee
@@ -22,6 +24,7 @@ import System.FSNotify hiding (defaultConfig)
 import Control.Concurrent
 import Data.IORef
 
+import Language.Javascript.JMacro
 
 someFunc :: Int -> IO ()
 someFunc port = do
@@ -31,7 +34,7 @@ someFunc port = do
             _ <- watchDirChan
                     mgr
                     "."
-                    (\x -> takeFileName (eventPath x) == "config.cfg") -- need a better check
+                   (\x -> takeFileName (eventPath x) == "config.cfg") -- need a better check
                     msgChan
 
             view <- case config of 
@@ -41,13 +44,13 @@ someFunc port = do
                     Left _ -> return missingConf
 
             startGUI
-                defaultConfig { jsStatic = Just "static"
-                              , jsPort = Just port
+                defaultConfig { jsPort = Just port
                               } view
             
 
 missingConf :: Window -> UI ()
 missingConf w = do
+    _ <- UI.loadFile "text/css" "static"
     _ <- UI.addStyleSheet w "bulma.min.css"
     section <- mkSection [UI.p # set UI.text "Mangler måske config"]
     _ <- getBody w #+ [element section] 
@@ -69,10 +72,31 @@ funci config idd w err msg = do
     _ <- runUI w ans
     return ()
 
+gg :: UI ()
+gg = runFunction $ ffi $ show $ renderJs
+        [jmacro|
+            var remote = require('electron').remote;
+            var path = remote.require('path');
+            var {|BrowserWindow: BrowserWindow|} = remote;
+        |]
+
+addStyleSheet :: Window -> FilePath -> UI ()
+addStyleSheet w filename = void $ do
+    el <- mkElement "link"
+            # set (attr "rel" ) "stylesheet"
+            # set (attr "type") "text/css"
+            # set (attr "href") filename
+    getHead w #+ [element el]
+
 
 setup :: (IORef ShakeConfig) -> EventChannel -> Window -> UI ()
 setup config msgChan w = do
-    _ <- UI.addStyleSheet w "bulma.min.css"
+    x <- UI.loadFile "text/css" "static/css/bulma.min.css"
+    traceShowM x
+    _ <- addStyleSheet w x
+
+    _ <- gg
+
     (button, view) <- mkButton "kør by"
     err <- UI.p
     msg <- UI.p
