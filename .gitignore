@@ -4,3 +4,12 @@ photoPenny.cabal
 _build/
 build/
 node_modules/
+config.cfg
+dump/
+out/
+locations/
+photographers.csv
+dump/
+out/
+locations/
+photographers.csv
