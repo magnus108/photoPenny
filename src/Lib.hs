@@ -24,17 +24,13 @@ import Data.IORef
 
 import Elements
 
-import Debug.Trace
-
 
 someFunc :: Int -> String -> IO ()
 someFunc port root = do
     -- opret config hvis den ikke findes
     config <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
-    msgChan <- newChan
-    traceShowM root
-    traceShowM port
     withManager $ \mgr -> do
+            msgChan <- newChan
             _ <- watchDirChan
                     mgr
                     "."
@@ -61,14 +57,12 @@ missingConf root w = do
     return ()
     
 
-funci :: (IORef ShakeConfig) -> (IORef String) -> Window -> Element -> Element -> IO ()
-funci config idd w err msg = do
+funci :: (IORef ShakeConfig) -> FilePath -> (IORef String) -> Window -> Element -> Element -> IO ()
+funci config root idd w err msg = do
     -- have to look this up from config
     idd2 <- readIORef idd
-
     conf <- readIORef config
-
-    let photographee = Photographee "test" "test" idd2
+    photographee <- findPhotographee (root </> _location conf) idd2
     build <- try $ myShake conf photographee :: IO (Either ShakeException ())
     let ans = case build of
             Left _ -> element err # set text "Der skete en fejl"  
@@ -81,15 +75,18 @@ setup :: (IORef ShakeConfig) -> EventChannel -> String -> Window -> UI ()
 setup config msgChan root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
-    (button, view) <- mkButton "kør by"
-    err <- UI.p
-    msg <- UI.p
+    (button, view) <- mkButton "Kør byg"
+    err <- UI.p # set UI.text "Errs:"
+    msg <- UI.p # set UI.text "Msgs:"
+    -- set OutDir
+    -- set OutDirExtern
+    --
 
-    input <- UI.input 
+    (input, inputView) <- mkInput "elev nr:"
     idd <- liftIO $ newIORef ""
     on UI.keyup input $ \_ -> liftIO . writeIORef idd =<< get value input
 
-    callback <- ffiExport $ funci config idd w err msg
+    callback <- ffiExport $ funci config root idd w err msg
     let click = "click" :: String
     runFunction $ ffi "$(%1).on(%2,%3)" button click callback
 
@@ -105,18 +102,43 @@ setup config msgChan root w = do
     void $ liftIO $ forkIO $ receiveMsg w msgChan' config msgChanges
 
 
-    section <- mkSection
+    (_, view2) <- mkFolderPicker "Vælg config folder"
+
+    cols <- mkColumns 
             [ element view
             , element msg
             , element err
             , element view1
-            , element input
+            , element inputView
             , element msgChanges
+            , element view2
             ]
+
+    section <- mkSection [ element cols ]
 
     _ <- getBody w #+ [element section] 
 
     return () 
+
+
+mkFolderPicker :: String -> UI (Element, Element)
+mkFolderPicker = mkShowOpenDialog ["openDirectory"]
+
+
+mkShowOpenDialog :: [String] -> String -> UI (Element, Element) 
+mkShowOpenDialog options x = do
+    (button, view) <- mkButton x
+
+    on UI.click button $ \_ -> do
+        cb <- ffiExport $ \folder -> do
+            putStrLn folder
+            return ()
+
+        runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: %2}, %1)" cb options
+
+    return (button, view)
+
+
 
 
 receiveMsg :: Window -> EventChannel -> (IORef ShakeConfig) -> Element -> IO ()
