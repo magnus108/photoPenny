@@ -4,7 +4,9 @@ module Elements
     , mkButton
     , mkLabel
     , mkColumns
+    , mkColumn
     , mkInput
+    , mkFolderPicker
     ) where
 
 import qualified Graphics.UI.Threepenny as UI
@@ -13,6 +15,8 @@ import Graphics.UI.Threepenny.Core
 import System.FilePath
 
 import Control.Monad
+
+import Data.List
 
 
 addStyleSheet :: Window -> FilePath -> FilePath -> UI ()
@@ -43,13 +47,15 @@ mkLabel s =
     UI.p #. "has-text-info has-text-weight-bold is-size-5" # set UI.text s
 
 
-mkColumns :: [UI Element] -> UI Element
-mkColumns xs = UI.div #. "columns" #+ (mkColumn <$> xs)
+mkColumns :: [String] -> [UI Element] -> UI Element
+mkColumns xs x = UI.div #. classes #+ x
+    where
+        classes = intercalate " " $ "columns" : xs
 
-
-mkColumn :: UI Element -> UI Element
-mkColumn x = UI.div #. "column" #+ [x]
-
+mkColumn :: [String] -> [UI Element] -> UI Element
+mkColumn xs x = UI.div #. classes #+ x
+    where
+        classes = intercalate " " $ "column" : xs
 
 mkInput :: String -> UI (Element, Element)
 mkInput s = do
@@ -63,3 +69,21 @@ mkInput s = do
             ]
         ] 
     return (input, view)
+
+
+mkFolderPicker :: String -> UI (Element, Element)
+mkFolderPicker = mkShowOpenDialog ["openDirectory"]
+
+
+mkShowOpenDialog :: [String] -> String -> UI (Element, Element) 
+mkShowOpenDialog options x = do
+    (button, view) <- mkButton x
+
+    on UI.click button $ \_ -> do
+        cb <- ffiExport $ \folder -> do
+            putStrLn folder
+            return ()
+
+        runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: %2}, %1)" cb options
+
+    return (button, view)
