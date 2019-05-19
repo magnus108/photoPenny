@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Lib
-    ( someFunc
+    ( setup
     ) where
 
 import qualified Graphics.UI.Threepenny as UI
@@ -8,9 +8,7 @@ import Graphics.UI.Threepenny.Core
 
 import Elements
 
---import PhotoShake
---import Photographee
---import PhotoShake.ShakeConfig
+import PhotoShake.ShakeConfig
 
 --import Development.Shake.FilePath
 
@@ -26,9 +24,8 @@ import Elements
 --import Elements
 
 
-someFunc :: Int -> String -> IO ()
-someFunc port root = do
-    -- opret config hvis den ikke findes
+setup :: Int -> String -> IO ()
+setup port root = do
     {-
     config <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
     withManager $ \mgr -> do
@@ -48,18 +45,23 @@ someFunc port root = do
                 defaultConfig { jsPort = Just port
                               } (view root)
         -}
+    config <- toShakeConfig "config.cfg" -- can throw error
     startGUI
         defaultConfig { jsPort = Just port
-                      } (view root)
+                      } (view root config)
 
             
-view :: FilePath -> Window -> UI ()
-view root w = do
+view :: FilePath -> ShakeConfig -> Window -> UI ()
+view root shakeConfig w = do
     _ <- addStyleSheet w root "bulma.min.css"
+    _ <- body w root shakeConfig
+    return ()
+
+body :: Window -> FilePath -> ShakeConfig -> UI ()
+body w _ _ = do
     section <- mkSection [ UI.p # set UI.text "Mangler måske config" ]
     _ <- getBody w #+ [element section] 
     return ()
-
 
 ---mkBuild :: IORef ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
 --mkBuild config root idd w err msg = do

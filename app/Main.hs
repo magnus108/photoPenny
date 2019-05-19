@@ -9,5 +9,5 @@ main :: IO ()
 main = do
     hSetBuffering stdout LineBuffering
     [port, root] <- getArgs
-    someFunc (read port) root
+    setup (read port) root
 
