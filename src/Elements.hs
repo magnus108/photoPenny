@@ -7,6 +7,7 @@ module Elements
     , mkColumn
     , mkInput
     , mkFolderPicker
+    , mkFilePicker
     ) where
 
 import qualified Graphics.UI.Threepenny as UI
@@ -73,6 +74,10 @@ mkInput s = do
 
 mkFolderPicker :: String -> (FilePath -> IO ()) -> UI (Element, Element)
 mkFolderPicker = mkShowOpenDialog ["openDirectory"]
+
+
+mkFilePicker :: String -> (FilePath -> IO ()) -> UI (Element, Element)
+mkFilePicker = mkShowOpenDialog ["openFile"]
 
 
 mkShowOpenDialog :: [String] -> String -> (FilePath -> IO ()) -> UI (Element, Element) 
