@@ -48,20 +48,49 @@ setup port root = do
     config <- toShakeConfig "config.cfg" -- can throw error
     startGUI
         defaultConfig { jsPort = Just port
-                      } (view root config)
+                      } (main root config)
 
             
-view :: FilePath -> ShakeConfig -> Window -> UI ()
-view root shakeConfig w = do
+main :: FilePath -> ShakeConfig -> Window -> UI ()
+main root shakeConfig w = do
     _ <- addStyleSheet w root "bulma.min.css"
     _ <- body w root shakeConfig
     return ()
 
+
 body :: Window -> FilePath -> ShakeConfig -> UI ()
-body w _ _ = do
+body w root config = do
     section <- mkSection [ UI.p # set UI.text "Mangler måske config" ]
-    _ <- getBody w #+ [element section] 
+    
+    --nicess
+    let lol = _dumpConfig config 
+    dumpConfig <- mkSection [ UI.p # set UI.text lol
+                            , mkConfPicker root lol
+                            ]
+
+    let lol1 = _dagsdatoConfig config 
+    dagsdatoConfig <- mkSection [ UI.p # set UI.text lol1
+                            , mkConfPicker root lol1
+                            ]
+
+    let lol2 = _doneshootingConfig config 
+    doneshootingConfig <- mkSection [ UI.p # set UI.text lol2
+                                    , mkConfPicker root lol2
+                                    ]
+
+    _ <- getBody w #+ [element section, element dumpConfig, element dagsdatoConfig , element doneshootingConfig]
     return ()
+
+
+mkConfPicker :: FilePath -> FilePath -> UI Element
+mkConfPicker _ conf = do
+    (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
+        --this is full path will
+        --that matter?
+        writeFile conf $ "location = " ++ folder
+        return ()
+    return view
+
 
 ---mkBuild :: IORef ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
 --mkBuild config root idd w err msg = do

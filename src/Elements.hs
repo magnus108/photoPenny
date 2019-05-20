@@ -71,19 +71,16 @@ mkInput s = do
     return (input, view)
 
 
-mkFolderPicker :: String -> UI (Element, Element)
+mkFolderPicker :: String -> (FilePath -> IO ()) -> UI (Element, Element)
 mkFolderPicker = mkShowOpenDialog ["openDirectory"]
 
 
-mkShowOpenDialog :: [String] -> String -> UI (Element, Element) 
-mkShowOpenDialog options x = do
+mkShowOpenDialog :: [String] -> String -> (FilePath -> IO ()) -> UI (Element, Element) 
+mkShowOpenDialog options x fx = do
     (button, view) <- mkButton x
 
     on UI.click button $ \_ -> do
-        cb <- ffiExport $ \folder -> do
-            putStrLn folder
-            return ()
-
+        cb <- ffiExport fx
         runFunction $ ffi "require('electron').remote.dialog.showOpenDialog({properties: %2}, %1)" cb options
 
     return (button, view)
