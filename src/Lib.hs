@@ -8,18 +8,22 @@ import Graphics.UI.Threepenny.Core
 
 import Elements
 
+import PhotoShake
 import PhotoShake.ShakeConfig
+import PhotoShake.Photographee
+
+import System.FilePath
 
 --import Development.Shake.FilePath
 
 --import Control.Monad 
 
---import Control.Exception
---import Development.Shake
+import Control.Exception
+import Development.Shake
 
 --import System.FSNotify hiding (defaultConfig)
 --import Control.Concurrent
---import Data.IORef
+import Data.IORef
 
 --import Elements
 
@@ -60,7 +64,7 @@ main root shakeConfig w = do
 
 body :: Window -> FilePath -> ShakeConfig -> UI ()
 body w root config = do
-    section <- mkSection [ UI.p # set UI.text "Mangler måske config" ]
+    --section <- mkSection [ UI.p # set UI.text "Mangler måske config" ]
     
     --nicess
     let lol = _dumpConfig config 
@@ -78,7 +82,13 @@ body w root config = do
                                     , mkConfPicker root lol2
                                     ]
 
-    _ <- getBody w #+ [element section, element dumpConfig, element dagsdatoConfig , element doneshootingConfig]
+    ident <- liftIO $ newIORef ""
+    (_, buildView) <- mkBuild config root ident w
+
+    (input, inputView) <- mkInput "elev nr:"
+    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
+
+    _ <- getBody w #+ [element dumpConfig, element dagsdatoConfig , element doneshootingConfig, element buildView, element inputView]
     return ()
 
 
@@ -92,12 +102,13 @@ mkConfPicker _ conf = do
     return view
 
 
----mkBuild :: IORef ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
 --mkBuild config root idd w err msg = do
-   -- (button, view) <- mkButton "Kør byg"
-   -- callback <- ffiExport $ funci config root idd w err msg
-    --runFunction $ ffi "$(%1).on('click',%2)" button callback
-   -- return (button, view)
+mkBuild :: ShakeConfig -> FilePath -> IORef String -> Window -> UI (Element, Element)
+mkBuild config root idd w = do
+    (button, view) <- mkButton "Kør byg"
+    callback <- ffiExport $ funci config root idd w 
+    runFunction $ ffi "$(%1).on('click',%2)" button callback
+    return (button, view)
 
 
 {-
@@ -141,15 +152,15 @@ mkOutDirPicker = do
 --    return ()
     
 
---funci :: (IORef ShakeConfig) -> FilePath -> (IORef String) -> Window -> IO ()
 --funci config root idd w err msg = do
-    -- have to look this up from config
-  --  idd2 <- readIORef idd
-  --  conf <- readIORef config
-   -- photographee <- findPhotographee (root </> _location conf) idd2
-  --  build <- try $ myShake conf photographee :: IO (Either ShakeException ())
+funci :: ShakeConfig -> FilePath -> (IORef String) -> Window -> IO ()
+funci config root idd _ = do
+    --have to look this up from config
+    idd2 <- readIORef idd
+    photographee <- findPhotographee (root </> _location config) idd2
+    _ <- try $ myShake config photographee :: IO (Either ShakeException ())
     --let ans = case build of
     --        Left _ -> element err # set text "Der skete en fejl"  
     --        Right _ -> element msg # set text "Byg færdigt"
-   -- _ <- runUI w ans
-   -- return ()
+    --_ <- runUI w ans
+    return ()
