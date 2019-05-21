@@ -61,25 +61,25 @@ receiveMsg w config events root = do
 
             conf <- liftIO $ readIORef config 
             let lol = _dumpConfig conf
-            dumpConfig <- mkSection [ UI.p # set UI.text "dump mappe" 
+            dumpConfig <- mkSection [ mkLabel "dump mappe" 
                                     , readConf root lol 
                                     , mkConfPicker root lol
                                     ]
 
             let lol1 = _dagsdatoConfig conf
-            dagsdatoConfig <- mkSection [ UI.p # set UI.text "dagsdato mappe"
+            dagsdatoConfig <- mkSection [ mkLabel "dagsdato mappe"
                                         , readConf root lol1 
                                         , mkConfPicker root lol1
                                         ]
 
             let lol2 = _doneshootingConfig conf
-            doneshootingConfig <- mkSection [ UI.p # set UI.text "doneshooting mappe"
+            doneshootingConfig <- mkSection [ mkLabel "doneshooting mappe"
                                             , readConf root lol2 
                                             , mkConfPicker root lol2
                                             ]
 
             let lol3 = _locationConfig conf
-            locationConfig <- mkSection [ UI.p # set UI.text "lokationsFil"
+            locationConfig <- mkSection [ mkLabel "lokationsFil"
                                         , readConf root lol3 --UI.p # set UI.text lol3
                                         , mkConfPicker2 root lol3
                                         ]
@@ -90,7 +90,10 @@ receiveMsg w config events root = do
             (input, inputView) <- mkInput "elev nr:"
             on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
 
-            _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, buildView, inputView]
+            inputView2 <- mkSection [element inputView] 
+            buildView2 <- mkSection [element buildView] 
+
+            _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2, buildView2]
             return ()
 
 
@@ -108,25 +111,25 @@ body w root config msgChan = do
     -- extremum bads
     conf <- liftIO $ readIORef config 
     let lol = _dumpConfig conf
-    dumpConfig <- mkSection [ UI.p # set UI.text "dump mappe" 
+    dumpConfig <- mkSection [ mkLabel "Dump mappe" 
                             , readConf root lol 
                             , mkConfPicker root lol
                             ]
 
     let lol1 = _dagsdatoConfig conf
-    dagsdatoConfig <- mkSection [ UI.p # set UI.text "dagsdato mappe"
+    dagsdatoConfig <- mkSection [ mkLabel "dagsdato mappe"
                                 , readConf root lol1 
                                 , mkConfPicker root lol1
                                 ]
 
     let lol2 = _doneshootingConfig conf
-    doneshootingConfig <- mkSection [ UI.p # set UI.text "doneshooting mappe"
+    doneshootingConfig <- mkSection [ mkLabel "doneshooting mappe"
                                     , readConf root lol2 
                                     , mkConfPicker root lol2
                                     ]
 
     let lol3 = _locationConfig conf
-    locationConfig <- mkSection [ UI.p # set UI.text "lokationsFil"
+    locationConfig <- mkSection [ mkLabel "lokationsFil"
                                 , readConf root lol3 --UI.p # set UI.text lol3
                                 , mkConfPicker2 root lol3
                                 ]
@@ -137,7 +140,10 @@ body w root config msgChan = do
     (input, inputView) <- mkInput "elev nr:"
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
 
-    _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, buildView, inputView]
+    inputView2 <- mkSection [element inputView] 
+    buildView2 <- mkSection [element buildView] 
+
+    _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2, buildView2]
     --bads
     msgChan' <- liftIO $ dupChan msgChan
     void $ liftIO $ forkIO $ receiveMsg w config msgChan' root
