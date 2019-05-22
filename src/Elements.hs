@@ -61,14 +61,10 @@ mkColumn xs x = UI.div #. classes #+ x
 mkInput :: String -> UI (Element, Element)
 mkInput s = do
     input <- UI.input #. "input" # set UI.type_ "text" 
-    view <- UI.div #. "field is-horizontal" #+
-        [ UI.div #. "field-label is-normal" #+
-            [ UI.label #. "label" # set UI.text s ]
-        , UI.div #. "field-body" #+
-            [ UI.div #. "field" #+
-                [ UI.p #. "control" #+ [ element input ] ]
-            ]
-        ] 
+    view <- UI.div #. "field" #+
+        [ UI.label #. "label has-text-info" # set UI.text s
+        , UI.div #. "control" #+ [ element input ] 
+        ]
     return (input, view)
 
 

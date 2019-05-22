@@ -11,13 +11,13 @@ import Elements
 import PhotoShake
 import PhotoShake.ShakeConfig
 import PhotoShake.Photographee
+import PhotoShake.ShakeError
 
 import System.FilePath
 
 import Control.Monad 
 
 import Control.Exception
-import Development.Shake
 
 import System.FSNotify hiding (defaultConfig)
 import Control.Concurrent
@@ -47,8 +47,8 @@ setup port root = do
                               } (view root)
 
             
-receiveMsg :: Window -> IORef ShakeConfig -> EventChannel -> FilePath -> IO ()
-receiveMsg w config events root = do
+receiveMsg :: Window -> FilePath -> IORef ShakeConfig -> EventChannel -> IO ()
+receiveMsg w root config events = do
     messages <- getChanContents events
     forM_ messages $ \_ -> do 
         -- handle more gracefully pls
@@ -57,44 +57,7 @@ receiveMsg w config events root = do
                 Right c -> modifyIORef config (\_ -> c)
                 Left _ -> fail "ERROR"
         --nicess
-        runUI w $ do
-
-            conf <- liftIO $ readIORef config 
-            let lol = _dumpConfig conf
-            dumpConfig <- mkSection [ mkLabel "dump mappe" 
-                                    , readConf root lol 
-                                    , mkConfPicker root lol
-                                    ]
-
-            let lol1 = _dagsdatoConfig conf
-            dagsdatoConfig <- mkSection [ mkLabel "dagsdato mappe"
-                                        , readConf root lol1 
-                                        , mkConfPicker root lol1
-                                        ]
-
-            let lol2 = _doneshootingConfig conf
-            doneshootingConfig <- mkSection [ mkLabel "doneshooting mappe"
-                                            , readConf root lol2 
-                                            , mkConfPicker root lol2
-                                            ]
-
-            let lol3 = _locationConfig conf
-            locationConfig <- mkSection [ mkLabel "lokationsFil"
-                                        , readConf root lol3 --UI.p # set UI.text lol3
-                                        , mkConfPicker2 root lol3
-                                        ]
-
-            ident <- liftIO $ newIORef ""
-            (_, buildView) <- mkBuild conf root ident w
-
-            (input, inputView) <- mkInput "elev nr:"
-            on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
-
-            inputView2 <- mkSection [element inputView] 
-            buildView2 <- mkSection [element buildView] 
-
-            _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2, buildView2]
-            return ()
+        runUI w (body w root config events)
 
 
 main :: IORef ShakeConfig -> EventChannel -> FilePath -> Window -> UI ()
@@ -104,51 +67,75 @@ main shakeConfig msgChan root w = do
     return ()
 
 
+
+dumpSection :: FilePath -> FilePath -> UI Element
+dumpSection root dumpPath = mkSection [ mkLabel "Dump mappe" 
+                                      , readConf root dumpPath 
+                                      , mkConfPicker root dumpPath
+                                      ]
+
+dagsdatoSection :: FilePath -> FilePath -> UI Element
+dagsdatoSection root dagsdatoPath = mkSection [ mkLabel "Dagsdato mappe"
+                                              , readConf root dagsdatoPath
+                                              , mkConfPicker root dagsdatoPath
+                                              ]
+
+
+locationsFilSection :: FilePath -> FilePath -> UI Element
+locationsFilSection root locationFilePath = 
+    mkSection [ mkLabel "Lokations Fil"
+              , readConf root locationFilePath
+              , mkConfPicker2 root locationFilePath
+              ]
+
+doneshootingSection :: FilePath -> FilePath -> UI Element
+doneshootingSection root doneshootingPath = 
+    mkSection [ mkLabel "Doneshooting mappe"
+              , readConf root doneshootingPath
+              , mkConfPicker2 root doneshootingPath
+              ]
+
+
 body :: Window -> FilePath -> IORef ShakeConfig -> EventChannel -> UI ()
 body w root config msgChan = do
     --section <- mkSection [ UI.p # set UI.text "Mangler måske config" ] 
     --
     -- extremum bads
     conf <- liftIO $ readIORef config 
-    let lol = _dumpConfig conf
-    dumpConfig <- mkSection [ mkLabel "Dump mappe" 
-                            , readConf root lol 
-                            , mkConfPicker root lol
-                            ]
 
-    let lol1 = _dagsdatoConfig conf
-    dagsdatoConfig <- mkSection [ mkLabel "dagsdato mappe"
-                                , readConf root lol1 
-                                , mkConfPicker root lol1
-                                ]
+    dumpConfig <- dumpSection root (_dumpConfig conf)
 
-    let lol2 = _doneshootingConfig conf
-    doneshootingConfig <- mkSection [ mkLabel "doneshooting mappe"
-                                    , readConf root lol2 
-                                    , mkConfPicker root lol2
-                                    ]
+    dagsdatoConfig <- dagsdatoSection root (_dagsdatoConfig conf)
 
-    let lol3 = _locationConfig conf
-    locationConfig <- mkSection [ mkLabel "lokationsFil"
-                                , readConf root lol3 --UI.p # set UI.text lol3
-                                , mkConfPicker2 root lol3
-                                ]
+    doneshootingConfig <- doneshootingSection root (_doneshootingConfig conf)
 
+    locationConfig <- locationsFilSection root (_locationConfig conf)
+
+
+
+    err <- UI.p 
+    msg <- UI.p 
     ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild conf root ident w
+    (_, buildView) <- mkBuild conf root ident w err msg
 
-    (input, inputView) <- mkInput "elev nr:"
+    (input, inputView) <- mkInput "Elev nr:"
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
 
-    inputView2 <- mkSection [element inputView] 
-    buildView2 <- mkSection [element buildView] 
+    inputView2 <- mkSection $ 
+                    [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-4"] [element inputView]
+                        , mkColumn ["is-12"] [element buildView]
+                        , mkColumn ["is-12"] [element err, element msg] 
+                        ]
+                    ]
 
-    _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2, buildView2]
+    _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
     --bads
     msgChan' <- liftIO $ dupChan msgChan
-    void $ liftIO $ forkIO $ receiveMsg w config msgChan' root
+    void $ liftIO $ forkIO $ receiveMsg w root config msgChan'
     
     return ()
+
 
 readConf :: FilePath -> FilePath -> UI Element
 readConf _ conf = do
@@ -177,10 +164,10 @@ mkConfPicker2 _ conf = do
 
 
 --mkBuild config root idd w err msg = do
-mkBuild :: ShakeConfig -> FilePath -> IORef String -> Window -> UI (Element, Element)
-mkBuild config root idd w = do
+mkBuild :: ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
+mkBuild config root idd w err msg = do
     (button, view) <- mkButton "Kør byg"
-    callback <- ffiExport $ funci config root idd w 
+    callback <- ffiExport $ funci config root idd w err msg
     runFunction $ ffi "$(%1).on('click',%2)" button callback
     return (button, view)
 
@@ -228,16 +215,25 @@ missingConf root w = do
     
 
 --funci config root idd w err msg = do
-funci :: ShakeConfig -> FilePath -> (IORef String) -> Window -> IO ()
-funci config root idd _ = do
+funci :: ShakeConfig -> FilePath -> (IORef String) -> Window -> Element -> Element -> IO ()
+funci config root idd w err msg = do
     --have to look this up from config
     idd2 <- readIORef idd
     let locationConfig = _locationConfig config
     locationFile <- getLocationFile locationConfig
-    photographee <- findPhotographee (root </> locationFile) idd2
-    _ <- try $ myShake config photographee :: IO (Either ShakeException ())
-    --let ans = case build of
-    --        Left _ -> element err # set text "Der skete en fejl"  
-    --        Right _ -> element msg # set text "Byg færdigt"
-    --_ <- runUI w ans
-    return ()
+    -- kinda bad here
+    find <- try $ findPhotographee (root </> locationFile) idd2 :: IO (Either ShakeError Photographee)
+    case find of
+            Left errMsg -> do
+                    _ <- runUI w $ element err # set text (show errMsg)
+                    return ()
+            Right photographee -> do
+                    build <- try $ myShake config photographee :: IO (Either ShakeError ())
+                    let ans = case build of
+                            Left errMsg -> element err # set text (show errMsg)
+                            Right _ -> element msg # set text "Byg færdigt"
+                    -- reset
+                    _ <- runUI w (element err # set text "")
+                    _ <- runUI w (element msg # set text "")
+                    _ <- runUI w ans
+                    return ()
