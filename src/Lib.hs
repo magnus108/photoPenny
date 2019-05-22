@@ -12,6 +12,7 @@ import PhotoShake
 import PhotoShake.ShakeConfig
 import PhotoShake.Photographee
 import PhotoShake.ShakeError
+import PhotoShake.Shooting
 
 import System.FilePath
 
@@ -67,6 +68,34 @@ main shakeConfig msgChan root w = do
     return ()
 
 
+-- improve me
+
+lol :: [Shooting]
+lol = [Normal, Omfoto]
+
+shootingSection :: FilePath -> Shooting -> UI Element
+shootingSection _ _ = mkSection [ mkLabel "Shooting Type"
+                               --               , readConf2 root shootingType
+                                              , mkRadioGroup lol
+                                              ]
+
+
+mkRadio :: Shooting -> UI Element
+mkRadio x = do
+    radio <- case x of
+            Omfoto -> UI.input # set UI.type_ "radio" # set UI.name "foobar" # set UI.html (show x)
+            Normal -> UI.input # set UI.type_ "radio" # set UI.name "foobar" # set UI.html (show x) # set (UI.attr "checked") "true"
+    view <- UI.label #. "radio" #+ [ element radio, string (show x)]
+    return view
+
+
+mkRadioGroup :: [Shooting] -> UI Element
+mkRadioGroup xs = do
+    view <- UI.div #. "control" #+ (fmap (mkRadio) xs)
+    return view
+
+
+
 
 dumpSection :: FilePath -> FilePath -> UI Element
 dumpSection root dumpPath = mkSection [ mkLabel "Dump mappe" 
@@ -103,6 +132,8 @@ body w root config msgChan = do
     -- extremum bads
     conf <- liftIO $ readIORef config 
 
+    shootingConfig <- shootingSection root (_shootingType conf)
+
     dumpConfig <- dumpSection root (_dumpConfig conf)
 
     dagsdatoConfig <- dagsdatoSection root (_dagsdatoConfig conf)
@@ -110,8 +141,6 @@ body w root config msgChan = do
     doneshootingConfig <- doneshootingSection root (_doneshootingConfig conf)
 
     locationConfig <- locationsFilSection root (_locationConfig conf)
-
-
 
     err <- UI.p 
     msg <- UI.p 
@@ -129,7 +158,7 @@ body w root config msgChan = do
                         ]
                     ]
 
-    _ <- getBody w # set children [dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    _ <- getBody w # set children [shootingConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
     --bads
     msgChan' <- liftIO $ dupChan msgChan
     void $ liftIO $ forkIO $ receiveMsg w root config msgChan'
@@ -142,6 +171,10 @@ readConf _ conf = do
     -- cant throw error
     x <- liftIO $ readFile conf
     UI.p # set UI.text x
+
+--readConf2 :: FilePath -> Shooting -> UI Element
+--readConf2 _ x = do
+--    UI.p # set UI.text (show x)
 
 
 mkConfPicker :: FilePath -> FilePath -> UI Element
