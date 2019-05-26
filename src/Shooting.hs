@@ -41,7 +41,7 @@ mkRadioGroup name config xs = do
     let inputs x = do
             y <- UI.input # set UI.type_ "radio" # set UI.name name
             on UI.checkedChange y $ \_ -> do
-                    liftIO $ writeFile config $ encode x
+                    liftIO $ writeFile config $ encode (Shootings x)
                     return ()
             return y
 
@@ -56,7 +56,7 @@ mkRadioGroup name config xs = do
     let x = focus widgets
     let r = rights widgets
 
-    view <- UI.div #. "control" #+ ((take 0 l) ++ [x] ++ (take 2 r))
+    view <- UI.div #. "control" #+ (l ++ [x] ++ r)
 
 
     return view
