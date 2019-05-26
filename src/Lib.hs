@@ -12,9 +12,14 @@ import PhotoShake
 import PhotoShake.ShakeConfig
 import PhotoShake.Photographee
 import PhotoShake.ShakeError
-import PhotoShake.Shooting
 
 import System.FilePath
+
+import Shooting
+import Dump
+import Dagsdato
+import Doneshooting
+import Locations
 
 import Control.Monad 
 
@@ -23,6 +28,7 @@ import Control.Exception
 import System.FSNotify hiding (defaultConfig)
 import Control.Concurrent
 import Data.IORef
+
 
 
 
@@ -68,71 +74,13 @@ main shakeConfig msgChan root w = do
     return ()
 
 
--- improve me
-
-lol :: [Shooting]
-lol = [Normal, Omfoto]
-
-shootingSection :: FilePath -> Shooting -> UI Element
-shootingSection _ _ = mkSection [ mkLabel "Shooting Type"
-                               --               , readConf2 root shootingType
-                                              , mkRadioGroup lol
-                                              ]
-
-
-mkRadio :: Shooting -> UI Element
-mkRadio x = do
-    radio <- case x of
-            Omfoto -> UI.input # set UI.type_ "radio" # set UI.name "foobar" # set UI.html (show x)
-            Normal -> UI.input # set UI.type_ "radio" # set UI.name "foobar" # set UI.html (show x) # set (UI.attr "checked") "true"
-    view <- UI.label #. "radio" #+ [ element radio, string (show x)]
-    return view
-
-
-mkRadioGroup :: [Shooting] -> UI Element
-mkRadioGroup xs = do
-    view <- UI.div #. "control" #+ (fmap (mkRadio) xs)
-    return view
-
-
-
-
-dumpSection :: FilePath -> FilePath -> UI Element
-dumpSection root dumpPath = mkSection [ mkLabel "Dump mappe" 
-                                      , readConf root dumpPath 
-                                      , mkConfPicker root dumpPath
-                                      ]
-
-dagsdatoSection :: FilePath -> FilePath -> UI Element
-dagsdatoSection root dagsdatoPath = mkSection [ mkLabel "Dagsdato mappe"
-                                              , readConf root dagsdatoPath
-                                              , mkConfPicker root dagsdatoPath
-                                              ]
-
-
-locationsFilSection :: FilePath -> FilePath -> UI Element
-locationsFilSection root locationFilePath = 
-    mkSection [ mkLabel "Lokations Fil"
-              , readConf root locationFilePath
-              , mkConfPicker2 root locationFilePath
-              ]
-
-doneshootingSection :: FilePath -> FilePath -> UI Element
-doneshootingSection root doneshootingPath = 
-    mkSection [ mkLabel "Doneshooting mappe"
-              , readConf root doneshootingPath
-              , mkConfPicker2 root doneshootingPath
-              ]
-
 
 body :: Window -> FilePath -> IORef ShakeConfig -> EventChannel -> UI ()
 body w root config msgChan = do
-    --section <- mkSection [ UI.p # set UI.text "Mangler måske config" ] 
-    --
-    -- extremum bads
+    
     conf <- liftIO $ readIORef config 
 
-    shootingConfig <- shootingSection root (_shootingType conf)
+    shootingConfig <- shootingSection root (shootingParse (_shootingType conf))
 
     dumpConfig <- dumpSection root (_dumpConfig conf)
 
@@ -140,7 +88,7 @@ body w root config msgChan = do
 
     doneshootingConfig <- doneshootingSection root (_doneshootingConfig conf)
 
-    locationConfig <- locationsFilSection root (_locationConfig conf)
+    locationConfig <- locationsSection root (_locationConfig conf)
 
     err <- UI.p 
     msg <- UI.p 
@@ -165,35 +113,6 @@ body w root config msgChan = do
     
     return ()
 
-
-readConf :: FilePath -> FilePath -> UI Element
-readConf _ conf = do
-    -- cant throw error
-    x <- liftIO $ readFile conf
-    UI.p # set UI.text x
-
---readConf2 :: FilePath -> Shooting -> UI Element
---readConf2 _ x = do
---    UI.p # set UI.text (show x)
-
-
-mkConfPicker :: FilePath -> FilePath -> UI Element
-mkConfPicker _ conf = do
-    (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
-        --this is full path will
-        --that matter?
-        writeFile conf $ "location = " ++ folder
-        return ()
-    return view
-
-mkConfPicker2 :: FilePath -> FilePath -> UI Element
-mkConfPicker2 _ conf = do
-    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
-        --this is full path will
-        --that matter?
-        writeFile conf $ "location = " ++ file
-        return ()
-    return view
 
 
 --mkBuild config root idd w err msg = do
