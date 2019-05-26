@@ -80,7 +80,7 @@ body w root config msgChan = do
     
     conf <- liftIO $ readIORef config 
 
-    shootingConfig <- shootingSection root (shootingParse (_shootingType conf))
+    shootingConfig <- shootingSection root (_shootingsConfig conf)
 
     dumpConfig <- dumpSection root (_dumpConfig conf)
 
