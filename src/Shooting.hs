@@ -2,6 +2,8 @@
 module Shooting
     ( mkRadioGroup
     , shootingSection
+    -- ups
+    , RadioGroup(..)
     ) where
 
 import Prelude hiding (writeFile)

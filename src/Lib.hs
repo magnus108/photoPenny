@@ -15,6 +15,7 @@ import PhotoShake.ShakeError
 
 import System.FilePath
 
+import Session
 import Shooting
 import Dump
 import Dagsdato
@@ -81,6 +82,9 @@ body w root config msgChan = do
     conf <- liftIO $ readIORef config 
 
     shootingConfig <- shootingSection root (_shootingsConfig conf)
+    
+    sessionConfig <- sessionSection root (_sessionConfig conf)
+
 
     dumpConfig <- dumpSection root (_dumpConfig conf)
 
@@ -106,7 +110,7 @@ body w root config msgChan = do
                         ]
                     ]
 
-    _ <- getBody w # set children [shootingConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    _ <- getBody w # set children [shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
     --bads
     msgChan' <- liftIO $ dupChan msgChan
     void $ liftIO $ forkIO $ receiveMsg w root config msgChan'
