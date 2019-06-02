@@ -187,7 +187,7 @@ funci config root idd w err msg = do
                     _ <- runUI w $ element err # set text (show errMsg)
                     return ()
             Right photographee -> do
-                    build <- try $ myShake config photographee :: IO (Either ShakeError ())
+                    build <- try $ myShake config photographee (takeBaseName locationFile) :: IO (Either ShakeError ())
                     let ans = case build of
                             Left errMsg -> element err # set text (show errMsg)
                             Right _ -> element msg # set text "Byg færdigt"
