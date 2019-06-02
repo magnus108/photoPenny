@@ -9,6 +9,8 @@ module Shooting
 import Prelude hiding (writeFile)
 import Data.ByteString.Lazy hiding (take, putStrLn)
 
+import System.FilePath
+
 import PhotoShake.Shooting
 
 import qualified Graphics.UI.Threepenny as UI
@@ -30,11 +32,11 @@ shootingSection root config = mkSection
 
 
 mkRadioShootings :: FilePath -> FilePath -> UI Element
-mkRadioShootings _ config = do 
-    shootings <- liftIO $ getShootings config
+mkRadioShootings root config = do 
+    shootings <- liftIO $ getShootings (root </> config)
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ writeFile config $ encode (Shootings x)
+                    liftIO $ writeFile (root </> config) $ encode (Shootings x)
                     return ()
             , view' = \x -> UI.string (show (focus x))
             , title' = "foobar"

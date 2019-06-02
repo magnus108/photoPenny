@@ -3,6 +3,8 @@ module Photographer
     ( photographerSection
     ) where
 
+import System.FilePath
+
 import Prelude hiding (writeFile)
 import Data.ByteString.Lazy hiding (take, putStrLn)
 
@@ -31,11 +33,11 @@ photographerSection root config = mkSection
 
 
 mkSelectPhotographers :: FilePath -> FilePath -> UI Element
-mkSelectPhotographers _ config = do 
-    photographers <- liftIO $ getPhotographers config
+mkSelectPhotographers root config = do 
+    photographers <- liftIO $ getPhotographers (root </> config)
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ writeFile config $ encode (Photographers x)
+                    liftIO $ writeFile (root </> config) $ encode (Photographers x)
                     return ()
             , view' = \x -> UI.string (name (focus x))
             , title' = "photographers"

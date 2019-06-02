@@ -4,6 +4,7 @@ module Doneshooting
     ) where
 
 import Elements
+import System.FilePath
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -18,9 +19,9 @@ doneshootingSection root doneshootingPath =
 
 
 readConf :: FilePath -> FilePath -> UI Element
-readConf _ conf = do
+readConf root conf = do
     -- cant throw error
-    x <- liftIO $ readFile conf
+    x <- liftIO $ readFile (root </> conf)
     UI.p # set UI.text x
 
 --readConf2 :: FilePath -> Shooting -> UI Element
@@ -29,10 +30,10 @@ readConf _ conf = do
 
 
 mkConfPicker2 :: FilePath -> FilePath -> UI Element
-mkConfPicker2 _ conf = do
+mkConfPicker2 root conf = do
     (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
         --this is full path will
         --that matter?
-        writeFile conf $ "location = " ++ file
+        writeFile (root </> conf) $ "location = " ++ file
         return ()
     return view

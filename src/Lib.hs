@@ -36,7 +36,7 @@ import Data.IORef
 
 setup :: Int -> String -> IO ()
 setup port root = do
-    config <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
+    config <- try $ toShakeConfig (root </> "config.cfg") :: IO (Either SomeException ShakeConfig)
     withManager $ \mgr -> do
             msgChan <- newChan
             _ <- watchDirChan
@@ -49,7 +49,7 @@ setup port root = do
                     Right c -> do
                         conf <- newIORef c
                         return $ main conf msgChan
-                    Left _ -> return missingConf
+                    Left xxx -> return $ missingConf xxx
 
             startGUI
                 defaultConfig { jsPort = Just port
@@ -165,10 +165,10 @@ mkOutDirPicker = do
 
 
 -- kinda of bad
-missingConf :: FilePath -> Window -> UI ()
-missingConf root w = do
+missingConf :: SomeException -> FilePath -> Window -> UI ()
+missingConf e root w = do
     _ <- addStyleSheet w root "bulma.min.css"
-    section <- mkSection [UI.p # set UI.text "Mangler måske config"]
+    section <- mkSection [UI.p # set UI.text ("Mangler måske config" ++ (show e))]
     _ <- getBody w #+ [element section] 
     return ()
     

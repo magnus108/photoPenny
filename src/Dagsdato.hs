@@ -5,6 +5,7 @@ module Dagsdato
 
 
 import Elements
+import System.FilePath
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
@@ -18,9 +19,9 @@ dagsdatoSection root dagsdatoPath = mkSection [ mkLabel "Dagsdato mappe"
 --
 --to delete
 readConf :: FilePath -> FilePath -> UI Element
-readConf _ conf = do
+readConf root conf = do
     -- cant throw error
-    x <- liftIO $ readFile conf
+    x <- liftIO $ readFile (root </> conf)
     UI.p # set UI.text x
 
 --readConf2 :: FilePath -> Shooting -> UI Element
@@ -29,11 +30,11 @@ readConf _ conf = do
 
 
 mkConfPicker :: FilePath -> FilePath -> UI Element
-mkConfPicker _ conf = do
+mkConfPicker root conf = do
     (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
         --this is full path will
         --that matter?
-        writeFile conf $ "location = " ++ folder
+        writeFile (root </> conf) $ "location = " ++ folder
         return ()
     return view
 

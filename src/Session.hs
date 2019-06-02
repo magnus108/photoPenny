@@ -6,6 +6,7 @@ module Session
 import Prelude hiding (writeFile)
 import Data.ByteString.Lazy hiding (take, putStrLn)
 
+import System.FilePath
 ---ups
 import Shooting
 import PhotoShake.Shooting
@@ -30,11 +31,11 @@ sessionSection root config = mkSection
 
 
 mkRadioSessions :: FilePath -> FilePath -> UI Element
-mkRadioSessions _ config = do 
-    sessions <- liftIO $ getSessions config
+mkRadioSessions root config = do 
+    sessions <- liftIO $ getSessions (root </> config)
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ writeFile config $ encode (Sessions x)
+                    liftIO $ writeFile (root </> config) $ encode (Sessions x)
                     return ()
             , view' = \x -> UI.string (show (focus x))
             , title' = "sessions"
