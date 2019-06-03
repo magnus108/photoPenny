@@ -4,36 +4,32 @@ module Doneshooting
     ) where
 
 import Elements
-import System.FilePath
+import PhotoShake.Doneshooting
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
+import PhotoShake.ShakeConfig
 
-doneshootingSection :: FilePath -> FilePath -> UI Element
-doneshootingSection root doneshootingPath = 
+
+
+doneshootingSection :: ShakeConfig -> UI Element
+doneshootingSection config = 
     mkSection [ mkLabel "Doneshooting mappe"
-              , readConf root doneshootingPath
-              , mkConfPicker2 root doneshootingPath
+              , readConf config
+              , mkConfPicker config
               ]
 
 
-readConf :: FilePath -> FilePath -> UI Element
-readConf root conf = do
-    -- cant throw error
-    x <- liftIO $ readFile (root </> conf)
-    UI.p # set UI.text x
-
---readConf2 :: FilePath -> Shooting -> UI Element
---readConf2 _ x = do
---    UI.p # set UI.text (show x)
+readConf :: ShakeConfig -> UI Element
+readConf config = do
+    x <- liftIO $ getDoneshooting config
+    UI.p # set UI.text (unDoneshooting x)
 
 
-mkConfPicker2 :: FilePath -> FilePath -> UI Element
-mkConfPicker2 root conf = do
-    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
-        --this is full path will
+mkConfPicker :: ShakeConfig  -> UI Element
+mkConfPicker config = do
+    (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
         --that matter?
-        writeFile (root </> conf) $ "location = " ++ file
-        return ()
+        liftIO $ setDoneshooting config $ Doneshooting { unDoneshooting = folder}
     return view

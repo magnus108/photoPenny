@@ -91,9 +91,9 @@ body w root config msgChan = do
 
     dumpConfig <- dumpSection root (_dumpConfig conf)
 
-    dagsdatoConfig <- dagsdatoSection root (_dagsdatoConfig conf)
+    dagsdatoConfig <- dagsdatoSection conf
 
-    doneshootingConfig <- doneshootingSection root (_doneshootingConfig conf)
+    doneshootingConfig <- doneshootingSection conf
 
     locationConfig <- locationsSection root (_locationConfig conf)
 

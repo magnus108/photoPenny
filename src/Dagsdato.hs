@@ -5,36 +5,30 @@ module Dagsdato
 
 
 import Elements
-import System.FilePath
+import PhotoShake.Dagsdato
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 
-dagsdatoSection :: FilePath -> FilePath -> UI Element
-dagsdatoSection root dagsdatoPath = mkSection [ mkLabel "Dagsdato mappe"
-                                              , readConf root dagsdatoPath
-                                              , mkConfPicker root dagsdatoPath
+import PhotoShake.ShakeConfig
+
+dagsdatoSection :: ShakeConfig -> UI Element
+dagsdatoSection  config = mkSection [ mkLabel "Dagsdato mappe"
+                                              , readConf config
+                                              , mkConfPicker config
                                               ]
 --
---to delete
-readConf :: FilePath -> FilePath -> UI Element
-readConf root conf = do
+readConf :: ShakeConfig -> UI Element
+readConf config = do
     -- cant throw error
-    x <- liftIO $ readFile (root </> conf)
-    UI.p # set UI.text x
-
---readConf2 :: FilePath -> Shooting -> UI Element
---readConf2 _ x = do
---    UI.p # set UI.text (show x)
+    x <- liftIO $ getDagsdato config
+    UI.p # set UI.text (unDagsdato x)
 
 
-mkConfPicker :: FilePath -> FilePath -> UI Element
-mkConfPicker root conf = do
+mkConfPicker :: ShakeConfig -> UI Element
+mkConfPicker config = do
     (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
-        --this is full path will
-        --that matter?
-        writeFile (root </> conf) $ "location = " ++ folder
-        return ()
+        liftIO $ setDagsdato config $ Dagsdato { unDagsdato = folder}
     return view
 
