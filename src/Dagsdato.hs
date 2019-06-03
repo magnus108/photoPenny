@@ -15,12 +15,13 @@ import PhotoShake.ShakeConfig
 
 dagsdatoSection :: ShakeConfig -> UI Element
 dagsdatoSection  config = mkSection [ mkLabel "Dagsdato mappe"
-                                              , readConf config
-                                              , mkConfPicker config
-                                              ]
---
-readConf :: ShakeConfig -> UI Element
-readConf config = do
+                                    , readConfig config
+                                    , mkConfPicker config
+                                    ]
+
+
+readConfig :: ShakeConfig -> UI Element
+readConfig config = do
     -- cant throw error
     x <- liftIO $ getDagsdato config
     UI.p # set UI.text (unDagsdato x)

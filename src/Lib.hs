@@ -8,20 +8,20 @@ import Graphics.UI.Threepenny.Core
 
 import Elements
 
-import PhotoShake
+--import PhotoShake
 import PhotoShake.ShakeConfig
-import PhotoShake.Photographee
-import PhotoShake.ShakeError
+--import PhotoShake.Photographee
+--import PhotoShake.ShakeError
 
 import System.FilePath
 
-import Photographer
-import Session
-import Shooting
+--import Photographer
+--import Session
+--import Shooting
 import Dump
 import Dagsdato
-import Doneshooting
-import Locations
+--import Doneshooting
+--import Locations
 
 import Control.Monad 
 
@@ -82,38 +82,57 @@ body w root config msgChan = do
     
     conf <- liftIO $ readIORef config 
 
-    shootingConfig <- shootingSection root (_shootingsConfig conf)
+    --shootingConfig <- shootingSection root (_shootingsConfig conf)
     
-    sessionConfig <- sessionSection root (_sessionConfig conf)
+    --sessionConfig <- sessionSection root (_sessionConfig conf)
 
-    photographerConfig <- photographerSection root (_photographerConfig conf)
+    --photographerConfig <- photographerSection root (_photographerConfig conf)
 
 
-    dumpConfig <- dumpSection root (_dumpConfig conf)
+    --dumpConfig <- dumpSection conf
 
     dagsdatoConfig <- dagsdatoSection conf
 
-    doneshootingConfig <- doneshootingSection conf
+    --doneshootingConfig <- doneshootingSection conf
 
-    locationConfig <- locationsSection root (_locationConfig conf)
+    --locationConfig <- locationsSection root (_locationConfig conf)
 
-    err <- UI.p 
-    msg <- UI.p 
-    ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild conf root ident w err msg
+    --err <- UI.p 
+   -- msg <- UI.p 
+    --ident <- liftIO $ newIORef ""
+    --(_, buildView) <- mkBuild conf root ident w err msg
 
-    (input, inputView) <- mkInput "Elev nr:"
-    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
+    --(input, inputView) <- mkInput "Elev nr:"
+    --on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
 
-    inputView2 <- mkSection $ 
-                    [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-4"] [element inputView]
-                        , mkColumn ["is-12"] [element buildView]
-                        , mkColumn ["is-12"] [element err, element msg] 
-                        ]
-                    ]
+    --inputView2 <- mkSection $ 
+     --               [ mkColumns ["is-multiline"]
+      --                  [ mkColumn ["is-4"] [element inputView]
+       --                 , mkColumn ["is-12"] [element buildView]
+        --                , mkColumn ["is-12"] [element err, element msg] 
+         --               ]
+          --          ]
+{-
+    sections <-  (mapM (\f -> f conf) [dumpSection, dagsdatoSection, doneshootingSection])
+                   `catch` (\e -> do 
+                                let err = show (e :: IOException)
+                                liftIO $ putStrLn ("Warning: Couldn'e open " ++ f ++ ": " ++ err)
+                                return [])
+                   -}
+    (b1, dump) <- dumpSection conf
+                   --`catch` (\e -> do 
+                     --           let err = show (e :: SomeException)
+                       --         liftIO $ putStrLn ("Warning: Couldn'e open " ++ err)
+                         --       gg <- liftIO $ dumpSection2 conf
+                           --     return gg
+                             --   )
 
-    _ <- getBody w # set children [photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    _ <- if b1 then 
+        getBody w # set children [dump, dagsdatoConfig] --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    else
+        getBody w # set children [dump] --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+
+
     --bads
     msgChan' <- liftIO $ dupChan msgChan
     void $ liftIO $ forkIO $ receiveMsg w root config msgChan'
@@ -123,12 +142,12 @@ body w root config msgChan = do
 
 
 --mkBuild config root idd w err msg = do
-mkBuild :: ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
-mkBuild config root idd w err msg = do
-    (button, view) <- mkButton "Kør byg"
-    callback <- ffiExport $ funci config root idd w err msg
-    runFunction $ ffi "$(%1).on('click',%2)" button callback
-    return (button, view)
+--mkBuild :: ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
+--mkBuild config root idd w err msg = do
+ --   (button, view) <- mkButton "Kør byg"
+  --  callback <- ffiExport $ funci config root idd w err msg
+   -- runFunction $ ffi "$(%1).on('click',%2)" button callback
+    --return (button, view)
 
 
 {-
@@ -174,6 +193,7 @@ missingConf e root w = do
     
 
 --funci config root idd w err msg = do
+{-
 funci :: ShakeConfig -> FilePath -> (IORef String) -> Window -> Element -> Element -> IO ()
 funci config root idd w err msg = do
     --have to look this up from config
@@ -196,3 +216,4 @@ funci config root idd w err msg = do
                     _ <- runUI w (element msg # set text "")
                     _ <- runUI w ans
                     return ()
+                    -}
