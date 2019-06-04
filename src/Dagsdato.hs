@@ -23,7 +23,7 @@ dagsdatoSection  config =  do
                             ]
             return (False, gg)
         Dagsdato y -> do
-            gg <- mkSection [ mkLabel "Dump mappe" 
+            gg <- mkSection [ mkLabel "Dagsdato mappe" 
                             , readConfig y
                             , mkConfPicker config
                             ]

@@ -7,21 +7,23 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import Elements
+import PhotoShake.Photographee
+import PhotoShake.ShakeError
+import PhotoShake.Location
+import PhotoShake
 
---import PhotoShake
+
 import PhotoShake.ShakeConfig
---import PhotoShake.Photographee
---import PhotoShake.ShakeError
 
 import System.FilePath
 
 import Photographer
---import Session
---import Shooting
+import Session
+import Shooting
 import Dump
 import Dagsdato
 import Doneshooting
---import Locations
+import Locations
 
 import Control.Monad 
 
@@ -82,48 +84,34 @@ body w root config msgChan = do
     
     conf <- liftIO $ readIORef config 
 
-    --shootingConfig <- shootingSection root (_shootingsConfig conf)
-    
-    --sessionConfig <- sessionSection root (_sessionConfig conf)
-
-    --photographerConfig <- photographerSection root (_photographerConfig conf)
 
 
-    --dumpConfig <- dumpSection conf
+    err <- UI.p 
+    msg <- UI.p 
+    ident <- liftIO $ newIORef ""
+    (_, buildView) <- mkBuild conf ident w err msg
 
+    (input, inputView) <- mkInput "Elev nr:"
+    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
 
-
-    --locationConfig <- locationsSection root (_locationConfig conf)
-
-    --err <- UI.p 
-   -- msg <- UI.p 
-    --ident <- liftIO $ newIORef ""
-    --(_, buildView) <- mkBuild conf root ident w err msg
-
-    --(input, inputView) <- mkInput "Elev nr:"
-    --on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
-
-    --inputView2 <- mkSection $ 
-     --               [ mkColumns ["is-multiline"]
-      --                  [ mkColumn ["is-4"] [element inputView]
-       --                 , mkColumn ["is-12"] [element buildView]
-        --                , mkColumn ["is-12"] [element err, element msg] 
-         --               ]
-          --          ]
-{-
-    sections <-  (mapM (\f -> f conf) [dumpSection, dagsdatoSection, doneshootingSection])
-                   `catch` (\e -> do 
-                                let err = show (e :: IOException)
-                                liftIO $ putStrLn ("Warning: Couldn'e open " ++ f ++ ": " ++ err)
-                                return [])
-                   -}
+    inputView2 <- mkSection $ 
+                    [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-4"] [element inputView]
+                        , mkColumn ["is-12"] [element buildView]
+                        , mkColumn ["is-12"] [element err, element msg] 
+                        ]
+                    ]
     (b1, dump) <- dumpSection conf
     (b2, dagsdato) <- dagsdatoSection conf
     (b3, doneshooting) <- doneshootingSection conf
     (b4, photographer) <- photographerSection conf
 
-    --extreme bad
-    --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    (b5, shooting) <- shootingSection conf
+    (b6, session) <- sessionSection conf
+
+    (b7, location) <- locationsSection conf
+
+
     _ <- if (not b1) then 
         getBody w # set children [dump] 
     else if (not b2) then
@@ -132,11 +120,16 @@ body w root config msgChan = do
         getBody w # set children [doneshooting]
     else if (not b4) then
         getBody w # set children [photographer]
+    else if (not b5) then
+        getBody w # set children [shooting]
+    else if (not b6) then
+        getBody w # set children [session]
+    else if (not b7) then
+        getBody w # set children [location]
     else
-        getBody w # set children [photographer, dump, dagsdato, doneshooting] --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+        getBody w # set children [inputView2, photographer, dump, dagsdato, doneshooting, shooting, session, location]
 
 
-    --bads
     msgChan' <- liftIO $ dupChan msgChan
     void $ liftIO $ forkIO $ receiveMsg w root config msgChan'
     
@@ -144,46 +137,12 @@ body w root config msgChan = do
 
 
 
---mkBuild config root idd w err msg = do
---mkBuild :: ShakeConfig -> FilePath -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
---mkBuild config root idd w err msg = do
- --   (button, view) <- mkButton "Kør byg"
-  --  callback <- ffiExport $ funci config root idd w err msg
-   -- runFunction $ ffi "$(%1).on('click',%2)" button callback
-    --return (button, view)
-
-
-{-
-mkContent :: UI Element
-mkContent = do
-    mkColumns ["is-multiline"]
-        [ mkColumn ["is-12"] [ element view ]
-        , mkColumn ["is-12"] [ mkOutDirPicker ]
-        , mkColumn ["is-8"] [ element inputView ]
-        , mkColumn ["is-12"] [ element msgChanges ]
-        , mkColumn ["is-12"] [ element view2 ]
-        ]
-
-
-mkOutDirPicker :: UI Element
-mkOutDirPicker = do
-    (_, view) <- mkFolderPicker "Vælg config folder"
-    return view
--}
-
---setup :: IORef ShakeConfig -> EventChannel -> String -> Window -> UI ()
---setup config msgChan root w = do
-  --  _ <- addStyleSheet w root "bulma.min.css"
-
-  --  ident <- liftIO $ newIORef ""
---    (_, view) <- mkBuild config root ident w
-
---    (input, inputView) <- mkInput "elev nr:"
---    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
-
- --   _ <- getBody w #+ [ mkSection [ mkContent ]] 
-
-    --return () 
+mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
+mkBuild config idd w err msg = do
+    (button, view) <- mkButton "Flyt filer"
+    callback <- ffiExport $ funci config idd w err msg
+    runFunction $ ffi "$(%1).on('click',%2)" button callback
+    return (button, view)
 
 
 -- kinda of bad
@@ -195,22 +154,28 @@ missingConf e root w = do
     return ()
     
 
---funci config root idd w err msg = do
-{-
-funci :: ShakeConfig -> FilePath -> (IORef String) -> Window -> Element -> Element -> IO ()
-funci config root idd w err msg = do
+funci :: ShakeConfig -> (IORef String) -> Window -> Element -> Element -> IO ()
+funci config idd w err msg = do
     --have to look this up from config
     idd2 <- readIORef idd
-    let locationConfig = _locationConfig config
-    locationFile <- getLocationFile locationConfig
+    locationFile <- getLocationFile config
     -- kinda bad here
-    find <- try $ findPhotographee (root </> locationFile) idd2 :: IO (Either ShakeError Photographee)
+    -- kinda bad here
+    -- kinda bad here
+    -- kinda bad here
+    -- kinda bad here
+    -- kinda bad here
+    -- kinda bad here
+    -- kinda bad here could cause errorr
+    find <- try $ findPhotographee (unLocation locationFile) idd2 :: IO (Either ShakeError Photographee)
+
     case find of
             Left errMsg -> do
                     _ <- runUI w $ element err # set text (show errMsg)
                     return ()
+
             Right photographee -> do
-                    build <- try $ myShake config photographee (takeBaseName locationFile) :: IO (Either ShakeError ())
+                    build <- try $ myShake config photographee (takeBaseName (unLocation locationFile)) :: IO (Either ShakeError ())
                     let ans = case build of
                             Left errMsg -> element err # set text (show errMsg)
                             Right _ -> element msg # set text "Byg færdigt"
@@ -219,4 +184,3 @@ funci config root idd w err msg = do
                     _ <- runUI w (element msg # set text "")
                     _ <- runUI w ans
                     return ()
-                    -}

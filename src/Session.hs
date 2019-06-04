@@ -3,13 +3,9 @@ module Session
     ( sessionSection
     ) where
 
-import Prelude hiding (writeFile)
-import Data.ByteString.Lazy hiding (take, putStrLn)
 
-import System.FilePath
 ---ups
 import Shooting
-import PhotoShake.Shooting
 ---ups
 import PhotoShake.Session
 
@@ -23,23 +19,37 @@ import Utils.ListZipper
 import PhotoShake.ShakeConfig
 
 
-sessionSection :: FilePath -> FilePath -> UI Element
-sessionSection root config = mkSection
-                                [ mkLabel "Session Type"
-                                , mkRadioSessions root config
-                                ]
+sessionSection :: ShakeConfig -> UI (Bool, Element)
+sessionSection config = do
+        x <- liftIO $ getSessions config
+        case x of
+            NoSessions -> do
+                    gg <- mkSection [ mkLabel "Sessions ikke valgt"
+                                    , mkSessionsImporter config
+                                    ]
+                    return (False, gg)
+
+            Sessions y -> do
+                        gg <- mkSection [ mkLabel "Sessions type"
+                                        , mkRadioSessions config y
+                                        ]
+                        return (True, gg)
+
+mkSessionsImporter :: ShakeConfig -> UI Element
+mkSessionsImporter config = do
+    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+        liftIO $ importSessions config file
+    return view
 
 
-mkRadioSessions :: FilePath -> FilePath -> UI Element
-mkRadioSessions root config = do 
-    sessions <- liftIO $ getSessions (root </> config)
+mkRadioSessions :: ShakeConfig -> ListZipper Session -> UI Element
+mkRadioSessions config y = do 
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ writeFile (root </> config) $ encode (Sessions x)
-                    return ()
+                    liftIO $ setSession config $ Sessions x
             , view' = \x -> UI.string (show (focus x))
             , title' = "sessions"
-            , items = unSessions sessions
+            , items = y
             }
     view <- mkRadioGroup group'
     return view

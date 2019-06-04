@@ -4,36 +4,38 @@ module Locations
     ) where
 
 import Elements
-import System.FilePath
 
+import PhotoShake.ShakeConfig
+import PhotoShake.Location
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 
-locationsSection :: FilePath -> FilePath -> UI Element
-locationsSection root locationFilePath = 
-    mkSection [ mkLabel "Lokations Fil"
-              , readConf root locationFilePath
-              , mkConfPicker2 root locationFilePath
-              ]
+locationsSection :: ShakeConfig -> UI (Bool, Element)
+locationsSection config = do
+    x <- liftIO $ getLocationFile config
+    case x of
+        NoLocation -> do
+            gg <- mkSection [ mkLabel "Lokations fil ikke valgt"
+                            , mkConfPicker2 config
+                            ]
+            return (False, gg)
+        Location y -> do
+            gg <- mkSection [ mkLabel "Lokations mappe" 
+                            , readConf y
+                            , mkConfPicker2 config
+                            ]
+            return (True, gg)
 
 
-readConf :: FilePath -> FilePath -> UI Element
-readConf root conf = do
-    -- cant throw error
-    x <- liftIO $ readFile (root </> conf)
+readConf :: FilePath -> UI Element
+readConf x = do
     UI.p # set UI.text x
 
---readConf2 :: FilePath -> Shooting -> UI Element
---readConf2 _ x = do
---    UI.p # set UI.text (show x)
 
 
-mkConfPicker2 :: FilePath -> FilePath -> UI Element
-mkConfPicker2 root conf = do
+mkConfPicker2 :: ShakeConfig -> UI Element
+mkConfPicker2 config = do
     (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
-        --this is full path will
-        --that matter?
-        writeFile (root </> conf) $ "location = " ++ file
-        return ()
+        liftIO $ setLocation config $ Location { unLocation = file}
     return view

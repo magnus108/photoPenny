@@ -6,10 +6,6 @@ module Shooting
     , RadioGroup(..)
     ) where
 
-import Prelude hiding (writeFile)
-import Data.ByteString.Lazy hiding (take, putStrLn)
-
-import System.FilePath
 
 import PhotoShake.Shooting
 
@@ -24,27 +20,40 @@ import Utils.Comonad
 import PhotoShake.ShakeConfig
 
 
-shootingSection :: FilePath -> FilePath -> UI Element
-shootingSection root config = mkSection
-                                [ mkLabel "Shooting Type"
-                                , mkRadioShootings root config
-                                ]
+shootingSection :: ShakeConfig -> UI (Bool, Element)
+shootingSection config = do
+        x <- liftIO $ getShootings config
+        case x of
+            NoShootings-> do
+                    gg <- mkSection [ mkLabel "Shooting ikke valgt"
+                                    , mkShootingsImporter config
+                                    ]
+                    return (False, gg)
+
+            Shootings y -> do
+                        gg <- mkSection [ mkLabel "Shooting type"
+                                        , mkRadioShootings config y
+                                        ]
+                        return (True, gg)
 
 
-mkRadioShootings :: FilePath -> FilePath -> UI Element
-mkRadioShootings root config = do 
-    shootings <- liftIO $ getShootings (root </> config)
+mkRadioShootings :: ShakeConfig -> ListZipper Shooting -> UI Element
+mkRadioShootings config y = do 
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ writeFile (root </> config) $ encode (Shootings x)
-                    return ()
+                    liftIO $ setShooting config $ Shootings x
             , view' = \x -> UI.string (show (focus x))
-            , title' = "foobar"
-            , items = unShootings shootings
+            , title' = "shootings"
+            , items = y
             }
     view <- mkRadioGroup group'
     return view
 
+mkShootingsImporter :: ShakeConfig -> UI Element
+mkShootingsImporter config = do
+    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+        liftIO $ importShootings config file
+    return view
 
 mkRadioGroup :: Eq a => RadioGroup a -> UI Element
 mkRadioGroup x = do

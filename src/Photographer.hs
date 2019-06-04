@@ -27,8 +27,8 @@ photographerSection config = do
         x <- liftIO $ getPhotographers config
         case x of
             NoPhotographers -> do
-                    gg <- mkSection [ mkLabel "Fotograf ikke valgt"
-                           --         , mkConfPicker config
+                    gg <- mkSection [ mkLabel "Fotograf ikke valgt - importer fil"
+                                    , mkPhotographersImporter config
                                     ]
                     return (False, gg)
 
@@ -38,6 +38,13 @@ photographerSection config = do
                                         ]
                         return (True, gg)
 
+
+
+mkPhotographersImporter :: ShakeConfig -> UI Element
+mkPhotographersImporter config = do
+    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+        liftIO $ importPhotographers config file
+    return view
 
 
 mkSelectPhotographers :: ShakeConfig -> ListZipper Photographer -> UI Element
