@@ -3,10 +3,8 @@ module Photographer
     ( photographerSection
     ) where
 
-import System.FilePath
 
 import Prelude hiding (writeFile)
-import Data.ByteString.Lazy hiding (take, putStrLn)
 
 import PhotoShake.Photographer
 
@@ -19,29 +17,37 @@ import Utils.ListZipper
 
 {- ups -}
 import Shooting
-import PhotoShake.Shooting
 
 
 import PhotoShake.ShakeConfig
 
 
-photographerSection :: FilePath -> FilePath -> UI Element
-photographerSection root config = mkSection
-                                [ mkLabel "Fotograf"
-                                , mkSelectPhotographers root config
-                                ]
+photographerSection :: ShakeConfig -> UI (Bool, Element)
+photographerSection config = do
+        x <- liftIO $ getPhotographers config
+        case x of
+            NoPhotographers -> do
+                    gg <- mkSection [ mkLabel "Fotograf ikke valgt"
+                           --         , mkConfPicker config
+                                    ]
+                    return (False, gg)
+
+            Photographers y -> do
+                        gg <- mkSection [ mkLabel "Fotograf"
+                                        , mkSelectPhotographers config y
+                                        ]
+                        return (True, gg)
 
 
-mkSelectPhotographers :: FilePath -> FilePath -> UI Element
-mkSelectPhotographers root config = do 
-    photographers <- liftIO $ getPhotographers (root </> config)
+
+mkSelectPhotographers :: ShakeConfig -> ListZipper Photographer -> UI Element
+mkSelectPhotographers config y = do 
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ writeFile (root </> config) $ encode (Photographers x)
-                    return ()
+                    liftIO $ setPhotographers config $ Photographers x
             , view' = \x -> UI.string (name (focus x))
             , title' = "photographers"
-            , items = unPhotographers photographers
+            , items = y 
             }
     view <- mkRadioGroup group'
     return view

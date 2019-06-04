@@ -15,12 +15,12 @@ import PhotoShake.ShakeConfig
 
 import System.FilePath
 
---import Photographer
+import Photographer
 --import Session
 --import Shooting
 import Dump
 import Dagsdato
---import Doneshooting
+import Doneshooting
 --import Locations
 
 import Control.Monad 
@@ -91,9 +91,7 @@ body w root config msgChan = do
 
     --dumpConfig <- dumpSection conf
 
-    dagsdatoConfig <- dagsdatoSection conf
 
-    --doneshootingConfig <- doneshootingSection conf
 
     --locationConfig <- locationsSection root (_locationConfig conf)
 
@@ -120,17 +118,22 @@ body w root config msgChan = do
                                 return [])
                    -}
     (b1, dump) <- dumpSection conf
-                   --`catch` (\e -> do 
-                     --           let err = show (e :: SomeException)
-                       --         liftIO $ putStrLn ("Warning: Couldn'e open " ++ err)
-                         --       gg <- liftIO $ dumpSection2 conf
-                           --     return gg
-                             --   )
+    (b2, dagsdato) <- dagsdatoSection conf
+    (b3, doneshooting) <- doneshootingSection conf
+    (b4, photographer) <- photographerSection conf
 
-    _ <- if b1 then 
-        getBody w # set children [dump, dagsdatoConfig] --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    --extreme bad
+    --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+    _ <- if (not b1) then 
+        getBody w # set children [dump] 
+    else if (not b2) then
+        getBody w # set children [dagsdato]
+    else if (not b3) then
+        getBody w # set children [doneshooting]
+    else if (not b4) then
+        getBody w # set children [photographer]
     else
-        getBody w # set children [dump] --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
+        getBody w # set children [photographer, dump, dagsdato, doneshooting] --[photographerConfig, shootingConfig, sessionConfig, dumpConfig, dagsdatoConfig , doneshootingConfig, locationConfig, inputView2]
 
 
     --bads

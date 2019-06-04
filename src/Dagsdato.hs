@@ -13,18 +13,26 @@ import Graphics.UI.Threepenny.Core
 
 import PhotoShake.ShakeConfig
 
-dagsdatoSection :: ShakeConfig -> UI Element
-dagsdatoSection  config = mkSection [ mkLabel "Dagsdato mappe"
-                                    , readConfig config
-                                    , mkConfPicker config
-                                    ]
-
-
-readConfig :: ShakeConfig -> UI Element
-readConfig config = do
-    -- cant throw error
+dagsdatoSection :: ShakeConfig -> UI (Bool, Element)
+dagsdatoSection  config =  do
     x <- liftIO $ getDagsdato config
-    UI.p # set UI.text (unDagsdato x)
+    case x of
+        NoDagsdato-> do
+            gg <- mkSection [ mkLabel "Dagsdato mappe ikke valgt"
+                            , mkConfPicker config
+                            ]
+            return (False, gg)
+        Dagsdato y -> do
+            gg <- mkSection [ mkLabel "Dump mappe" 
+                            , readConfig y
+                            , mkConfPicker config
+                            ]
+            return (True, gg)
+
+
+readConfig :: FilePath -> UI Element
+readConfig x = do
+    UI.p # set UI.text x
 
 
 mkConfPicker :: ShakeConfig -> UI Element
