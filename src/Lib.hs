@@ -7,11 +7,17 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import Elements
+import PhotoShake.Photographer
+import PhotoShake.Session
+import PhotoShake.Doneshooting
+import PhotoShake.Shooting
 import PhotoShake.Photographee
 import PhotoShake.ShakeError
 import PhotoShake.Location
 import PhotoShake
 
+import PhotoShake.Dagsdato
+import PhotoShake.Dump
 
 import PhotoShake.ShakeConfig
 
@@ -112,6 +118,12 @@ body w root config msgChan = do
     (b7, location) <- locationsSection conf
 
 
+    (_, viewReset)<- mkReset conf w 
+    viewReset2 <- mkSection $ 
+                    [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-4"] [element viewReset] ]
+                    ]
+
     _ <- if (not b1) then 
         getBody w # set children [dump] 
     else if (not b2) then
@@ -127,7 +139,9 @@ body w root config msgChan = do
     else if (not b7) then
         getBody w # set children [location]
     else
-        getBody w # set children [inputView2, photographer, dump, dagsdato, doneshooting, shooting, session, location]
+        getBody w # set children [viewReset2, inputView2, 
+                    photographer, dump, dagsdato
+                    , doneshooting, shooting, session, location]
 
 
     msgChan' <- liftIO $ dupChan msgChan
@@ -136,6 +150,22 @@ body w root config msgChan = do
     return ()
 
 
+mkReset :: ShakeConfig -> Window -> UI (Element, Element)
+mkReset config w = do
+    (button, view) <- mkButton "Reset konfiguration"
+    callback <- ffiExport $ resetIt config w
+    runFunction $ ffi "$(%1).on('click',%2)" button callback
+    return (button, view)
+
+resetIt :: ShakeConfig -> Window -> IO ()
+resetIt config _ = 
+        setDump config NoDump
+        >> setDagsdato config NoDagsdato
+        >> setPhotographers config NoPhotographers
+        >> setLocation config NoLocation
+        >> setSession config NoSessions
+        >> setShooting config NoShootings
+        >> setDoneshooting config NoDoneshooting
 
 mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
 mkBuild config idd w err msg = do
