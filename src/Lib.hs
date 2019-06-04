@@ -38,7 +38,7 @@ import Data.IORef
 
 setup :: Int -> String -> IO ()
 setup port root = do
-    config <- try $ toShakeConfig (root </> "config.cfg") :: IO (Either SomeException ShakeConfig)
+    config <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
     withManager $ \mgr -> do
             msgChan <- newChan
             _ <- watchDirChan
@@ -63,7 +63,7 @@ receiveMsg w root config events = do
     messages <- getChanContents events
     forM_ messages $ \_ -> do 
         -- handle more gracefully pls
-        config' <- try $ toShakeConfig "config.cfg" :: IO (Either SomeException ShakeConfig)
+        config' <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
         _ <- case config' of 
                 Right c -> modifyIORef config (\_ -> c)
                 Left _ -> fail "ERROR"
