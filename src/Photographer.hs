@@ -42,7 +42,7 @@ photographerSection config = do
 
 mkPhotographersImporter :: ShakeConfig -> UI Element
 mkPhotographersImporter config = do
-    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+    (_, view) <- mkFilePicker "photographerPicker" "Vælg config fil" $ \file -> do
         liftIO $ importPhotographers config file
     return view
 

@@ -37,7 +37,7 @@ readConfig x = do
 
 mkConfPicker :: ShakeConfig -> UI Element
 mkConfPicker config = do
-    (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
+    (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder -> do
         liftIO $ setDagsdato config $ Dagsdato { unDagsdato = folder}
     return view
 

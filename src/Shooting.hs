@@ -51,7 +51,7 @@ mkRadioShootings config y = do
 
 mkShootingsImporter :: ShakeConfig -> UI Element
 mkShootingsImporter config = do
-    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+    (_, view) <- mkFilePicker "shootingPicker" "Vælg config fil" $ \file -> do
         liftIO $ importShootings config file
     return view
 

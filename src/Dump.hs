@@ -40,7 +40,7 @@ readConf x = do
 
 mkConfPicker :: ShakeConfig -> UI Element
 mkConfPicker config = do
-    (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
+    (_, view) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder -> do
         liftIO $ setDump config $ Dump { unDump = folder }
 
     return view

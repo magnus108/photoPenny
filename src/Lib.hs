@@ -93,7 +93,7 @@ body w root config msgChan = do
 
 
     err <- UI.p 
-    msg <- UI.p 
+    msg <- UI.p # set (attr "id") "result"
     ident <- liftIO $ newIORef ""
     (_, buildView) <- mkBuild conf ident w err msg
 
@@ -152,7 +152,7 @@ body w root config msgChan = do
 
 mkReset :: ShakeConfig -> Window -> UI (Element, Element)
 mkReset config w = do
-    (button, view) <- mkButton "Reset konfiguration"
+    (button, view) <- mkButton "reset" "Reset konfiguration"
     callback <- ffiExport $ resetIt config w
     runFunction $ ffi "$(%1).on('click',%2)" button callback
     return (button, view)
@@ -169,7 +169,8 @@ resetIt config _ =
 
 mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
 mkBuild config idd w err msg = do
-    (button, view) <- mkButton "Flyt filer"
+    --- with pattern
+    (button, view) <- mkButton "mover" "Flyt filer"
     callback <- ffiExport $ funci config idd w err msg
     runFunction $ ffi "$(%1).on('click',%2)" button callback
     return (button, view)

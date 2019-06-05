@@ -36,6 +36,6 @@ readConf x = do
 
 mkConfPicker2 :: ShakeConfig -> UI Element
 mkConfPicker2 config = do
-    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+    (_, view) <- mkFilePicker "locationsPicker" "Vælg config fil" $ \file -> do
         liftIO $ setLocation config $ Location { unLocation = file}
     return view

@@ -37,7 +37,7 @@ readConf x = do
 
 mkConfPicker :: ShakeConfig  -> UI Element
 mkConfPicker config = do
-    (_, view) <- mkFolderPicker "Vælg config folder" $ \folder -> do
+    (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
         --that matter?
         liftIO $ setDoneshooting config $ Doneshooting { unDoneshooting = folder}
     return view

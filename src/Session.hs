@@ -37,7 +37,7 @@ sessionSection config = do
 
 mkSessionsImporter :: ShakeConfig -> UI Element
 mkSessionsImporter config = do
-    (_, view) <- mkFilePicker "Vælg config fil" $ \file -> do
+    (_, view) <- mkFilePicker "sessionPicker" "Vælg config fil" $ \file -> do
         liftIO $ importSessions config file
     return view
 

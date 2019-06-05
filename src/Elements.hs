@@ -36,9 +36,9 @@ mkSection xs =
         [ UI.div #. "container is-fluid" #+ xs]
 
 
-mkButton :: String -> UI (Element, Element)
-mkButton x = do
-    button <- UI.button #. "button" #+ [string x]
+mkButton :: String -> String -> UI (Element, Element)
+mkButton idd x = do
+    button <- UI.button # set (attr "id") idd #. "button" #+ [string x]
     view <- UI.div #. "control" #+ [element button]
     return (button, view)
 
@@ -68,17 +68,17 @@ mkInput s = do
     return (input, view)
 
 
-mkFolderPicker :: String -> (FilePath -> IO ()) -> UI (Element, Element)
+mkFolderPicker :: String -> String -> (FilePath -> IO ()) -> UI (Element, Element)
 mkFolderPicker = mkShowOpenDialog ["openDirectory"]
 
 
-mkFilePicker :: String -> (FilePath -> IO ()) -> UI (Element, Element)
+mkFilePicker :: String -> String -> (FilePath -> IO ()) -> UI (Element, Element)
 mkFilePicker = mkShowOpenDialog ["openFile"]
 
 
-mkShowOpenDialog :: [String] -> String -> (FilePath -> IO ()) -> UI (Element, Element) 
-mkShowOpenDialog options x fx = do
-    (button, view) <- mkButton x
+mkShowOpenDialog :: [String] -> String -> String -> (FilePath -> IO ()) -> UI (Element, Element) 
+mkShowOpenDialog options idd x fx = do
+    (button, view) <- mkButton idd x
 
     on UI.click button $ \_ -> do
         cb <- ffiExport fx
