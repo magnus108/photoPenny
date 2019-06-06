@@ -30,24 +30,44 @@ shootingSection config = do
                                     ]
                     return (False, gg)
 
-            Shootings y -> do
+            UnApprovedShootings y -> do
+                        gg <- mkSection [ mkLabel "Vælg Shooting"
+                                        , mkApprovedShootings config y $ \z _ ->
+                                                liftIO $ setShooting config $ ApprovedShootings z
+                                        ]
+                        return (False, gg)
+
+            ApprovedShootings y -> do
                         gg <- mkSection [ mkLabel "Shooting type"
                                         , mkRadioShootings config y
                                         ]
                         return (True, gg)
 
 
+mkApprovedShootings :: ShakeConfig -> ListZipper Shooting -> (ListZipper Shooting -> () -> UI ()) -> UI Element
+mkApprovedShootings config y cb = do
+    (button, buttonView) <- mkButton "approveShootings" "ok"
+
+    on UI.click button (cb y)
+
+    view <- UI.div #+
+                [ mkRadioShootings config y
+                , element buttonView
+                ]
+    return view
+
 mkRadioShootings :: ShakeConfig -> ListZipper Shooting -> UI Element
 mkRadioShootings config y = do 
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ setShooting config $ Shootings x
+                    liftIO $ setShooting config $ ApprovedShootings x
             , view' = \x -> UI.string (show (focus x))
             , title' = "shootings"
             , items = y
             }
     view <- mkRadioGroup group'
     return view
+
 
 mkShootingsImporter :: ShakeConfig -> UI Element
 mkShootingsImporter config = do

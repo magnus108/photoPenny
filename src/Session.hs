@@ -29,7 +29,14 @@ sessionSection config = do
                                     ]
                     return (False, gg)
 
-            Sessions y -> do
+            UnApprovedSessions y -> do
+                        gg <- mkSection [ mkLabel "Vælg Session"
+                                        , mkApprovedSessions config y $ \z _ ->
+                                                liftIO $ setSession config $ ApprovedSessions z
+                                        ]
+                        return (False, gg)
+
+            ApprovedSessions y -> do
                         gg <- mkSection [ mkLabel "Sessions type"
                                         , mkRadioSessions config y
                                         ]
@@ -41,12 +48,24 @@ mkSessionsImporter config = do
         liftIO $ importSessions config file
     return view
 
+mkApprovedSessions :: ShakeConfig -> ListZipper Session -> (ListZipper Session -> () -> UI ()) -> UI Element
+mkApprovedSessions config y cb = do
+    (button, buttonView) <- mkButton "approveSessions" "ok"
+
+    on UI.click button (cb y)
+
+    view <- UI.div #+
+                [ mkRadioSessions config y
+                , element buttonView
+                ]
+    return view
+
 
 mkRadioSessions :: ShakeConfig -> ListZipper Session -> UI Element
 mkRadioSessions config y = do 
     let group' = RadioGroup 
             { action = \x _ -> do
-                    liftIO $ setSession config $ Sessions x
+                    liftIO $ setSession config $ ApprovedSessions x
             , view' = \x -> UI.string (show (focus x))
             , title' = "sessions"
             , items = y
