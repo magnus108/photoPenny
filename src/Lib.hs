@@ -139,9 +139,9 @@ body w root config msgChan = do
     else if (not b7) then
         getBody w # set children [location]
     else
-        getBody w # set children [viewReset2, inputView2, 
+        getBody w # set children [inputView2, 
                     photographer, dump, dagsdato
-                    , doneshooting, shooting, session, location]
+                    , doneshooting, shooting, session, location, viewReset2]
 
 
     msgChan' <- liftIO $ dupChan msgChan

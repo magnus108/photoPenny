@@ -45,7 +45,7 @@ mkButton idd x = do
 
 mkLabel :: String -> UI Element
 mkLabel s =
-    UI.p #. "has-text-info has-text-weight-bold is-size-5" # set UI.text s
+    UI.p #. "has-text-info has-text-weight-bold" # set UI.text s
 
 
 mkColumns :: [String] -> [UI Element] -> UI Element
