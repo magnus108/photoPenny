@@ -19,57 +19,30 @@ import Utils.ListZipper
 import PhotoShake.ShakeConfig
 
 
-sessionSection :: ShakeConfig -> UI (Bool, Element)
+sessionSection :: ShakeConfig -> UI Element
 sessionSection config = do
         x <- liftIO $ getSessions config
+
         case x of
             NoSessions -> do
-                    gg <- mkSection [ mkLabel "Sessions ikke valgt"
-                                    , mkSessionsImporter config
-                                    ]
-                    return (False, gg)
+                    (_, importer) <- mkFilePicker "sessionPicker" "Vælg config fil" $ \file -> do
+                        liftIO $ importSessions config file
 
-            UnApprovedSessions y -> do
-                        gg <- mkSection [ mkLabel "Vælg Session"
-                                        , mkApprovedSessions config y $ \z _ ->
-                                                liftIO $ setSession config $ ApprovedSessions z
-                                        ]
-                        return (False, gg)
+                    mkSection [ mkLabel "Sessions ikke valgt"
+                              , element importer
+                              ]
 
-            ApprovedSessions y -> do
-                        gg <- mkSection [ mkLabel "Sessions type"
-                                        , mkRadioSessions config y
-                                        ]
-                        return (True, gg)
+            Sessions y -> do
+                    let group' = RadioGroup 
+                            { action = \x _ -> do
+                                    liftIO $ setSession config $ Sessions x
+                            , view' = \x -> UI.string (show (focus x))
+                            , title' = "sessions"
+                            , items = y
+                            }
 
-mkSessionsImporter :: ShakeConfig -> UI Element
-mkSessionsImporter config = do
-    (_, view) <- mkFilePicker "sessionPicker" "Vælg config fil" $ \file -> do
-        liftIO $ importSessions config file
-    return view
+                    select <- mkRadioGroup group'
 
-mkApprovedSessions :: ShakeConfig -> ListZipper Session -> (ListZipper Session -> () -> UI ()) -> UI Element
-mkApprovedSessions config y cb = do
-    (button, buttonView) <- mkButton "approveSessions" "ok"
-
-    on UI.click button (cb y)
-
-    view <- UI.div #+
-                [ mkRadioSessions config y
-                , element buttonView
-                ]
-    return view
-
-
-mkRadioSessions :: ShakeConfig -> ListZipper Session -> UI Element
-mkRadioSessions config y = do 
-    let group' = RadioGroup 
-            { action = \x _ -> do
-                    liftIO $ setSession config $ ApprovedSessions x
-            , view' = \x -> UI.string (show (focus x))
-            , title' = "sessions"
-            , items = y
-            }
-    view <- mkRadioGroup group'
-    return view
-
+                    mkSection [ mkLabel "Sessions type"
+                              , element select
+                              ]

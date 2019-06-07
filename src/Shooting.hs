@@ -20,61 +20,38 @@ import Utils.Comonad
 import PhotoShake.ShakeConfig
 
 
-shootingSection :: ShakeConfig -> UI (Bool, Element)
+shootingSection :: ShakeConfig -> UI Element
 shootingSection config = do
         x <- liftIO $ getShootings config
+
         case x of
             NoShootings-> do
-                    gg <- mkSection [ mkLabel "Shooting ikke valgt"
-                                    , mkShootingsImporter config
-                                    ]
-                    return (False, gg)
+                    (_, importer) <- mkFilePicker "shootingPicker" "Vælg config fil" $ \file -> do
+                        liftIO $ importShootings config file
 
-            UnApprovedShootings y -> do
-                        gg <- mkSection [ mkLabel "Vælg Shooting"
-                                        , mkApprovedShootings config y $ \z _ ->
-                                                liftIO $ setShooting config $ ApprovedShootings z
-                                        ]
-                        return (False, gg)
+                    mkSection [ mkLabel "Shooting ikke valgt"
+                              , element importer
+                              ]
 
-            ApprovedShootings y -> do
-                        gg <- mkSection [ mkLabel "Shooting type"
-                                        , mkRadioShootings config y
-                                        ]
-                        return (True, gg)
+            Shootings y -> do
 
+                    let group = RadioGroup 
+                            { action = \x _ -> do
+                                    liftIO $ setShooting config $ Shootings x
+                            , view' = \x -> UI.string (show (focus x))
+                            , title' = "shootings"
+                            , items = y
+                            }
 
-mkApprovedShootings :: ShakeConfig -> ListZipper Shooting -> (ListZipper Shooting -> () -> UI ()) -> UI Element
-mkApprovedShootings config y cb = do
-    (button, buttonView) <- mkButton "approveShootings" "ok"
+                    select <- mkRadioGroup group
 
-    on UI.click button (cb y)
-
-    view <- UI.div #+
-                [ mkRadioShootings config y
-                , element buttonView
-                ]
-    return view
-
-mkRadioShootings :: ShakeConfig -> ListZipper Shooting -> UI Element
-mkRadioShootings config y = do 
-    let group' = RadioGroup 
-            { action = \x _ -> do
-                    liftIO $ setShooting config $ ApprovedShootings x
-            , view' = \x -> UI.string (show (focus x))
-            , title' = "shootings"
-            , items = y
-            }
-    view <- mkRadioGroup group'
-    return view
+                    mkSection [ mkLabel "Shooting type"
+                              , element select
+                              ]
 
 
-mkShootingsImporter :: ShakeConfig -> UI Element
-mkShootingsImporter config = do
-    (_, view) <- mkFilePicker "shootingPicker" "Vælg config fil" $ \file -> do
-        liftIO $ importShootings config file
-    return view
 
+-- MOVE MEEE
 mkRadioGroup :: Eq a => RadioGroup a -> UI Element
 mkRadioGroup x = do
     let widgets = extend 

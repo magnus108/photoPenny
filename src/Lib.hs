@@ -6,32 +6,35 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import Data.Time.Clock
+--import Data.Time.Clock
 
+import State
 import Elements
-import PhotoShake.Photographer
-import PhotoShake.Session
-import PhotoShake.Doneshooting
-import PhotoShake.Shooting
-import PhotoShake.Photographee
-import PhotoShake.ShakeError
-import PhotoShake.Location
-import PhotoShake
+--import PhotoShake.Photographer
+--import PhotoShake.Session
+--import PhotoShake.Doneshooting
+--import PhotoShake.Shooting
+--import PhotoShake.Photographee
+--import PhotoShake.ShakeError
+--import PhotoShake.Location
+---import PhotoShake
 
-import PhotoShake.Dagsdato
-import PhotoShake.Dump
+--import PhotoShake.Dagsdato
+--import PhotoShake.Dump
 
 import PhotoShake.ShakeConfig
 
 import System.FilePath
 
+import Main
+import Dump
+import Dagsdato
 import Photographer
 import Session
 import Shooting
-import Dump
-import Dagsdato
 import Doneshooting
 import Locations
+
 
 import Control.Monad 
 
@@ -42,13 +45,20 @@ import Control.Concurrent
 import Data.IORef
 
 
+import Utils.Comonad
+import Utils.ListZipper
 
 
 setup :: Int -> String -> IO ()
 setup port root = do
     config <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
+
+    -- get appState.
+    state <- getStates root
+
     withManager $ \mgr -> do
             msgChan <- newChan
+
             _ <- watchDirChan
                     mgr
                     (root </> "config") --this is kind of wrong
@@ -57,125 +67,95 @@ setup port root = do
 
             view <- case config of 
                     Right c -> do
-                        conf <- newIORef c
-                        return $ main conf msgChan
-                    Left xxx -> return $ missingConf xxx
+                        return $ main c msgChan state
+                    Left xxx -> 
+                        return $ missingConf xxx
 
             startGUI
                 defaultConfig { jsPort = Just port
                               } (view root)
+ 
 
-            
-receiveMsg :: Window -> FilePath -> IORef ShakeConfig -> EventChannel -> IO ()
-receiveMsg w root config events = do
-    messages <- getChanContents events
+
+viewState :: FilePath -> ShakeConfig -> Window -> ListZipper State -> UI Element
+viewState root config w states = do
+    view <- case (focus states) of 
+            Dump -> dumpSection config
+
+            Dagsdato -> dagsdatoSection config 
+
+            Photographer -> photographerSection config
+
+            Doneshooting -> doneshootingSection config
+
+            Session -> sessionSection config
+
+            Shooting -> shootingSection config
+
+            Location -> locationsSection config
+
+            Main -> mainSection config w
+
+    ---ifNotIsLeft
+    (buttonForward, forwardView) <- mkButton "nextDump" "vidre"
+    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+
+    (buttonBackward, backwardView) <- mkButton "prevDump" "back"
+    on UI.click buttonBackward $ \_ -> liftIO $ setStates root (States (back states))
+
+    UI.div #+ [ element view
+              , element backwardView 
+              , element forwardView
+              ]
+
+
+redoLayout :: Window -> FilePath -> ShakeConfig -> States -> UI ()
+redoLayout w root config (States states) = void $ do
+    let views = states =>> viewState root config w
+    view <- focus views
+    getBody w # set children [ view ]
+
+
+recevier  :: Window -> FilePath -> EventChannel -> IO ()
+recevier w root msgs = void $ do
+    messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
-        -- handle more gracefully pls
-        config' <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
-        _ <- case config' of 
-                Right c -> modifyIORef config (\_ -> c)
-                Left _ -> fail "ERROR"
-        --nicess
-        runUI w (body w root config events)
+        -- actually also an try here :S
+        state <- liftIO $ getStates root
+        -- eww
+        -- maybe i can hidaway errors on this one and deligate?
+        config <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
+        case config of 
+            Right c ->
+                runUI w $ redoLayout w root c state
 
+            Left _ -> fail "ERROR"
 
-main :: IORef ShakeConfig -> EventChannel -> FilePath -> Window -> UI ()
-main shakeConfig msgChan root w = do
+-- eww
+main :: ShakeConfig -> EventChannel -> States -> FilePath -> Window -> UI ()
+main config msgChan states root w = do
     _ <- addStyleSheet w root "bulma.min.css"
-    _ <- body w root shakeConfig msgChan
-    return ()
 
+    msgs <- liftIO $ dupChan msgChan  
 
-
-body :: Window -> FilePath -> IORef ShakeConfig -> EventChannel -> UI ()
-body w root config msgChan = do
+    redoLayout w root config states
     
-    conf <- liftIO $ readIORef config 
+    void $ liftIO $ forkIO $ recevier w root msgs
 
 
 
-    err <- UI.p 
-    msg <- UI.p # set (attr "id") "result"
-    ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild conf ident w err msg
-
-    (input, inputView) <- mkInput "Elev nr:"
-    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
-
-    inputView2 <- mkSection $ 
-                    [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-4"] [element inputView]
-                        , mkColumn ["is-12"] [element buildView]
-                        , mkColumn ["is-12"] [element err, element msg] 
-                        ]
-                    ]
-    (b1, dump) <- dumpSection conf
-    (b2, dagsdato) <- dagsdatoSection conf
-    (b3, doneshooting) <- doneshootingSection conf
-    (b4, photographer) <- photographerSection conf
-
-    (b5, shooting) <- shootingSection conf
-    (b6, session) <- sessionSection conf
-
-    (b7, location) <- locationsSection conf
 
 
-    (_, viewReset)<- mkReset conf w 
-    viewReset2 <- mkSection $ 
-                    [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-4"] [element viewReset] ]
-                    ]
 
-    _ <- if (not b1) then 
-        getBody w # set children [dump] 
-    else if (not b2) then
-        getBody w # set children [dagsdato]
-    else if (not b3) then
-        getBody w # set children [doneshooting]
-    else if (not b4) then
-        getBody w # set children [photographer]
-    else if (not b5) then
-        getBody w # set children [shooting]
-    else if (not b6) then
-        getBody w # set children [session]
-    else if (not b7) then
-        getBody w # set children [location]
-    else
-        getBody w # set children [inputView2, 
-                    photographer, dump, dagsdato
-                    , doneshooting, shooting, session, location, viewReset2]
-
-
-    msgChan' <- liftIO $ dupChan msgChan
-    void $ liftIO $ forkIO $ receiveMsg w root config msgChan'
     
-    return ()
 
-
-mkReset :: ShakeConfig -> Window -> UI (Element, Element)
-mkReset config w = do
-    (button, view) <- mkButton "reset" "Reset konfiguration"
-    callback <- ffiExport $ resetIt config w
-    runFunction $ ffi "$(%1).on('click',%2)" button callback
-    return (button, view)
-
-resetIt :: ShakeConfig -> Window -> IO ()
-resetIt config _ = 
-        setDump config NoDump
-        >> setDagsdato config NoDagsdato
-        >> setPhotographers config NoPhotographers
-        >> setLocation config NoLocation
-        >> setSession config NoSessions
-        >> setShooting config NoShootings
-        >> setDoneshooting config NoDoneshooting
-
-mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
-mkBuild config idd w err msg = do
+--mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
+--mkBuild config idd w err msg = do
     --- with pattern
-    (button, view) <- mkButton "mover" "Flyt filer"
-    callback <- ffiExport $ funci config idd w err msg
-    runFunction $ ffi "$(%1).on('click',%2)" button callback
-    return (button, view)
+  --  (button, view) <- mkButton "mover" "Flyt filer"
+    --callback <- ffiExport $ funci config idd w err msg
+    --runFunction $ ffi "$(%1).on('click',%2)" button callback
+   --return (button, view)
 
 
 -- kinda of bad
@@ -187,34 +167,3 @@ missingConf e root w = do
     return ()
     
 
-funci :: ShakeConfig -> (IORef String) -> Window -> Element -> Element -> IO ()
-funci config idd w err msg = do
-    --have to look this up from config
-    idd2 <- readIORef idd
-    locationFile <- getLocationFile config
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here could cause errorr
-    find <- try $ findPhotographee (unLocation locationFile) idd2 :: IO (Either ShakeError Photographee)
-
-    case find of
-            Left errMsg -> do
-                    _ <- runUI w $ element err # set text (show errMsg)
-                    return ()
-
-            Right photographee -> do
-                    time <- getCurrentTime
-                    build <- try $ myShake config photographee (takeBaseName (unLocation locationFile)) time :: IO (Either ShakeError ())
-                    let ans = case build of
-                            Left errMsg -> element err # set text (show errMsg)
-                            Right _ -> element msg # set text ("Byg færdigt for" ++ " " ++ (_name photographee)) --- OVERVEJ en trie
-                    -- reset
-                    _ <- runUI w (element err # set text "")
-                    _ <- runUI w (element msg # set text "")
-                    _ <- runUI w ans
-                    return ()

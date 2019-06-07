@@ -13,31 +13,22 @@ import Graphics.UI.Threepenny.Core
 
 import PhotoShake.ShakeConfig
 
-dagsdatoSection :: ShakeConfig -> UI (Bool, Element)
+
+dagsdatoSection :: ShakeConfig -> UI Element
 dagsdatoSection  config =  do
     x <- liftIO $ getDagsdato config
+
+    (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder ->
+        liftIO $ setDagsdato config $ Dagsdato { unDagsdato = folder}
+
     case x of
         NoDagsdato-> do
-            gg <- mkSection [ mkLabel "Dagsdato mappe ikke valgt"
-                            , mkConfPicker config
-                            ]
-            return (False, gg)
-        Dagsdato y -> do
-            gg <- mkSection [ mkLabel "Dagsdato mappe" 
-                            , readConfig y
-                            , mkConfPicker config
-                            ]
-            return (True, gg)
+            mkSection [ mkLabel "Dagsdato mappe ikke valgt"
+                      , element view
+                      ]
 
-
-readConfig :: FilePath -> UI Element
-readConfig x = do
-    UI.p # set UI.text x
-
-
-mkConfPicker :: ShakeConfig -> UI Element
-mkConfPicker config = do
-    (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder -> do
-        liftIO $ setDagsdato config $ Dagsdato { unDagsdato = folder}
-    return view
-
+        Dagsdato y ->
+            mkSection [ mkLabel "Dagsdato mappe" 
+                      , UI.p # set UI.text y
+                      , element view
+                      ]

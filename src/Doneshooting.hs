@@ -13,31 +13,22 @@ import PhotoShake.ShakeConfig
 
 
 
-doneshootingSection :: ShakeConfig -> UI (Bool, Element)
+doneshootingSection :: ShakeConfig -> UI Element
 doneshootingSection config = do
     x <- liftIO $ getDoneshooting config
+
+    (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
+            liftIO $ setDoneshooting config $ Doneshooting { unDoneshooting = folder}
+
     case x of
         NoDoneshooting -> do
-            gg <- mkSection [ mkLabel "Doneshooting mappe ikke valgt"
-                            , mkConfPicker config
-                            ]
-            return (False, gg)
+
+            mkSection [ mkLabel "Doneshooting mappe ikke valgt"
+                      , element view
+                      ]
+
         Doneshooting y -> do
-            gg <- mkSection [ mkLabel "Doneshooting mappe" 
-                            , readConf y
-                            , mkConfPicker config
-                            ]
-            return (True, gg)
- 
-            
-readConf :: FilePath -> UI Element
-readConf x = do
-    UI.p # set UI.text x
-
-
-mkConfPicker :: ShakeConfig  -> UI Element
-mkConfPicker config = do
-    (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
-        --that matter?
-        liftIO $ setDoneshooting config $ Doneshooting { unDoneshooting = folder}
-    return view
+            mkSection [ mkLabel "Doneshooting mappe" 
+                      , UI.p # set UI.text y
+                      , element view
+                      ]
