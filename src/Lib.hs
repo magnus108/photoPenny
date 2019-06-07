@@ -6,6 +6,8 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
+import Data.Time.Clock
+
 import Elements
 import PhotoShake.Photographer
 import PhotoShake.Session
@@ -206,10 +208,11 @@ funci config idd w err msg = do
                     return ()
 
             Right photographee -> do
-                    build <- try $ myShake config photographee (takeBaseName (unLocation locationFile)) :: IO (Either ShakeError ())
+                    time <- getCurrentTime
+                    build <- try $ myShake config photographee (takeBaseName (unLocation locationFile)) time :: IO (Either ShakeError ())
                     let ans = case build of
                             Left errMsg -> element err # set text (show errMsg)
-                            Right _ -> element msg # set text "Byg færdigt"
+                            Right _ -> element msg # set text ("Byg færdigt for" ++ " " ++ (_name photographee)) --- OVERVEJ en trie
                     -- reset
                     _ <- runUI w (element err # set text "")
                     _ <- runUI w (element msg # set text "")

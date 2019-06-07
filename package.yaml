@@ -34,6 +34,7 @@ dependencies:
 - distributive >= 0.6 && < 0.7
 - webdriver >= 0.8 && < 0.9
 - async >= 2.2 && < 2.3
+- time >= 1.8 && < 2.0
 
 library:
   source-dirs: src
