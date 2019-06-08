@@ -44,7 +44,6 @@ stateFile = "config/state.json"
 getStates :: FilePath -> IO States
 getStates root = do
         let filepath = root </> stateFile
-        putStrLn filepath
         state' <- readFile filepath `catch` \e -> 
                 fail ("Caught " ++ show (e :: SomeException))
         let state = decode state' :: Maybe States

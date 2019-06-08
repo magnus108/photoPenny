@@ -6,5 +6,7 @@ lav konfiguartions knap.
 
 Børnehave csv - ikke oprettet. / fix
 
+import af forkert fil skal give fejl besked
+
 not a bug:
 sys eller tea

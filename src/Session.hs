@@ -18,9 +18,13 @@ import Utils.ListZipper
 
 import PhotoShake.ShakeConfig
 
+import Utils.Comonad
+import Utils.ListZipper
+import State (State, States(..), setStates)
 
-sessionSection :: ShakeConfig -> UI Element
-sessionSection config = do
+
+sessionSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
+sessionSection root states config = do
         x <- liftIO $ getSessions config
 
         case x of
@@ -28,9 +32,12 @@ sessionSection config = do
                     (_, importer) <- mkFilePicker "sessionPicker" "Vælg config fil" $ \file -> do
                         liftIO $ importSessions config file
 
-                    mkSection [ mkLabel "Sessions ikke valgt"
-                              , element importer
-                              ]
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Sessions ikke valgt" ]
+                                    , mkColumn ["is-12"] [ element importer ]
+                                    ]
+                              ] 
+
 
             Sessions y -> do
                     let group' = RadioGroup 
@@ -43,6 +50,12 @@ sessionSection config = do
 
                     select <- mkRadioGroup group'
 
-                    mkSection [ mkLabel "Sessions type"
-                              , element select
-                              ]
+                    (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+                    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Sessions type" ]
+                                    , mkColumn ["is-12"] [ element select ]
+                                    , mkColumn ["is-12"] [ element forwardView ]
+                                    ]
+                              ] 

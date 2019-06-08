@@ -24,8 +24,6 @@ dumpSection root states config = do
     (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
             liftIO $ setDump config $ Dump folder
 
-    (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
 
     case x of
         NoDump -> 
@@ -35,7 +33,10 @@ dumpSection root states config = do
                             ]
                       ] 
 
-        Dump y ->
+        Dump y -> do
+            (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+            on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe" ]
                             , mkColumn ["is-12"] [ element picker ]

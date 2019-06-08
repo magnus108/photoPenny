@@ -20,9 +20,14 @@ import Shooting
 
 import PhotoShake.ShakeConfig
 
+import Utils.Comonad
+import Utils.ListZipper
+import State (State, States(..), setStates)
 
-photographerSection :: ShakeConfig -> UI Element
-photographerSection config = do
+
+
+photographerSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
+photographerSection root states config = do
 
         x <- liftIO $ getPhotographers config
 
@@ -30,10 +35,12 @@ photographerSection config = do
             NoPhotographers -> do
                     (_, importer) <- mkFilePicker "photographerPicker" "Vælg config fil" $ \file -> do
                             liftIO $ importPhotographers config file
-                
-                    mkSection [ mkLabel "Fotograf ikke valgt - importer fil"
-                              , element importer
-                              ]
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" ]
+                                    , mkColumn ["is-12"] [ element importer ]
+                                    ]
+                              ] 
 
             Photographers y -> do
                     let group = RadioGroup 
@@ -46,6 +53,12 @@ photographerSection config = do
 
                     select <- mkRadioGroup group
 
-                    mkSection [ mkLabel "Fotograf"
-                              , element select
-                              ]
+                    (buttonForward, forwardView) <- mkButton "next" "Ok"
+                    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf" ]
+                                    , mkColumn ["is-12"] [ element select ]
+                                    , mkColumn ["is-12"] [ element forwardView ]
+                                    ]
+                              ] 

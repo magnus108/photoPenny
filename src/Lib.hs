@@ -82,17 +82,17 @@ viewState root config w states = do
     case (focus states) of 
             Dump -> dumpSection root states config
 
-            Dagsdato -> dagsdatoSection config 
+            Dagsdato -> dagsdatoSection root states config 
 
-            Photographer -> photographerSection config
+            Photographer -> photographerSection root states config
 
-            Doneshooting -> doneshootingSection config
+            Doneshooting -> doneshootingSection root states config
 
-            Session -> sessionSection config
+            Session -> sessionSection root states config
 
-            Shooting -> shootingSection config
+            Shooting -> shootingSection root states config
 
-            Location -> locationsSection config
+            Location -> locationsSection root states config
 
             Main -> mainSection config w
 

@@ -11,10 +11,13 @@ import Graphics.UI.Threepenny.Core
 
 import PhotoShake.ShakeConfig
 
+import Utils.Comonad
+import Utils.ListZipper
+import State (State, States(..), setStates)
 
 
-doneshootingSection :: ShakeConfig -> UI Element
-doneshootingSection config = do
+doneshootingSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
+doneshootingSection root states config = do
     x <- liftIO $ getDoneshooting config
 
     (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
@@ -22,13 +25,21 @@ doneshootingSection config = do
 
     case x of
         NoDoneshooting -> do
-
-            mkSection [ mkLabel "Doneshooting mappe ikke valgt"
-                      , element view
-                      ]
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe ikke valgt" ]
+                            , mkColumn ["is-12"] [ element view ]
+                            ]
+                      ] 
 
         Doneshooting y -> do
-            mkSection [ mkLabel "Doneshooting mappe" 
-                      , UI.p # set UI.text y
-                      , element view
-                      ]
+
+            (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+            on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
+                            , mkColumn ["is-12"] [ element view ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                            , mkColumn ["is-12"] [ element forwardView ]
+                            ]
+                      ] 
