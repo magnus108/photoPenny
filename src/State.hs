@@ -28,13 +28,13 @@ data State
     | Session
     | Location
     | Main
-    deriving (Show)
+    deriving (Show, Eq)
 
 
 deriveJSON defaultOptions ''State
 
 data States = States (ListZipper State)
-    deriving (Show)
+    deriving (Show, Eq)
 
 deriveJSON defaultOptions ''States
 

@@ -103,6 +103,8 @@ viewState root config w states = do
     (buttonBackward, backwardView) <- mkButton "prevDump" "back"
     on UI.click buttonBackward $ \_ -> liftIO $ setStates root (States (back states))
 
+
+
     UI.div #+ [ element view
               , element backwardView 
               , element forwardView
@@ -113,7 +115,21 @@ redoLayout :: Window -> FilePath -> ShakeConfig -> States -> UI ()
 redoLayout w root config (States states) = void $ do
     let views = states =>> viewState root config w
     view <- focus views
-    getBody w # set children [ view ]
+    let buttons = states =>> (\states' -> do
+                        button <- UI.button #. "button" #+ [string (show (focus states'))]
+                        button' <- if (states' == states) then
+                                set (UI.attr  "class") "button is-info is-selected" (element button)
+                            else
+                                return button
+
+                        on UI.click button' $ \_ -> liftIO $ setStates root (States states')
+
+                        return button'
+                    )
+
+    view'' <- mkSection [UI.div #. "buttons has-addons" #+ (toList buttons)]
+
+    getBody w # set children [ view'', view]
 
 
 recevier  :: Window -> FilePath -> EventChannel -> IO ()
