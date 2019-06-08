@@ -18,7 +18,7 @@ doneshootingSection config = do
     x <- liftIO $ getDoneshooting config
 
     (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
-            liftIO $ setDoneshooting config $ Doneshooting { unDoneshooting = folder}
+            liftIO $ setDoneshooting config $ Doneshooting folder
 
     case x of
         NoDoneshooting -> do

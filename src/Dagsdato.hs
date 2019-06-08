@@ -19,7 +19,7 @@ dagsdatoSection  config =  do
     x <- liftIO $ getDagsdato config
 
     (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder ->
-        liftIO $ setDagsdato config $ Dagsdato { unDagsdato = folder}
+        liftIO $ setDagsdato config $ Dagsdato folder
 
     case x of
         NoDagsdato-> do

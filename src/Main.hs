@@ -4,6 +4,7 @@ module Main
     ) where
 import Elements
 import PhotoShake.Dagsdato
+import Control.Monad 
 
 import PhotoShake
 import PhotoShake.ShakeConfig
@@ -94,7 +95,7 @@ funci config idd w err msg = do
     -- kinda bad here
     -- kinda bad here could cause errorr
     find <- case locationFile of 
-        NoLocation -> error "wda"
+        NoLocation -> return (Left LocationConfigFileMissing)
         Location xxx -> do
             try $ findPhotographee xxx idd2 :: IO (Either ShakeError Photographee)
 
@@ -107,8 +108,9 @@ funci config idd w err msg = do
                     time <- getCurrentTime
                     -- wtf????
                     case locationFile of 
-                        NoLocation -> error "wda"
-
+                        NoLocation -> 
+                            void $ runUI w (element err # set text (show LocationConfigFileMissing))
+                    
                         Location xxx -> do
                             build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
                             let ans = case build of
