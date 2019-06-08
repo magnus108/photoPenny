@@ -79,8 +79,8 @@ setup port root = do
 
 viewState :: FilePath -> ShakeConfig -> Window -> ListZipper State -> UI Element
 viewState root config w states = do
-    view <- case (focus states) of 
-            Dump -> dumpSection config
+    case (focus states) of 
+            Dump -> dumpSection root states config
 
             Dagsdato -> dagsdatoSection config 
 
@@ -95,20 +95,6 @@ viewState root config w states = do
             Location -> locationsSection config
 
             Main -> mainSection config w
-
-    ---ifNotIsLeft
-    (buttonForward, forwardView) <- mkButton "nextDump" "vidre"
-    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
-
-    (buttonBackward, backwardView) <- mkButton "prevDump" "back"
-    on UI.click buttonBackward $ \_ -> liftIO $ setStates root (States (back states))
-
-
-
-    UI.div #+ [ element view
-              , element backwardView 
-              , element forwardView
-              ]
 
 
 redoLayout :: Window -> FilePath -> ShakeConfig -> States -> UI ()
