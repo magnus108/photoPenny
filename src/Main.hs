@@ -27,8 +27,13 @@ import Data.IORef
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-mainSection :: ShakeConfig -> Window -> UI Element
-mainSection config w = do
+import Utils.ListZipper
+import Utils.Comonad
+
+
+mainSection :: FilePath -> ShakeConfig -> Window -> UI Element
+mainSection root config w = do
+
     err <- UI.p 
     msg <- UI.p # set (attr "id") "result"
     ident <- liftIO $ newIORef ""
@@ -53,7 +58,54 @@ mainSection config w = do
                         [ mkColumn ["is-4"] [element viewReset] ]
                     ]
     
-    UI.div #+ [element inputView2, element viewReset2]
+    sessions <- liftIO $ getSessions config
+
+
+    let wats = (\zipper items -> do
+                    input' <- UI.input # set UI.type_ "radio" # set UI.name "sessions"
+                    input <- if (zipper == items) then
+                            set (UI.attr "checked") "" (element input')
+                        else
+                            return input'
+                        
+                    on UI.checkedChange input $ \_ -> liftIO $ setSession config $ Sessions zipper
+
+                    label <- UI.string $ case (focus zipper) of
+                                        School -> "FA"
+                                        Kindergarten y ->
+                                            case y of 
+                                                    Group -> "Gruppe"
+                                                    Single -> "Enkelt"
+
+                    view <- UI.label #. "radio" #+ [element input, element label]
+                    return view
+            ) 
+
+    -- badness 3000
+    let s = case sessions of
+            NoSessions -> ListZipper [] UI.div []
+            Sessions y ->
+                y =>> (\zipper ->
+                        case (focus zipper) of
+                            Kindergarten x -> wats zipper y
+                            School -> UI.div
+                        )
+
+    let ss = case sessions of
+            NoSessions -> ListZipper [] UI.div []
+            Sessions y ->
+                case (focus y) of
+                        Kindergarten x -> s 
+                        School -> ListZipper [] UI.div []
+
+        
+    
+    ssss <- mkSection 
+                    [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-12"] [UI.div #. "control" #+ (toList ss) ] ]
+                    ]
+    
+    UI.div #+ [element ssss, element inputView2, element viewReset2]
 
 
 mkReset :: ShakeConfig -> UI (Element, Element)

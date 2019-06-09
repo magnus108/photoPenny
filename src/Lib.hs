@@ -94,7 +94,7 @@ viewState root config w states = do
 
             Location -> locationsSection root states config
 
-            Main -> mainSection config w
+            Main -> mainSection root config w
 
 
 redoLayout :: Window -> FilePath -> ShakeConfig -> States -> UI ()
