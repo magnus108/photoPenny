@@ -15,6 +15,7 @@ import PhotoShake.Location
 import PhotoShake.Photographer
 import PhotoShake.Dump
 import PhotoShake.Photographee
+import PhotoShake.Built
 
 import Data.Time.Clock
 import Control.Exception
@@ -42,11 +43,17 @@ mainSection root config w = do
     (input, inputView) <- mkInput "Elev nr:"
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
 
+    built <- liftIO $ getBuilt config
+    builtMsg <- UI.p # set text (case built of
+                                    NoBuilt -> ""
+                                    Built s -> s)
+
     inputView2 <- mkSection $ 
                    [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-4"] [element inputView]
                         , mkColumn ["is-12"] [element buildView]
                         , mkColumn ["is-12"] [element err, element msg] 
+                        , mkColumn ["is-12"] [element builtMsg]
                         ]
                     ]
 
@@ -59,6 +66,9 @@ mainSection root config w = do
                     ]
     
     sessions <- liftIO $ getSessions config
+
+
+
 
 
     let wats = (\zipper items -> do
