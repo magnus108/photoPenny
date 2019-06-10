@@ -10,7 +10,6 @@ import PhotoShake.Location
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import Utils.Comonad
 import Utils.ListZipper
 import State (State, States(..), setStates)
 

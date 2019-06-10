@@ -42,7 +42,6 @@ import Control.Exception
 
 import System.FSNotify hiding (defaultConfig)
 import Control.Concurrent
-import Data.IORef
 
 
 import Utils.Comonad

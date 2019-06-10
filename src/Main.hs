@@ -4,7 +4,6 @@ module Main
     ) where
 import Elements
 import PhotoShake.Dagsdato
-import Control.Monad 
 
 import PhotoShake
 import PhotoShake.ShakeConfig
@@ -33,11 +32,10 @@ import Utils.Comonad
 
 
 mainSection :: FilePath -> ShakeConfig -> Window -> UI Element
-mainSection _ config w = do
+mainSection _ config _ = do
 
-    err <- UI.p 
     ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild config ident w err 
+    (_, buildView) <- mkBuild config ident
 
     (input, inputView) <- mkInput "Elev nr:"
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
@@ -45,17 +43,18 @@ mainSection _ config w = do
     built <- liftIO $ getBuilt config
     builtMsg <- UI.p # set text (case built of
                                     NoBuilt -> ""
+                                    NoFind s -> s
                                     Built _ s -> s)
 
     msg <- UI.p # set text (case built of
                                     NoBuilt -> ""
+                                    NoFind s -> s
                                     Built p _ -> _name p)
 
     inputView2 <- mkSection $ 
                    [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-4"] [element inputView]
                         , mkColumn ["is-12"] [element buildView]
-                        , mkColumn ["is-12"] [element err] 
                         , mkColumn ["is-12"] [element msg] 
                         , mkColumn ["is-12"] [element builtMsg]
                         ]
@@ -135,38 +134,48 @@ resetIt config =
         >> setShooting config NoShootings
         >> setDoneshooting config NoDoneshooting
 
-mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> UI (Element, Element)
-mkBuild config idd w err = do
+mkBuild :: ShakeConfig -> IORef String -> UI (Element, Element)
+mkBuild config idd = do
     --- with pattern
     (button, view) <- mkButton "mover" "Flyt filer"
-    on UI.click button $ \_ -> liftIO $ funci config idd w err 
+    on UI.click button $ \_ -> liftIO $ funci config idd
     return (button, view)
 
 
-funci :: ShakeConfig -> (IORef String) -> Window -> Element -> IO ()
-funci config idd w err = do
+funci :: ShakeConfig -> (IORef String) -> IO ()
+funci config idd = do
     --have to look this up from config
     idd2 <- readIORef idd
     locationFile <- getLocationFile config
     -- kinda bad here
     -- kinda bad here could cause errorr
+    putStrLn "lol"
     find <- case locationFile of 
         NoLocation -> return (Left LocationConfigFileMissing)
         Location xxx -> do
+            putStrLn "lol"
             try $ findPhotographee xxx idd2 :: IO (Either ShakeError Photographee)
 
     case find of
             Left errMsg -> do
-                    _ <- runUI w $ element err # set text (show errMsg)
+                    putStrLn "lol"
+                    _ <- setBuilt config (NoFind (show errMsg))
                     return ()
 
             Right photographee -> do
+                    putStrLn "lol"
                     time <- getCurrentTime
                     -- wtf????
                     case locationFile of 
-                        NoLocation -> 
-                            void $ runUI w (element err # set text (show LocationConfigFileMissing))
+                        NoLocation -> setBuilt config (Built photographee (show LocationConfigFileMissing))  
                     
                         Location xxx -> do
-                            _ <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
-                            return ()
+                            putStrLn "lola"
+                            build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
+                            case build of
+                                    Left errMsg -> do
+                                        putStrLn "lola"
+                                        setBuilt config (Built photographee (show errMsg))  
+                                    Right _ -> do
+                                        putStrLn "lolaaa"
+                                        return () 
