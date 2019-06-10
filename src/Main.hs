@@ -33,12 +33,11 @@ import Utils.Comonad
 
 
 mainSection :: FilePath -> ShakeConfig -> Window -> UI Element
-mainSection root config w = do
+mainSection _ config w = do
 
     err <- UI.p 
-    msg <- UI.p # set (attr "id") "result"
     ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild config ident w err msg
+    (_, buildView) <- mkBuild config ident w err 
 
     (input, inputView) <- mkInput "Elev nr:"
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
@@ -46,13 +45,18 @@ mainSection root config w = do
     built <- liftIO $ getBuilt config
     builtMsg <- UI.p # set text (case built of
                                     NoBuilt -> ""
-                                    Built s -> s)
+                                    Built _ s -> s)
+
+    msg <- UI.p # set text (case built of
+                                    NoBuilt -> ""
+                                    Built p _ -> _name p)
 
     inputView2 <- mkSection $ 
                    [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-4"] [element inputView]
                         , mkColumn ["is-12"] [element buildView]
-                        , mkColumn ["is-12"] [element err, element msg] 
+                        , mkColumn ["is-12"] [element err] 
+                        , mkColumn ["is-12"] [element msg] 
                         , mkColumn ["is-12"] [element builtMsg]
                         ]
                     ]
@@ -67,18 +71,14 @@ mainSection root config w = do
     
     sessions <- liftIO $ getSessions config
 
-
-
-
-
     let wats = (\zipper items -> do
                     input' <- UI.input # set UI.type_ "radio" # set UI.name "sessions"
-                    input <- if (zipper == items) then
+                    input'' <- if (zipper == items) then
                             set (UI.attr "checked") "" (element input')
                         else
                             return input'
                         
-                    on UI.checkedChange input $ \_ -> liftIO $ setSession config $ Sessions zipper
+                    on UI.checkedChange input'' $ \_ -> liftIO $ setSession config $ Sessions zipper
 
                     label <- UI.string $ case (focus zipper) of
                                         School -> "FA"
@@ -87,7 +87,7 @@ mainSection root config w = do
                                                     Group -> "Gruppe"
                                                     Single -> "Enkelt"
 
-                    view <- UI.label #. "radio" #+ [element input, element label]
+                    view <- UI.label #. "radio" #+ [element input'', element label]
                     return view
             ) 
 
@@ -97,7 +97,7 @@ mainSection root config w = do
             Sessions y ->
                 y =>> (\zipper ->
                         case (focus zipper) of
-                            Kindergarten x -> wats zipper y
+                            Kindergarten _ -> wats zipper y
                             School -> UI.div
                         )
 
@@ -105,7 +105,7 @@ mainSection root config w = do
             NoSessions -> ListZipper [] UI.div []
             Sessions y ->
                 case (focus y) of
-                        Kindergarten x -> s 
+                        Kindergarten _ -> s 
                         School -> ListZipper [] UI.div []
 
         
@@ -135,25 +135,19 @@ resetIt config =
         >> setShooting config NoShootings
         >> setDoneshooting config NoDoneshooting
 
-mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
-mkBuild config idd w err msg = do
+mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> UI (Element, Element)
+mkBuild config idd w err = do
     --- with pattern
     (button, view) <- mkButton "mover" "Flyt filer"
-    on UI.click button $ \_ -> liftIO $ funci config idd w err msg
+    on UI.click button $ \_ -> liftIO $ funci config idd w err 
     return (button, view)
 
 
-funci :: ShakeConfig -> (IORef String) -> Window -> Element -> Element -> IO ()
-funci config idd w err msg = do
+funci :: ShakeConfig -> (IORef String) -> Window -> Element -> IO ()
+funci config idd w err = do
     --have to look this up from config
     idd2 <- readIORef idd
     locationFile <- getLocationFile config
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
-    -- kinda bad here
     -- kinda bad here
     -- kinda bad here could cause errorr
     find <- case locationFile of 
@@ -174,12 +168,5 @@ funci config idd w err msg = do
                             void $ runUI w (element err # set text (show LocationConfigFileMissing))
                     
                         Location xxx -> do
-                            build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
-                            let ans = case build of
-                                    Left errMsg -> element err # set text (show errMsg)
-                                    Right _ -> element msg # set text ("Byg færdigt for" ++ " " ++ (_name photographee)) --- OVERVEJ en trie
-                            -- reset
-                            _ <- runUI w (element err # set text "")
-                            _ <- runUI w (element msg # set text "")
-                            _ <- runUI w ans
+                            _ <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
                             return ()
