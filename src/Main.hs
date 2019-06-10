@@ -48,7 +48,7 @@ mainSection _ config _ = do
 
     msg <- UI.p # set text (case built of
                                     NoBuilt -> ""
-                                    NoFind s -> s
+                                    NoFind _ -> ""
                                     Built p _ -> _name p)
 
     inputView2 <- mkSection $ 
@@ -149,33 +149,26 @@ funci config idd = do
     locationFile <- getLocationFile config
     -- kinda bad here
     -- kinda bad here could cause errorr
-    putStrLn "lol"
     find <- case locationFile of 
         NoLocation -> return (Left LocationConfigFileMissing)
         Location xxx -> do
-            putStrLn "lol"
             try $ findPhotographee xxx idd2 :: IO (Either ShakeError Photographee)
 
     case find of
             Left errMsg -> do
-                    putStrLn "lol"
-                    _ <- setBuilt config (NoFind (show errMsg))
-                    return ()
+                    setBuilt config (NoFind (show errMsg))
 
             Right photographee -> do
-                    putStrLn "lol"
                     time <- getCurrentTime
                     -- wtf????
                     case locationFile of 
-                        NoLocation -> setBuilt config (Built photographee (show LocationConfigFileMissing))  
+                        NoLocation -> do 
+                            setBuilt config (NoFind (show LocationConfigFileMissing))
                     
                         Location xxx -> do
-                            putStrLn "lola"
                             build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
                             case build of
                                     Left errMsg -> do
-                                        putStrLn "lola"
-                                        setBuilt config (Built photographee (show errMsg))  
+                                        setBuilt config (NoFind (show errMsg))  
                                     Right _ -> do
-                                        putStrLn "lolaaa"
                                         return () 
