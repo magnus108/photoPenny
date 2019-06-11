@@ -8,6 +8,7 @@ module Elements
     , mkInput
     , mkFolderPicker
     , mkFilePicker
+    , mkFileMaker
     ) where
 
 import qualified Graphics.UI.Threepenny as UI
@@ -75,6 +76,20 @@ mkFolderPicker = mkShowOpenDialog ["openDirectory"]
 mkFilePicker :: String -> String -> (FilePath -> IO ()) -> UI (Element, Element)
 mkFilePicker = mkShowOpenDialog ["openFile"]
 
+
+mkFileMaker :: String -> String -> (FilePath -> IO ()) -> UI (Element, Element)
+mkFileMaker = mkShowSaveDialog []
+
+
+mkShowSaveDialog :: [String] -> String -> String -> (FilePath -> IO ()) -> UI (Element, Element) 
+mkShowSaveDialog options idd x fx = do
+    (button, view) <- mkButton idd x
+
+    on UI.click button $ \_ -> do
+        cb <- ffiExport fx
+        runFunction $ ffi "require('electron').remote.dialog.showSaveDialog({properties: %2}, %1)" cb options
+
+    return (button, view)
 
 mkShowOpenDialog :: [String] -> String -> String -> (FilePath -> IO ()) -> UI (Element, Element) 
 mkShowOpenDialog options idd x fx = do
