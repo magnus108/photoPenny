@@ -20,8 +20,6 @@ import Shooting
 
 import PhotoShake.ShakeConfig
 
-import Utils.Comonad
-import Utils.ListZipper
 import State (State, States(..), setStates)
 
 
@@ -31,10 +29,11 @@ photographerSection root states config = do
 
         x <- liftIO $ getPhotographers config
 
+        (_, importer) <- mkFilePicker "photographerPicker" "Vælg import fil" $ \file -> do
+                liftIO $ importPhotographers config file
+
         case x of
             NoPhotographers -> do
-                    (_, importer) <- mkFilePicker "photographerPicker" "Vælg config fil" $ \file -> do
-                            liftIO $ importPhotographers config file
 
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" ]
@@ -44,9 +43,9 @@ photographerSection root states config = do
 
             Photographers y -> do
                     let group = RadioGroup 
-                            { action = \x _ -> do
-                                    liftIO $ setPhotographers config $ Photographers x
-                            , view' = \x -> UI.string (name (focus x))
+                            { action = \xx _ -> do
+                                    liftIO $ setPhotographers config $ Photographers xx
+                            , view' = \xx -> UI.string (name (focus xx))
                             , title' = "photographers"
                             , items = y 
                             }
@@ -59,6 +58,7 @@ photographerSection root states config = do
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Fotograf" ]
                                     , mkColumn ["is-12"] [ element select ]
+                                    , mkColumn ["is-12"] [ element importer ]
                                     , mkColumn ["is-12"] [ element forwardView ]
                                     ]
                               ] 

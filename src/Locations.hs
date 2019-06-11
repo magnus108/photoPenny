@@ -33,11 +33,16 @@ locationsSection root states config = do
         Location y -> do
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
             on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+            
+            (buttonOpen, openView) <- mkButton "open" "Åben csv"
+            on UI.click buttonOpen $ \_ -> do 
+                    runFunction $ ffi $ "require('electron').shell.openItem('" ++ y ++ "')"
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" ]
                             , mkColumn ["is-12"] [ element view ]
                             , mkColumn ["is-12"] [UI.p # set UI.text y]
+                            , mkColumn ["is-12"] [ element openView ]
                             , mkColumn ["is-12"] [ element forwardView ]
                             ]
                       ] 
