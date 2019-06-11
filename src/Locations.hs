@@ -36,6 +36,7 @@ locationsSection root states config = do
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" ]
+                            , mkColumn ["is-12"] [ element view ]
                             , mkColumn ["is-12"] [UI.p # set UI.text y]
                             , mkColumn ["is-12"] [ element forwardView ]
                             ]
