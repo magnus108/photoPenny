@@ -24,8 +24,8 @@ import State (State, States(..), setStates)
 
 
 
-photographerSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
-photographerSection root states config = do
+photographerSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+photographerSection root stateFile states config = do
 
         x <- liftIO $ getPhotographers config
 
@@ -53,7 +53,7 @@ photographerSection root states config = do
                     select <- mkRadioGroup group
 
                     (buttonForward, forwardView) <- mkButton "next" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+                    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Fotograf" ]

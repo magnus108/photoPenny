@@ -21,8 +21,8 @@ import PhotoShake.ShakeConfig
 import State (State, States(..), setStates)
 
 
-sessionSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
-sessionSection root states config = do
+sessionSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+sessionSection root stateFile states config = do
         x <- liftIO $ getSessions config
 
         (_, importer) <- mkFilePicker "sessionPicker" "Vælg import fil" $ \file -> do
@@ -50,7 +50,7 @@ sessionSection root states config = do
                     select <- mkRadioGroup group'
 
                     (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+                    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Sessions type" ]

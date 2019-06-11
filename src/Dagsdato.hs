@@ -16,8 +16,8 @@ import State (State, States(..), setStates)
 import PhotoShake.ShakeConfig
 
 
-dagsdatoSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
-dagsdatoSection  root states config =  do
+dagsdatoSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+dagsdatoSection  root stateFile states config =  do
     x <- liftIO $ getDagsdato config
 
     (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder ->
@@ -33,7 +33,7 @@ dagsdatoSection  root states config =  do
 
         Dagsdato y -> do
             (buttonForward, forwardView) <- mkButton "next" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" ]

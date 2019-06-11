@@ -48,66 +48,67 @@ import Utils.Comonad
 import Utils.ListZipper
 
 
-setup :: Int -> String -> IO ()
-setup port root = do
-    config <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
-
+setup :: Int -> String -> String -> FilePath -> FilePath -> IO ()
+setup port root conf watchDir' stateFile = do
+    config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
     -- get appState.
-    state <- getStates root
+    state <- getStates root stateFile
 
     withManager $ \mgr -> do
             msgChan <- newChan
 
             _ <- watchDirChan
                     mgr
-                    (root </> "config") --this is kind of wrong
+                    (root </> watchDir') --this is less wrong than earlier
                     (const True)
                     msgChan
 
             view <- case config of 
                     Right c -> do
-                        return $ main c msgChan state
+                        return $ main c msgChan stateFile state 
                     Left xxx -> 
                         return $ missingConf xxx
 
             startGUI
                 defaultConfig { jsPort = Just port
+                              , jsWindowReloadOnDisconnect = False
                               } (view root)
  
 
 
-viewState :: FilePath -> ShakeConfig -> Window -> ListZipper State -> UI Element
-viewState root config w states = do
+viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> ListZipper State -> UI Element
+viewState root stateFile config w states = do
     case (focus states) of 
-            Dump -> dumpSection root states config
+            Dump -> dumpSection root stateFile states config
 
-            Dagsdato -> dagsdatoSection root states config 
+            Dagsdato -> dagsdatoSection root stateFile states config 
 
-            Photographer -> photographerSection root states config
+            Photographer -> photographerSection root stateFile states config
 
-            Doneshooting -> doneshootingSection root states config
+            Doneshooting -> doneshootingSection root stateFile states config
 
-            Session -> sessionSection root states config
+            Session -> sessionSection root stateFile states config
 
-            Shooting -> shootingSection root states config
+            Shooting -> shootingSection root stateFile states config
 
-            Location -> locationsSection root states config
+            Location -> locationsSection root stateFile states config
 
-            Main -> mainSection root config w
+            Main -> mainSection root stateFile config w
 
 
-redoLayout :: Window -> FilePath -> ShakeConfig -> States -> UI ()
-redoLayout w root config (States states) = void $ do
-    let views = states =>> viewState root config w
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
+redoLayout w root stateFile config (States states) = void $ do
+
+    let views = states =>> viewState root stateFile config w
     view <- focus views
     let buttons = states =>> (\states' -> do
-                        button <- UI.button #. "button" #+ [string (show (focus states'))]
+                        button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
                         button' <- if (states' == states) then
                                 set (UI.attr  "class") "button is-info is-selected" (element button)
                             else
                                 return button
 
-                        on UI.click button' $ \_ -> liftIO $ setStates root (States states')
+                        on UI.click button' $ \_ -> liftIO $ setStates root stateFile (States states')
 
                         return button'
                     )
@@ -117,31 +118,31 @@ redoLayout w root config (States states) = void $ do
     getBody w # set children [ view'', view]
 
 
-recevier  :: Window -> FilePath -> EventChannel -> IO ()
-recevier w root msgs = void $ do
+recevier  :: Window -> FilePath -> FilePath -> EventChannel -> IO ()
+recevier w root stateFile msgs = void $ do
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
         -- actually also an try here :S
-        state <- liftIO $ getStates root
+        state <- liftIO $ getStates root stateFile
         -- eww
         -- maybe i can hidaway errors on this one and deligate?
         config <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
         case config of 
             Right c ->
-                runUI w $ redoLayout w root c state
+                runUI w $ redoLayout w root stateFile c state
 
             Left _ -> fail "ERROR"
 
 -- eww
-main :: ShakeConfig -> EventChannel -> States -> FilePath -> Window -> UI ()
-main config msgChan states root w = do
+main :: ShakeConfig -> EventChannel -> FilePath -> States -> FilePath -> Window -> UI ()
+main config msgChan stateFile states root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     msgs <- liftIO $ dupChan msgChan  
 
-    redoLayout w root config states
+    redoLayout w root stateFile config states
     
-    void $ liftIO $ forkIO $ recevier w root msgs
+    void $ liftIO $ forkIO $ recevier w root stateFile msgs
 
 
 

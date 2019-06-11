@@ -19,8 +19,8 @@ import Utils.ListZipper
 import State (State, States(..), setStates)
 
 
-locationsSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
-locationsSection root states config = do
+locationsSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+locationsSection root stateFile states config = do
 
     x <- liftIO $ getLocationFile config
 
@@ -43,7 +43,7 @@ locationsSection root states config = do
 
         Location y -> do
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
             
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 

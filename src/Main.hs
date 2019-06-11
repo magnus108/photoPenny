@@ -31,8 +31,8 @@ import Utils.ListZipper
 import Utils.Comonad
 
 
-mainSection :: FilePath -> ShakeConfig -> Window -> UI Element
-mainSection _ config _ = do
+mainSection :: FilePath -> FilePath -> ShakeConfig -> Window -> UI Element
+mainSection _ _ config _ = do
 
     ident <- liftIO $ newIORef ""
     (_, buildView) <- mkBuild config ident

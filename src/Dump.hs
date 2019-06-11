@@ -16,8 +16,8 @@ import Utils.ListZipper
 import State (State, States(..), setStates)
 
 
-dumpSection :: FilePath -> ListZipper State -> ShakeConfig -> UI Element
-dumpSection root states config = do
+dumpSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+dumpSection root stateFile states config = do
     x <- liftIO $ getDump config
 
     (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
@@ -34,7 +34,7 @@ dumpSection root states config = do
 
         Dump y -> do
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe" ]

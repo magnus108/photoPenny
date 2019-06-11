@@ -38,11 +38,8 @@ data States = States (ListZipper State)
 
 deriveJSON defaultOptions ''States
 
-stateFile :: String
-stateFile = "config/state.json"
-
-getStates :: FilePath -> IO States
-getStates root = do
+getStates :: FilePath -> FilePath -> IO States
+getStates root stateFile = do
         let filepath = root </> stateFile
         state' <- readFile filepath `catch` \e -> 
                 fail ("Caught " ++ show (e :: SomeException))
@@ -52,8 +49,8 @@ getStates root = do
                 Just y -> return y
 
 
-setStates:: FilePath -> States -> IO ()
-setStates root states = do
+setStates:: FilePath -> FilePath -> States -> IO ()
+setStates root stateFile states = do
     let filepath = root </> stateFile
     writeFile filepath (encode states) `catch` \e -> 
             fail ("Caught " ++ show (e :: SomeException))
