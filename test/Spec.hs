@@ -18,19 +18,19 @@ runSessionThenClose action = runSession chromeConfig . finallyClose $ action
 
 main :: IO ()
 main = do
-    --config <- toShakeConfig (Just "") "test/config.cfg"    
+    config <- toShakeConfig Nothing "test/config.cfg"    
     -- dangerous difference between these params
-    race_ (setup 9000 "" "test" "config.cfg")
+    race_ (setup 9000 "" "test/config.cfg" "test/config" "test/config/state.json")
         (runSessionThenClose $ do                      
             _ <- setImplicitWait 10000
             openPage "http://localhost:9000"
             _ <- setImplicitWait 10000
             tabDump <- findElem ( ById "tabDump" ) 
-            --_ <- click tabDump
-            --_ <- liftBase $ setDump config $ Dump "lolman"
+            _ <- click tabDump
+            _ <- setImplicitWait 10000 
+            _ <- liftBase $ setDump config $ Dump "lolman" -- maybe i should inject this service
+
             
-
-
             searchInput <- waitUntil 10000 $ findElem ( ByCSS "input[type='text']" )  
             sendKeys "1234" searchInput
             mover <- findElem ( ById "mover" )

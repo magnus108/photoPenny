@@ -65,7 +65,7 @@ setup port root conf watchDir' stateFile = do
 
             view <- case config of 
                     Right c -> do
-                        return $ main c msgChan stateFile state 
+                        return $ main c msgChan conf watchDir' stateFile state 
                     Left xxx -> 
                         return $ missingConf xxx
 
@@ -118,15 +118,15 @@ redoLayout w root stateFile config (States states) = void $ do
     getBody w # set children [ view'', view]
 
 
-recevier  :: Window -> FilePath -> FilePath -> EventChannel -> IO ()
-recevier w root stateFile msgs = void $ do
+recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
+recevier w root conf _ stateFile msgs = void $ do
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
         -- actually also an try here :S
         state <- liftIO $ getStates root stateFile
         -- eww
         -- maybe i can hidaway errors on this one and deligate?
-        config <- try $ toShakeConfig (Just root) "config.cfg" :: IO (Either SomeException ShakeConfig)
+        config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
         case config of 
             Right c ->
                 runUI w $ redoLayout w root stateFile c state
@@ -134,15 +134,15 @@ recevier w root stateFile msgs = void $ do
             Left _ -> fail "ERROR"
 
 -- eww
-main :: ShakeConfig -> EventChannel -> FilePath -> States -> FilePath -> Window -> UI ()
-main config msgChan stateFile states root w = do
+main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
+main config msgChan conf watchDir' stateFile states root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     msgs <- liftIO $ dupChan msgChan  
 
     redoLayout w root stateFile config states
     
-    void $ liftIO $ forkIO $ recevier w root stateFile msgs
+    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs
 
 
 
