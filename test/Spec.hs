@@ -29,6 +29,9 @@ main = do
             _ <- click tabDump
             _ <- setImplicitWait 10000 
             _ <- liftBase $ setDump config $ Dump "lolman" -- maybe i should inject this service
+            _ <- setImplicitWait 10000 
+            tabDagsdato <- findElem ( ById "tabDagsdato" ) 
+            _ <- click tabDagsdato
 
             
             searchInput <- waitUntil 10000 $ findElem ( ByCSS "input[type='text']" )  
