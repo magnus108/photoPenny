@@ -18,9 +18,12 @@ import Graphics.UI.Threepenny.Core hiding (empty)
 import Utils.ListZipper
 import State (State, States(..), setStates)
 
+import Control.Concurrent.Async
+import Control.Concurrent.STM
+import Control.Concurrent.STM.TBMQueue
 
-locationsSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-locationsSection root stateFile states config = do
+locationsSection :: FilePath -> FilePath -> TBMQueue States -> ListZipper State -> ShakeConfig -> UI Element
+locationsSection root stateFile queue states config = do
 
     x <- liftIO $ getLocationFile config
 
@@ -43,14 +46,14 @@ locationsSection root stateFile states config = do
 
         Location y -> do
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ setStates queue (States (forward states))
             
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 
                     runFunction $ ffi $ "require('electron').shell.openItem('" ++ y ++ "')"
 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" # set (attr "id") "locationOK" ]
                             , mkColumn ["is-12"] [ UI.div #. "field is-grouped" #+ [element view, element view2]]
                             , mkColumn ["is-12"] [ UI.p # set UI.text y]
                             , mkColumn ["is-12"] [ element openView ]
