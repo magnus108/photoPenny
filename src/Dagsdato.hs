@@ -36,7 +36,7 @@ dagsdatoSection  root stateFile states config =  do
             on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" # set (attr "id") "dagsdatoOK" ]
                             , mkColumn ["is-12"] [ element view ]
                             , mkColumn ["is-12"] [ UI.p # set UI.text y ]
                             , mkColumn ["is-12"] [ element forwardView ]

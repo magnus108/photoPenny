@@ -50,7 +50,7 @@ locationsSection root stateFile states config = do
                     runFunction $ ffi $ "require('electron').shell.openItem('" ++ y ++ "')"
 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" # set (attr "id") "locationOK" ]
                             , mkColumn ["is-12"] [ UI.div #. "field is-grouped" #+ [element view, element view2]]
                             , mkColumn ["is-12"] [ UI.p # set UI.text y]
                             , mkColumn ["is-12"] [ element openView ]

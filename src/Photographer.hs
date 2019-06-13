@@ -56,7 +56,7 @@ photographerSection root stateFile states config = do
                     on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
                     mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf" ]
+                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]
                                     , mkColumn ["is-12"] [ element select ]
                                     , mkColumn ["is-12"] [ element importer ]
                                     , mkColumn ["is-12"] [ element forwardView ]

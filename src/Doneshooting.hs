@@ -25,7 +25,7 @@ doneshootingSection root stateFile states config = do
     case x of
         NoDoneshooting -> do
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe ikke valgt" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
                             , mkColumn ["is-12"] [ element view ]
                             ]
                       ] 

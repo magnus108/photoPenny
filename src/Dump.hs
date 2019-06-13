@@ -37,7 +37,7 @@ dumpSection root stateFile states config = do
             on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
                             , mkColumn ["is-12"] [ element picker ]
                             , mkColumn ["is-12"] [ UI.p # set UI.text y ]
                             , mkColumn ["is-12"] [ element forwardView ]
