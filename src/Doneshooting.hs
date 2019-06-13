@@ -15,13 +15,8 @@ import Utils.ListZipper
 import State (State, States(..), setStates)
 
 
-import Control.Concurrent.Async
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TBMQueue
-
-
-doneshootingSection :: FilePath -> FilePath -> TBMQueue States -> ListZipper State -> ShakeConfig -> UI Element
-doneshootingSection root stateFile queue states config = do
+doneshootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+doneshootingSection root stateFile states config = do
     x <- liftIO $ getDoneshooting config
 
     (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
@@ -38,10 +33,10 @@ doneshootingSection root stateFile queue states config = do
         Doneshooting y -> do
 
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates queue (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
                             , mkColumn ["is-12"] [ element view ]
                             , mkColumn ["is-12"] [ UI.p # set UI.text y ]
                             , mkColumn ["is-12"] [ element forwardView ]

@@ -21,13 +21,8 @@ import PhotoShake.ShakeConfig
 import State (State, States(..), setStates)
 
 
-import Control.Concurrent.Async
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TBMQueue
-
-
-sessionSection :: FilePath -> FilePath -> TBMQueue States -> ListZipper State -> ShakeConfig -> UI Element
-sessionSection root stateFile queue states config = do
+sessionSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
+sessionSection root stateFile states config = do
         x <- liftIO $ getSessions config
 
         (_, importer) <- mkFilePicker "sessionPicker" "Vælg import fil" $ \file -> do
@@ -55,10 +50,10 @@ sessionSection root stateFile queue states config = do
                     select <- mkRadioGroup group'
 
                     (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ setStates queue (States (forward states))
+                    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
                     mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Sessions type" # set (attr "id") "sessionOK" ]
+                                    [ mkColumn ["is-12"] [ mkLabel "Sessions type" ]
                                     , mkColumn ["is-12"] [ element select ]
                                     , mkColumn ["is-12"] [ element importer ]
                                     , mkColumn ["is-12"] [ element forwardView ]

@@ -47,70 +47,60 @@ import Control.Concurrent
 import Utils.Comonad
 import Utils.ListZipper
 
-import Control.Concurrent.Async
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TBMQueue
 
 setup :: Int -> String -> String -> FilePath -> FilePath -> IO ()
 setup port root conf watchDir' stateFile = do
     config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
     -- get appState.
-    queue <- newTBMQueueIO 100
-    startState <- getStates root stateFile
+    state <- getStates root stateFile
 
-    --_ <- atomically $ writeTBQueue queue startState
-    
-    --mnext <- atomically $ readTBMQueue queue
-    concurrently_
-        (drainQueue root stateFile queue)
-        (withManager $ \mgr -> do
-                msgChan <- newChan
+    withManager $ \mgr -> do
+            msgChan <- newChan
 
-                _ <- watchDirChan
-                        mgr
-                        (root </> watchDir') --this is less wrong than earlier
-                        (const True)
-                        msgChan
+            _ <- watchDirChan
+                    mgr
+                    (root </> watchDir') --this is less wrong than earlier
+                    (const True)
+                    msgChan
 
-                view <- case config of 
-                        Right c -> do
-                            return $ main c msgChan conf watchDir' stateFile startState queue
-                        Left xxx -> 
-                            return $ missingConf xxx
+            view <- case config of 
+                    Right c -> do
+                        return $ main c msgChan conf watchDir' stateFile state 
+                    Left xxx -> 
+                        return $ missingConf xxx
 
-                (startGUI
-                    defaultConfig { jsPort = Just port
---                                  , jsWindowReloadOnDisconnect = False
-                                  } (view root)) `finally` atomically (closeTBMQueue queue))
-     
+            startGUI
+                defaultConfig { jsPort = Just port
+                              , jsWindowReloadOnDisconnect = False
+                              } (view root)
+ 
 
 
-viewState :: FilePath -> FilePath -> TBMQueue States -> ShakeConfig -> Window -> ListZipper State -> UI Element
-viewState root stateFile queue config w states = do
+viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> ListZipper State -> UI Element
+viewState root stateFile config w states = do
     case (focus states) of 
-            Dump -> dumpSection root stateFile queue states config
+            Dump -> dumpSection root stateFile states config
 
-            Dagsdato -> dagsdatoSection root stateFile queue states config 
+            Dagsdato -> dagsdatoSection root stateFile states config 
 
-            Photographer -> photographerSection root stateFile queue states config
+            Photographer -> photographerSection root stateFile states config
 
-            Doneshooting -> doneshootingSection root stateFile queue states config
+            Doneshooting -> doneshootingSection root stateFile states config
 
-            Session -> sessionSection root stateFile queue states config
+            Session -> sessionSection root stateFile states config
 
-            Shooting -> shootingSection root stateFile queue states config
+            Shooting -> shootingSection root stateFile states config
 
-            Location -> locationsSection root stateFile queue states config
+            Location -> locationsSection root stateFile states config
 
             Main -> mainSection root stateFile config w
 
 
-redoLayout :: Window -> FilePath -> FilePath -> TBMQueue States -> ShakeConfig -> States -> UI ()
-redoLayout w root stateFile queue config (States states) = void $ do
-    let views = states =>> viewState root stateFile queue config w
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
+redoLayout w root stateFile config (States states) = void $ do
 
+    let views = states =>> viewState root stateFile config w
     view <- focus views
-
     let buttons = states =>> (\states' -> do
                         button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
                         button' <- if (states' == states) then
@@ -118,7 +108,7 @@ redoLayout w root stateFile queue config (States states) = void $ do
                             else
                                 return button
 
-                        on UI.click button' $ \_ -> liftIO $ setStates queue (States states')
+                        on UI.click button' $ \_ -> liftIO $ setStates root stateFile (States states')
 
                         return button'
                     )
@@ -128,8 +118,8 @@ redoLayout w root stateFile queue config (States states) = void $ do
     getBody w # set children [ view'', view]
 
 
-recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> TBMQueue States -> IO ()
-recevier w root conf _ stateFile msgs queue = void $ do
+recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
+recevier w root conf _ stateFile msgs = void $ do
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
         -- actually also an try here :S
@@ -139,20 +129,20 @@ recevier w root conf _ stateFile msgs queue = void $ do
         config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
         case config of 
             Right c ->
-                runUI w $ redoLayout w root stateFile queue c state 
+                runUI w $ redoLayout w root stateFile c state
 
             Left _ -> fail "ERROR"
 
 -- eww
-main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> TBMQueue States -> FilePath -> Window -> UI ()
-main config msgChan conf watchDir' stateFile startStates stateQueue root w = do
+main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
+main config msgChan conf watchDir' stateFile states root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     msgs <- liftIO $ dupChan msgChan  
 
-    redoLayout w root stateFile stateQueue config startStates
+    redoLayout w root stateFile config states
     
-    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs stateQueue
+    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs
 
 
 
