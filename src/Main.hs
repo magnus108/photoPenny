@@ -71,22 +71,19 @@ mainSection _ _ config _ = do
     sessions <- liftIO $ getSessions config
 
     let wats = (\zipper items -> do
-                    input' <- UI.input # set UI.type_ "radio" # set UI.name "sessions"
-                    input'' <- if (zipper == items) then
-                            set (UI.attr "checked") "" (element input')
-                        else
-                            return input'
+                    input' <- UI.button # set UI.type_ "butto" # set UI.name "sessions"
                         
-                    on UI.checkedChange input'' $ \_ -> liftIO $ setSession config $ Sessions zipper
-
-                    label <- UI.string $ case (focus zipper) of
+                    let label = case (focus zipper) of
                                         School -> "FA"
                                         Kindergarten y ->
                                             case y of 
                                                     Group -> "Gruppe"
                                                     Single -> "Enkelt"
+                    
+                    (button, view) <- mkButton "buttonX" label
 
-                    view <- UI.label #. "radio" #+ [element input'', element label]
+                    on UI.click button $ \_ -> liftIO $ setSession config $ Sessions zipper
+
                     return view
             ) 
 
