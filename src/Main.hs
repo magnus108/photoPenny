@@ -111,7 +111,20 @@ mainSection _ _ config _ = do
                         [ mkColumn ["is-12"] [UI.div #. "control" #+ (toList ss) ] ]
                     ]
     
-    UI.div #+ [element ssss, element inputView2, element viewReset2]
+
+    -- antal billeder
+    dumps <- liftIO $ getDumpFiles config
+    let dumps' = length $ fmap fst dumps
+    label <- mkLabel "Antal billeder i dump:"
+    dumpSize <- mkSection 
+                    [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-12"] [ element label ]
+                        , mkColumn ["is-12"] [ UI.string (show dumps') #. "is-size-1 has-text-danger has-text-weight-bold" ]
+                        ]
+                    ]
+
+
+    UI.div #+ [element ssss, element inputView2, element dumpSize, element viewReset2]
 
 
 mkReset :: ShakeConfig -> UI (Element, Element)

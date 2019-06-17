@@ -23,6 +23,7 @@ import Elements
 --import PhotoShake.Dump
 
 import PhotoShake.ShakeConfig
+import qualified PhotoShake.Dump as D
 
 import System.FilePath
 
@@ -54,8 +55,10 @@ setup port root conf watchDir' stateFile = do
     -- get appState.
     state <- getStates root stateFile
 
+
     withManager $ \mgr -> do
             msgChan <- newChan
+
 
             _ <- watchDirChan
                     mgr
@@ -65,7 +68,24 @@ setup port root conf watchDir' stateFile = do
 
             view <- case config of 
                     Right c -> do
-                        return $ main c msgChan conf watchDir' stateFile state 
+
+                        dump <- getDump c
+                        dumpChan <- newChan
+
+                        case dump of
+                            D.Dump x -> do
+                                    _ <- watchDirChan
+                                            mgr
+                                            x --this is less wrong than earlier
+                                            (const True)
+                                            dumpChan
+
+                                    return $ main c msgChan dumpChan conf watchDir' stateFile state 
+
+                            D.NoDump -> do
+                                    return $ main c msgChan dumpChan conf watchDir' stateFile state 
+                                
+                                
                     Left xxx -> 
                         return $ missingConf xxx
 
@@ -118,10 +138,13 @@ redoLayout w root stateFile config (States states) = void $ do
     getBody w # set children [ view'', view]
 
 
-recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
-recevier w root conf _ stateFile msgs = void $ do
+recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> EventChannel -> IO ()
+recevier w root conf watchDir' stateFile msgs msgsDumps = void $ do
     messages <- liftIO $ getChanContents msgs
-    forM_ messages $ \_ -> do 
+
+    messageDumps <- liftIO $ getChanContents msgsDumps 
+
+    _ <- forM_ messages $ \_ -> do 
         -- actually also an try here :S
         state <- liftIO $ getStates root stateFile
         -- eww
@@ -133,16 +156,48 @@ recevier w root conf _ stateFile msgs = void $ do
 
             Left _ -> fail "ERROR"
 
+    -- this can almost only lead to bugs
+    -- this can almost only lead to bugs
+    -- this can almost only lead to bugs
+    forM_ messageDumps $ \_ -> do 
+        -- maybe i can hidaway errors on this one and deligate?
+        config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
+
+        state <- liftIO $ getStates root stateFile
+
+        withManager $ \mgr -> do
+            case config of 
+                Right c -> do
+                    dump <- getDump c
+                    dumpChan <- newChan
+
+                    case dump of
+                        D.Dump x -> do
+                                _ <- watchDirChan
+                                        mgr
+                                        x --this is less wrong than earlier
+                                        (const True)
+                                        dumpChan
+                                return $ main c msgs dumpChan conf watchDir' stateFile state 
+
+                        D.NoDump -> do
+                                return $ main c msgs dumpChan conf watchDir' stateFile state 
+
+
+                Left _ -> fail "ERROR"
+
 -- eww
-main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
-main config msgChan conf watchDir' stateFile states root w = do
+main :: ShakeConfig -> EventChannel -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
+main config msgChan dumpChan conf watchDir' stateFile states root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     msgs <- liftIO $ dupChan msgChan  
 
+    msgsDumps <- liftIO $ dupChan dumpChan
+
     redoLayout w root stateFile config states
     
-    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs
+    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs msgsDumps
 
 
 
