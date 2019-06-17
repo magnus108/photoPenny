@@ -29,7 +29,7 @@ cr2 og jpg med smøt
 
 
 
-lav 2 knapper flyt filer eller flyt gruppe
+lav 2 knapper flyt filer eller flyt gruppe og så fjern session fane
 
 børnehave csv fil
 inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
