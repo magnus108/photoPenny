@@ -70,7 +70,7 @@ mainSection _ _ config _ = do
                                     Group -> "Gruppe"
                                     Single -> "Enkelt"
                     
-                    button <- UI.button #. "button" #+ [string label]
+                    button <- UI.button #. "button" #+ [string label] # set (attr "disabled") "true"
                     
                     on UI.click button $ \_ -> do
                         _ <- liftIO $ setSession config $ Sessions zipper
