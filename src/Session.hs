@@ -3,10 +3,12 @@ module Session
     ( sessionSection
     ) where
 
-
 ---ups
 import Shooting
 ---ups
+
+import Data.List
+
 import PhotoShake.Session
 
 import qualified Graphics.UI.Threepenny as UI
@@ -15,6 +17,7 @@ import Graphics.UI.Threepenny.Core
 import Elements
 
 import Utils.ListZipper 
+import Utils.Comonad
 
 import PhotoShake.ShakeConfig
 
@@ -39,12 +42,20 @@ sessionSection root stateFile states config = do
 
 
             Sessions y -> do
+                    let toString = extend (\xx -> case focus xx of
+                                Kindergarten x -> ("Børnehave", xx)
+                                School -> ("Skole",xx)
+                            ) y
+
+                    -- wauw
+                    let widgets' = (\(ListZipper ls x rs) -> ListZipper (filter (\zz -> (fst zz) /= (fst x)) $ filter (\zz -> (fst zz) `notElem` (fmap fst rs)) $ nubBy (\a b -> fst a == fst b) ls) x (filter (\zz -> (fst zz) /= (fst x)) $ nubBy (\a b -> fst a == fst b) rs)) toString
+
                     let group' = RadioGroup 
                             { action = \xx _ -> do
-                                    liftIO $ setSession config $ Sessions xx
-                            , view' = \xx -> UI.string (show (focus xx))
+                                    liftIO $ setSession config $ Sessions (focus $ fmap snd xx)
+                            , view' = \xx -> UI.string (focus (fmap fst xx))
                             , title' = "sessions"
-                            , items = y
+                            , items = widgets'
                             }
 
                     select <- mkRadioGroup group'
@@ -59,3 +70,5 @@ sessionSection root stateFile states config = do
                                     , mkColumn ["is-12"] [ element forwardView ]
                                     ]
                               ] 
+
+

@@ -27,6 +27,7 @@ import qualified PhotoShake.Dump as D
 
 import System.FilePath
 
+import Summary
 import Main
 import Dump
 import Dagsdato
@@ -114,6 +115,8 @@ viewState root stateFile config w states = do
             Location -> locationsSection root stateFile states config
 
             Main -> mainSection root stateFile config w
+
+            Summary -> summarySection root stateFile config w
 
 
 redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()

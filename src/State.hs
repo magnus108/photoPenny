@@ -28,6 +28,7 @@ data State
     | Session
     | Location
     | Main
+    | Summary
     deriving (Show, Eq)
 
 
