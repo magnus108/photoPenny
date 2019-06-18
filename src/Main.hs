@@ -45,6 +45,11 @@ mainSection _ _ config _ = do
                                     NoBuilt -> ""
                                     NoFind s -> s
                                     Built _ s -> s)
+    let isBuilding = case built of
+                        NoBuilt -> False
+                        NoFind s -> False
+                        Building _ _ -> True
+                        Built _ _ -> False
 
     msg <- UI.p # set text (case built of
                                     NoBuilt -> ""
@@ -160,19 +165,19 @@ funci config idd = do
 
     case find of
             Left errMsg -> do
-                    setBuilt config (NoFind (show errMsg))
+                    setBuilt' config (NoFind (show errMsg))
 
             Right photographee -> do
                     time <- getCurrentTime
                     -- wtf????
                     case locationFile of 
                         NoLocation -> do 
-                            setBuilt config (NoFind (show LocationConfigFileMissing))
+                            setBuilt' config (NoFind (show LocationConfigFileMissing))
                     
                         Location xxx -> do
                             build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
                             case build of
                                     Left errMsg -> do
-                                        setBuilt config (NoFind (show errMsg))  
+                                        setBuilt' config (NoFind (show errMsg))  
                                     Right _ -> do
                                         return () 
