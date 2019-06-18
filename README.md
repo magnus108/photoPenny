@@ -20,7 +20,7 @@ cr2 og jpg med smøt
 
 
 
-lav 2 knapper flyt filer eller flyt gruppe og så fjern session fane
+lav 2 knapper flyt filer eller flyt gruppe 
 startside
 hvor mange billeder er der taget ikke live endnu
 
@@ -28,6 +28,7 @@ hvor mange billeder er der taget ikke live endnu
 børnehave csv fil
 inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
 
+LAZY IO StADIG FEJL
 
 
 

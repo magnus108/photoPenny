@@ -72,14 +72,16 @@ mainSection _ _ config _ = do
                     
                     button <- UI.button #. "button" #+ [string label]
                     
-                    on UI.click button $ \_ -> liftIO $ setSession config $ Sessions zipper
+                    on UI.click button $ \_ -> do
+                        _ <- liftIO $ setSession config $ Sessions zipper
+                        liftIO $ funci config ident
 
                     return button
             ) 
 
     -- badness 3000
     let s = case sessions of
-            NoSessions -> UI.div #+ [ string "session ikke angivet" ]
+            NoSessions -> UI.div #+ [ string "Session ikke angivet" ]
             Sessions y ->
                 UI.div #. "buttons has-addons" #+ (fmap snd $ filter (\xxx -> case (fst xxx) of 
                                                         Kindergarten _ -> case focus y of
