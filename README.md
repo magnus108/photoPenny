@@ -14,13 +14,13 @@ ikke detektion af kamera
 done:
 cr2 og jpg skal følges ad i nr (de er lige nu bundet lidt hårdt op)
 cr2 og jpg med smøt
-
-
-
-
-
-
 lav 2 knapper flyt filer eller flyt gruppe 
+
+
+
+
+
+lås byg når der bygges
 startside
 hvor mange billeder er der taget ikke live endnu
 
@@ -29,6 +29,7 @@ børnehave csv fil
 inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
 
 LAZY IO StADIG FEJL
+
 
 
 
