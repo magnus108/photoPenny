@@ -44,7 +44,8 @@ mainSection _ _ config _ = do
     builtMsg <- UI.p # set text (case built of
                                     NoBuilt -> ""
                                     NoFind s -> s
-                                    Built _ s -> s)
+                                    Built _ s -> s
+                                    Building _ s -> s)
     let isBuilding = case built of
                         NoBuilt -> False
                         NoFind s -> False
@@ -54,7 +55,8 @@ mainSection _ _ config _ = do
     msg <- UI.p # set text (case built of
                                     NoBuilt -> ""
                                     NoFind _ -> ""
-                                    Built p _ -> _name p)
+                                    Built p _ -> _name p
+                                    Building p _ -> _name p)
 
 
 
@@ -75,13 +77,15 @@ mainSection _ _ config _ = do
                                     Group -> "Gruppe"
                                     Single -> "Enkelt"
                     
-                    button <- UI.button #. "button" #+ [string label] # set (attr "disabled") "true"
+                    button <- UI.button #. "button" #+ [string label] 
+
+                    button' <- if (not isBuilding) then return button else (element button) # set (attr "disabled") ""
                     
-                    on UI.click button $ \_ -> do
+                    on UI.click button' $ \_ -> do
                         _ <- liftIO $ setSession config $ Sessions zipper
                         liftIO $ funci config ident
 
-                    return button
+                    return button'
             ) 
 
     -- badness 3000
