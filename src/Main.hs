@@ -34,23 +34,31 @@ import Utils.Comonad
 mainSection :: FilePath -> FilePath -> ShakeConfig -> Window -> UI Element
 mainSection _ _ config _ = do
 
-    ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild config ident
-
-    (input, inputView) <- mkInput "Elev nr:"
-    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
-
     built <- liftIO $ getBuilt config
-    builtMsg <- UI.p # set text (case built of
-                                    NoBuilt -> ""
-                                    NoFind s -> s
-                                    Built _ s -> s
-                                    Building _ s -> s)
     let isBuilding = case built of
                         NoBuilt -> False
                         NoFind s -> False
                         Building _ _ -> True
                         Built _ _ -> False
+                        
+    ident <- liftIO $ newIORef ""
+    (_, buildView) <- mkBuild config ident
+
+    input <- UI.input #. "input" # set UI.type_ "text" 
+    input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") ""
+
+    inputView <- UI.div #. "field" #+
+        [ UI.label #. "label has-text-info" # set UI.text "Nummer"
+        , UI.div #. "control" #+ [ element input' ] 
+        ]
+
+    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
+
+    builtMsg <- UI.p # set text (case built of
+                                    NoBuilt -> ""
+                                    NoFind s -> s
+                                    Built _ s -> s
+                                    Building _ s -> s)
 
     msg <- UI.p # set text (case built of
                                     NoBuilt -> ""
