@@ -51,14 +51,6 @@ mainSection _ _ config _ = do
                                     NoFind _ -> ""
                                     Built p _ -> _name p)
 
-    inputView2 <- mkSection $ 
-                   [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-4"] [element inputView]
-                        , mkColumn ["is-12"] [element buildView]
-                        , mkColumn ["is-12"] [element msg] 
-                        , mkColumn ["is-12"] [element builtMsg]
-                        ]
-                    ]
 
 
     (_, viewReset)<- mkReset config
@@ -68,48 +60,39 @@ mainSection _ _ config _ = do
                         [ mkColumn ["is-4"] [element viewReset] ]
                     ]
     
+
     sessions <- liftIO $ getSessions config
 
-    let wats = (\zipper items -> do
-                    input' <- UI.button # set UI.type_ "butto" # set UI.name "sessions"
+    let wats = (\zipper item -> do
+                    input' <- UI.button # set UI.type_ "button" # set UI.name "sessions"
                         
-                    let label = case (focus zipper) of
-                                        School -> "FA"
-                                        Kindergarten y ->
-                                            case y of 
-                                                    Group -> "Gruppe"
-                                                    Single -> "Enkelt"
+                    let label = case item of
+                                    Group -> "Gruppe"
+                                    Single -> "Enkelt"
                     
-                    (button, view) <- mkButton "buttonX" label
-
+                    button <- UI.button #. "button" #+ [string label]
+                    
                     on UI.click button $ \_ -> liftIO $ setSession config $ Sessions zipper
 
-                    return view
+                    return button
             ) 
 
     -- badness 3000
     let s = case sessions of
-            NoSessions -> ListZipper [] UI.div []
+            NoSessions -> UI.div #+ [ string "session ikke angivet" ]
             Sessions y ->
-                y =>> (\zipper ->
-                        case (focus zipper) of
-                            Kindergarten _ -> wats zipper y
-                            School -> UI.div
-                        )
-
-    let ss = case sessions of
-            NoSessions -> ListZipper [] UI.div []
-            Sessions y ->
-                case (focus y) of
-                        Kindergarten _ -> s 
-                        School -> ListZipper [] UI.div []
-
-        
+                UI.div #. "buttons has-addons" #+ (fmap snd $ filter (\xxx -> case (fst xxx) of 
+                                                        Kindergarten _ -> case focus y of
+                                                                Kindergarten _ -> True
+                                                                School -> False
+                                                        School -> School == focus y
+                                                    ) $ toList $ y =>> (\zipper ->
+                            case (focus zipper) of
+                                Kindergarten t -> (Kindergarten t, wats zipper t) --her skal noget andet på.
+                                School -> 
+                                    (School, element buildView)
+                            ) )
     
-    ssss <- mkSection 
-                    [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-12"] [UI.div #. "control" #+ (toList ss) ] ]
-                    ]
     
 
     -- antal billeder
@@ -124,7 +107,16 @@ mainSection _ _ config _ = do
                     ]
 
 
-    UI.div #+ [element ssss, element inputView2, element dumpSize, element viewReset2]
+    inputView2 <- mkSection $ 
+                   [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-4"] [element inputView]
+                        , mkColumn ["is-12"] [s] 
+                        , mkColumn ["is-12"] [element msg] 
+                        , mkColumn ["is-12"] [element builtMsg]
+                        ]
+                    ]
+
+    UI.div #+ [ element inputView2, element dumpSize, element viewReset2]
 
 
 mkReset :: ShakeConfig -> UI (Element, Element)

@@ -12,9 +12,8 @@ ikke detektion af kamera
 
 
 done:
-cr2 og jpg skal følges ad i nr
+cr2 og jpg skal følges ad i nr (de er lige nu bundet lidt hårdt op)
 cr2 og jpg med smøt
-hvor mange billeder er der taget
 
 
 
@@ -23,7 +22,7 @@ hvor mange billeder er der taget
 
 lav 2 knapper flyt filer eller flyt gruppe og så fjern session fane
 startside
-
+hvor mange billeder er der taget ikke live endnu
 
 
 børnehave csv fil
