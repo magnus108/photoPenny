@@ -147,7 +147,7 @@ recevier w root conf watchDir' stateFile msgs msgsDumps = void $ do
 
     messageDumps <- liftIO $ getChanContents msgsDumps 
 
-    _ <- forM_ messages $ \_ -> do 
+    forM_ messages $ \_ -> do 
         -- actually also an try here :S
         state <- liftIO $ getStates root stateFile
         -- eww
@@ -162,6 +162,11 @@ recevier w root conf watchDir' stateFile msgs msgsDumps = void $ do
     -- this can almost only lead to bugs
     -- this can almost only lead to bugs
     -- this can almost only lead to bugs
+recevier2  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> EventChannel -> IO ()
+recevier2 w root conf watchDir' stateFile msgs msgsDumps = void $ do
+
+    messageDumps <- liftIO $ getChanContents msgsDumps 
+
     forM_ messageDumps $ \_ -> do 
         -- maybe i can hidaway errors on this one and deligate?
         config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
@@ -181,10 +186,10 @@ recevier w root conf watchDir' stateFile msgs msgsDumps = void $ do
                                         x --this is less wrong than earlier
                                         (const True)
                                         dumpChan
-                                return $ main c msgs dumpChan conf watchDir' stateFile state 
+                                runUI w $ redoLayout w root stateFile c state
 
                         D.NoDump -> do
-                                return $ main c msgs dumpChan conf watchDir' stateFile state 
+                                runUI w $ redoLayout w root stateFile c state
 
 
                 Left _ -> fail "ERROR"
@@ -201,21 +206,12 @@ main config msgChan dumpChan conf watchDir' stateFile states root w = do
     redoLayout w root stateFile config states
     
     void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs msgsDumps
-
-
-
-
-
-
     
+    void $ liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgs msgsDumps
 
---mkBuild :: ShakeConfig -> IORef String -> Window -> Element -> Element -> UI (Element, Element)
---mkBuild config idd w err msg = do
-    --- with pattern
-  --  (button, view) <- mkButton "mover" "Flyt filer"
-    --callback <- ffiExport $ funci config idd w err msg
-    --runFunction $ ffi "$(%1).on('click',%2)" button callback
-   --return (button, view)
+
+
+
 
 
 -- kinda of bad
