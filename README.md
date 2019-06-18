@@ -21,20 +21,16 @@ hvor mange billeder er der taget
 
 
 
-
-
-
-
-
-
-
-
 lav 2 knapper flyt filer eller flyt gruppe og så fjern session fane
+startside
+
+
 
 børnehave csv fil
 inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
 
-startside
+
+
 
 
 
