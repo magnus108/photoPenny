@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Photographer
     ( photographerSection
+    , photographerOverview
     ) where
 
 
@@ -23,6 +24,24 @@ import PhotoShake.ShakeConfig
 import State (State, States(..), setStates)
 
 
+photographerOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
+photographerOverview stateFile states config = do
+        x <- liftIO $ getPhotographers config
+
+        case x of
+            NoPhotographers -> do
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" ]
+                                    ]
+                              ] 
+
+            Photographers y -> do
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]
+                                    , mkColumn ["is-12"] [ UI.string (name (focus y))]
+                                    ]
+                              ] 
 
 photographerSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
 photographerSection root stateFile states config = do

@@ -28,7 +28,7 @@ data State
     | Session
     | Location
     | Main
-    | Summary
+--    | Summary need for treezipper
     deriving (Show, Eq)
 
 

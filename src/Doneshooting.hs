@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Doneshooting
     ( doneshootingSection 
+    , doneshootingOverview
     ) where
 
 import Elements
@@ -13,6 +14,24 @@ import PhotoShake.ShakeConfig
 
 import Utils.ListZipper
 import State (State, States(..), setStates)
+
+
+doneshootingOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
+doneshootingOverview stateFile states config = do
+    x <- liftIO $ getDoneshooting config
+    case x of
+        NoDoneshooting -> do
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
+                            ]
+                      ] 
+
+        Doneshooting y -> do
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                            ]
+                      ] 
 
 
 doneshootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element

@@ -116,7 +116,6 @@ viewState root stateFile config w states = do
 
             Main -> mainSection root stateFile config w
 
-            Summary -> summarySection root stateFile config w
 
 
 redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
@@ -196,20 +195,47 @@ recevier2 w root conf watchDir' stateFile msgs msgsDumps = void $ do
 
 -- eww
 main :: ShakeConfig -> EventChannel -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
-main config msgChan dumpChan conf watchDir' stateFile states root w = do
+main config msgChan dumpChan conf watchDir' stateFile (States states) root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     msgs <- liftIO $ dupChan msgChan  
 
     msgsDumps <- liftIO $ dupChan dumpChan
-
-    redoLayout w root stateFile config states
     
-    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs msgsDumps
+    case focus states of
+        Main -> starterScreen w root stateFile config (States states)
+        _ -> redoLayout w root stateFile config (States states)
     
+    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs msgsDumps    
     void $ liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgs msgsDumps
 
 
+
+starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
+starterScreen w root stateFile config states = void $ do
+    dump <- dumpOverview root stateFile config
+    dagsdato <- dagsdatoOverview root stateFile config 
+    photographer <- photographerOverview root stateFile config
+    doneshooting <- doneshootingOverview root stateFile config
+    session <- sessionOverview root stateFile config
+    shooting <- shootingOverview root stateFile config
+    location <- locationsOverview root stateFile config
+
+    (buttonForward, forwardView) <- mkButton "next" "Ok"
+    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile states
+    view' <- mkSection [ element forwardView]
+
+    view <- mkSection [ element dump 
+                      , element dagsdato
+                      , element doneshooting
+                      , element session
+                      , element photographer
+                      , element shooting
+                      , element location
+                      , element view'
+                      ]
+
+    getBody w # set children [ view ]
 
 
 

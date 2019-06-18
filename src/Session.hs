@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Session
     ( sessionSection
+    , sessionOverview
     ) where
 
 ---ups
@@ -22,6 +23,29 @@ import Utils.Comonad
 import PhotoShake.ShakeConfig
 
 import State (State, States(..), setStates)
+
+sessionOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
+sessionOverview stateFile states config = do
+        x <- liftIO $ getSessions config
+
+        case x of
+            NoSessions -> do
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Sessions ikke valgt" ]
+                                    ]
+                              ] 
+            Sessions y -> do
+                    let toString = (\xx -> case xx of
+                                Kindergarten x -> "Børnehave"
+                                School -> "Skole"
+                            ) (focus y)
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Sessions type" # set (attr "id") "sessionOK" ]
+                                    , mkColumn ["is-12"] [ UI.p # set UI.text toString ]
+                                    ]
+                              ] 
+
 
 
 sessionSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element

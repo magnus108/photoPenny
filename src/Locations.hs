@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Locations
     ( locationsSection 
+    , locationsOverview
     ) where
 
 import Elements
@@ -17,6 +18,23 @@ import Graphics.UI.Threepenny.Core hiding (empty)
 
 import Utils.ListZipper
 import State (State, States(..), setStates)
+
+locationsOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
+locationsOverview stateFile states config = do
+    x <- liftIO $ getLocationFile config
+    case x of
+        NoLocation -> 
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations fil ikke valgt" ]
+                            ]
+                      ] 
+
+        Location y -> do
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" # set (attr "id") "locationOK" ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y]
+                            ]
+                      ] 
 
 
 locationsSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Dagsdato
     ( dagsdatoSection 
+    , dagsdatoOverview
     ) where
 
 
@@ -15,6 +16,23 @@ import State (State, States(..), setStates)
 
 import PhotoShake.ShakeConfig
 
+
+dagsdatoOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
+dagsdatoOverview stateFile states config = do
+    x <- liftIO $ getDagsdato config
+    case x of
+        NoDagsdato ->
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe ikke valgt" ]
+                            ]
+                      ] 
+
+        Dagsdato y -> do
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" # set (attr "id") "dagsdatoOK" ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                            ]
+                      ] 
 
 dagsdatoSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
 dagsdatoSection  root stateFile states config =  do

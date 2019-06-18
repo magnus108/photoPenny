@@ -2,6 +2,7 @@
 module Shooting
     ( mkRadioGroup
     , shootingSection
+    , shootingOverview
     -- ups
     , RadioGroup(..)
     ) where
@@ -21,6 +22,29 @@ import PhotoShake.ShakeConfig
 
 import State (State, States(..), setStates)
 
+shootingOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
+shootingOverview stateFile states config = do
+        x <- liftIO $ getShootings config
+
+        case x of
+            NoShootings-> do
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Shooting ikke valgt" ]
+                                    ]
+                              ] 
+
+            Shootings y -> do
+                    let toString = (\xx -> case xx of
+                                Normal -> "Normal"
+                                ReShoot -> "Genskydning"
+                            ) (focus y)
+
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]
+                                    , mkColumn ["is-12"] [ UI.p # set UI.text toString ]
+                                    ]
+                              ] 
 
 
 shootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
