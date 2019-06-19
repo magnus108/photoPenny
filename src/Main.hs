@@ -105,14 +105,16 @@ mainSection _ _ config _ = do
     on UI.keyup inputKinderName' $ \_ -> liftIO . writeIORef identKinderName =<< get value inputKinderName'
 
     identKinderClass <- liftIO $ newIORef ""
-    inputKinderClass <- UI.input #. "input" # set UI.type_ "text" 
+
+    grades <- liftIO $ getGrades config  
+    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (unGrade grades))
     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
     inputViewKinderClass <- UI.div #. "field" #+
         [ UI.label #. "label has-text-info" # set UI.text "Stue"
-        , UI.div #. "control" #+ [ element inputKinderClass' ] 
+        , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
         ]
 
-    on UI.keyup inputKinderClass' $ \_ -> liftIO . writeIORef identKinderClass =<< get value inputKinderClass'
+    on UI.selectionChange inputKinderClass' $ \_ -> liftIO . writeIORef identKinderClass =<< get value inputKinderClass'
 
 
 
