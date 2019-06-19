@@ -18,14 +18,13 @@ lav 2 knapper flyt filer eller flyt gruppe
 lås byg knap når byg
 hvor mange billeder er der taget
 startside
-
-
-
-
-
-
-børnehave csv fil
 inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
+
+
+
+
+
+
 
 
 
@@ -40,3 +39,4 @@ overvej tjek script
 find person
 EH bedre barcodescanner?
 skal kunne slette billeder individuelt
+skal kunne slette klasser individuelt
