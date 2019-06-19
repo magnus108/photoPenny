@@ -102,6 +102,10 @@ locationsSection root stateFile states config = do
                     grade' <- liftIO $ readIORef grade
                     grades <- liftIO $ getGrades config  
                     liftIO $ setGrades config $ Grades $ grade':(unGrade grades)
+            
+            (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
+            on UI.click gradeDelete $ \_ -> do 
+                    liftIO $ setGrades config $ Grades []
 
 
             mkSection [ mkColumns ["is-multiline"]
@@ -110,7 +114,7 @@ locationsSection root stateFile states config = do
                             , mkColumn ["is-12"] [ UI.p # set UI.text y]
                             , mkColumn ["is-12"] [ element openView ]
                             , mkColumn ["is-4"] [ element inputViewGrade ]
-                            , mkColumn ["is-12"] [ element gradeInsert ]
+                            , mkColumn ["is-12"] [ UI.div #. "buttons has-addons" #+ [element gradeInsert, element gradeDelete] ]
                             , mkColumn ["is-12"] [ element forwardView ]
                             ]
                       ] 
