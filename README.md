@@ -39,3 +39,4 @@ fix så man ikke kan bygge mens byg er igang
 overvej tjek script
 find person
 EH bedre barcodescanner?
+skal kunne slette billeder individuelt
