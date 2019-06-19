@@ -78,23 +78,6 @@ mainSection _ _ config _ = do
 
     sessions <- liftIO $ getSessions config
 
-    let wats = (\zipper item -> do
-                    input' <- UI.button # set UI.type_ "button" # set UI.name "sessions"
-                        
-                    let label = case item of
-                                    Group -> "Gruppe"
-                                    Single -> "Enkelt"
-                    
-                    button <- UI.button #. "button" #+ [string label] 
-
-                    button' <- if (not isBuilding) then return button else (element button) # set (attr "disabled") ""
-                    
-                    on UI.click button' $ \_ -> do
-                        _ <- liftIO $ setSession config $ Sessions zipper
-                        liftIO $ funci config ident
-
-                    return button'
-            ) 
 
     viewSchool <- mkColumns ["is-multiline"]
                 [ mkColumn ["is-12"] [element inputView]
@@ -110,6 +93,56 @@ mainSection _ _ config _ = do
         ]
 
     on UI.keyup inputKinder' $ \_ -> liftIO . writeIORef identKinder =<< get value inputKinder'
+
+    identKinderName <- liftIO $ newIORef ""
+    inputKinderName <- UI.input #. "input" # set UI.type_ "text" 
+    inputKinderName' <- if (not isBuilding) then return inputKinderName else (element inputKinderName) # set (attr "disabled") ""
+    inputViewKinderName <- UI.div #. "field" #+
+        [ UI.label #. "label has-text-info" # set UI.text "Navn"
+        , UI.div #. "control" #+ [ element inputKinderName' ] 
+        ]
+
+    on UI.keyup inputKinderName' $ \_ -> liftIO . writeIORef identKinderName =<< get value inputKinderName'
+
+    identKinderClass <- liftIO $ newIORef ""
+    inputKinderClass <- UI.input #. "input" # set UI.type_ "text" 
+    inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
+    inputViewKinderClass <- UI.div #. "field" #+
+        [ UI.label #. "label has-text-info" # set UI.text "Stue"
+        , UI.div #. "control" #+ [ element inputKinderClass' ] 
+        ]
+
+    on UI.keyup inputKinderClass' $ \_ -> liftIO . writeIORef identKinderClass =<< get value inputKinderClass'
+
+
+
+    let wats = (\zipper item -> do
+                    input' <- UI.button # set UI.type_ "button" # set UI.name "sessions"
+                        
+                    let label = case item of
+                                    Group -> "Gruppe"
+                                    Single -> "Enkelt"
+                    
+                    button <- UI.button #. "button" #+ [string label] 
+
+                    button' <- if (not isBuilding) then return button else (element button) # set (attr "disabled") ""
+                    
+                    on UI.click button' $ \_ -> do
+                        _ <- liftIO $ setSession config $ Sessions zipper
+                        idd <- liftIO $ readIORef identKinder
+                        clas <- liftIO $ readIORef identKinderClass
+                        name <- liftIO $ readIORef identKinderName
+                        locationFile <- liftIO $ getLocationFile config
+                        -- kinda bad here
+                        -- kinda bad here could cause errorr
+                        find <- case locationFile of 
+                            NoLocation -> return (Left LocationConfigFileMissing)
+                            Location xxx -> do
+                                liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
+                        liftIO $ funci config identKinder
+
+                    return button'
+            ) 
 
     -- badness 3000
     let s = case sessions of
@@ -132,7 +165,9 @@ mainSection _ _ config _ = do
                     case (focus y) of
                             School -> UI.div #+ [ s ] --bad
                             Kindergarten t -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-4"] [element inputViewKinder]
+                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
+                                            , mkColumn ["is-3"] [element inputViewKinder]
+                                            , mkColumn ["is-3"] [element inputViewKinderName]
                                             , mkColumn ["is-12"] [s] 
                                             ]
 

@@ -30,6 +30,8 @@ inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
 
 
 
+slet billeder efterbyg -inject
+ikke se specifik view ved start 
 LAZY IO StADIG FEJL
 import af forkert fil skal give fejl besked
 fix så reads er safe
