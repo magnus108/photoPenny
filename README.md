@@ -27,14 +27,10 @@ startside
 børnehave csv fil
 inputput felt til navn stue og sys. Skriv kun stue engang men skal være sikkert
 
+
+
+
 LAZY IO StADIG FEJL
-
-
-
-
-
-
-
 import af forkert fil skal give fejl besked
 fix så reads er safe
 fix så man ikke kan bygge mens byg er igang

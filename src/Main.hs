@@ -96,6 +96,21 @@ mainSection _ _ config _ = do
                     return button'
             ) 
 
+    viewSchool <- mkColumns ["is-multiline"]
+                [ mkColumn ["is-12"] [element inputView]
+                , mkColumn ["is-12"] [element buildView]
+                ]
+
+    identKinder <- liftIO $ newIORef ""
+    inputKinder <- UI.input #. "input" # set UI.type_ "text" 
+    inputKinder' <- if (not isBuilding) then return inputKinder else (element inputKinder) # set (attr "disabled") ""
+    inputViewKinder <- UI.div #. "field" #+
+        [ UI.label #. "label has-text-info" # set UI.text "Nummer"
+        , UI.div #. "control" #+ [ element inputKinder' ] 
+        ]
+
+    on UI.keyup inputKinder' $ \_ -> liftIO . writeIORef identKinder =<< get value inputKinder'
+
     -- badness 3000
     let s = case sessions of
             NoSessions -> UI.div #+ [ string "Session ikke angivet" ]
@@ -107,12 +122,19 @@ mainSection _ _ config _ = do
                                                         School -> School == focus y
                                                     ) $ toList $ y =>> (\zipper ->
                             case (focus zipper) of
-                                Kindergarten t -> (Kindergarten t, wats zipper t) --her skal noget andet på.
-                                School -> 
-                                    (School, element buildView)
+                                Kindergarten t -> (Kindergarten t, wats zipper t)
+                                School -> (School, element viewSchool)
                             ) )
     
-    
+    let ss = case sessions of 
+            NoSessions -> UI.div 
+            Sessions y ->
+                    case (focus y) of
+                            School -> UI.div #+ [ s ] --bad
+                            Kindergarten t -> mkColumns ["is-multiline"] 
+                                            [ mkColumn ["is-4"] [element inputViewKinder]
+                                            , mkColumn ["is-12"] [s] 
+                                            ]
 
     -- antal billeder
     dumps <- liftIO $ getDumpFiles config
@@ -128,8 +150,7 @@ mainSection _ _ config _ = do
 
     inputView2 <- mkSection $ 
                    [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-4"] [element inputView]
-                        , mkColumn ["is-12"] [s] 
+                        [ mkColumn ["is-12"] [ss] 
                         , mkColumn ["is-12"] [element msg] 
                         , mkColumn ["is-12"] [element builtMsg]
                         ]
