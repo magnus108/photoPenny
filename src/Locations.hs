@@ -82,8 +82,11 @@ locationsSection root stateFile states config = do
             gradeInput <- UI.input #. "input" # set UI.type_ "text" 
             gradeInput' <- if (not isBuilding) then return gradeInput else (element gradeInput) # set (attr "disabled") ""
 
-            gradesr <- liftIO $ getGrades config  
-            let gg = if null (unGrade gradesr) then "" else "Sidst indsat:" ++ (head (unGrade gradesr))
+            gradesr <- liftIO $ getGrades config   
+            let gg = case gradesr of
+                    NoGrades -> "" 
+                    Grades (ListZipper _ x _) -> x 
+            
             --- SUPER BADNESS
             insertedMsg <- UI.p #+ [string gg]
 
@@ -101,11 +104,18 @@ locationsSection root stateFile states config = do
             on UI.click gradeInsert $ \_ -> do 
                     grade' <- liftIO $ readIORef grade
                     grades <- liftIO $ getGrades config  
-                    liftIO $ setGrades config $ Grades $ grade':(unGrade grades)
+                    case grades of
+                        NoGrades ->
+                                 liftIO $ setGrades config $ Grades $ ListZipper [] grade' []
+                        Grades (ListZipper ls x rs) ->
+                                 --dette er en insert
+                                 liftIO $ setGrades config $ Grades $ ListZipper ls grade' (x:rs)
+                                
+
             
             (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
             on UI.click gradeDelete $ \_ -> do 
-                    liftIO $ setGrades config $ Grades []
+                    liftIO $ setGrades config NoGrades
 
 
             mkSection [ mkColumns ["is-multiline"]

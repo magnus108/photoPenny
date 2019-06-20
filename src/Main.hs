@@ -5,6 +5,8 @@ module Main
 import Elements
 import PhotoShake.Dagsdato
 
+import Data.List
+
 import PhotoShake
 import PhotoShake.ShakeConfig
 import PhotoShake.Doneshooting
@@ -107,18 +109,29 @@ mainSection _ _ config _ = do
     identKinderClass <- liftIO $ newIORef ""
 
     grades <- liftIO $ getGrades config  
-    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (unGrade grades))
-    inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
-    inputViewKinderClass <- UI.div #. "field" #+
-        [ UI.label #. "label has-text-info" # set UI.text "Stue"
-        , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
-        ]
 
-    on UI.selectionChange inputKinderClass' $ \_ -> liftIO . writeIORef identKinderClass =<< get value inputKinderClass'
+    --badness 3thousand
+    inputViewKinderClass <- case grades of 
+            NoGrades -> UI.div # set text "Ingen stuer/klasser"
+            Grades zipper -> do
+                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                    inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
+                    inputViewKinderClass' <- UI.div #. "field" #+
+                        [ UI.label #. "label has-text-info" # set UI.text "Stue"
+                        , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
+                        ]
 
+                    on UI.selectionChange inputKinderClass' $ \xxxx -> do
+                        case xxxx of
+                            Nothing -> error "this is bad"
+                            Just n -> do
+                                let val = toList zipper !! n
+                                liftIO $  writeIORef identKinderClass val
 
+                    return inputViewKinderClass'
 
     let wats = (\zipper item -> do
+
                     input' <- UI.button # set UI.type_ "button" # set UI.name "sessions"
                         
                     let label = case item of
