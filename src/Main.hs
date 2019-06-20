@@ -106,9 +106,14 @@ mainSection _ _ config _ = do
 
     on UI.keyup inputKinderName' $ \_ -> liftIO . writeIORef identKinderName =<< get value inputKinderName'
 
-    identKinderClass <- liftIO $ newIORef ""
-
+    --BAD can throw error
     grades <- liftIO $ getGrades config  
+
+    identKinderClass <- case grades of 
+                NoGrades -> error "ingen klasser/stuer"
+                Grades (ListZipper _ x _) ->
+                        liftIO $ newIORef x
+
 
     --badness 3thousand
     inputViewKinderClass <- case grades of 
@@ -146,6 +151,7 @@ mainSection _ _ config _ = do
                         _ <- liftIO $ setSession config $ Sessions zipper
                         idd <- liftIO $ readIORef identKinder
                         clas <- liftIO $ readIORef identKinderClass
+
                         name <- liftIO $ readIORef identKinderName
                         locationFile <- liftIO $ getLocationFile config
                         -- kinda bad here
