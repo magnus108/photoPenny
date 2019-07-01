@@ -110,7 +110,7 @@ mainSection _ _ config _ = do
     grades <- liftIO $ getGrades config  
 
     identKinderClass <- case grades of 
-                NoGrades -> error "ingen klasser/stuer"
+                NoGrades -> liftIO $ newIORef "Ingen valg"
                 Grades (ListZipper _ x _) ->
                         liftIO $ newIORef x
 

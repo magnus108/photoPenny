@@ -7,17 +7,18 @@ module State
     , setStates
     ) where
     
-import Prelude hiding (readFile, writeFile)
+import Prelude hiding (readFile, writeFile, length)
 
 
 import Data.Aeson
 import Data.Aeson.TH (deriveJSON, defaultOptions)
-import Data.ByteString.Lazy (readFile, writeFile)
+import Data.ByteString.Lazy (readFile, writeFile, length)
 
 import System.FilePath
 import Control.Exception
 
 import Utils.ListZipper
+
 
 data State
     = Dump
@@ -42,8 +43,8 @@ deriveJSON defaultOptions ''States
 getStates :: FilePath -> FilePath -> IO States
 getStates root stateFile = do
         let filepath = root </> stateFile
-        state' <- readfile filepath `catch` \e -> 
-                fail ("caught " ++ show (e :: someexception))
+        state' <- readFile filepath `catch` \e -> 
+                fail ("caught " ++ show (e :: SomeException))
         seq (length state') (return ())
         let state = decode state' :: Maybe States
         case state of
@@ -54,8 +55,8 @@ getStates root stateFile = do
 setStates:: FilePath -> FilePath -> States -> IO ()
 setStates root stateFile states = do
     let filepath = root </> stateFile
-    state' <- readfile filepath `catch` \e -> 
-            fail ("caught " ++ show (e :: someexception))
+    state' <- readFile filepath `catch` \e -> 
+            fail ("caught " ++ show (e :: SomeException))
     seq (length state') (return ())
     writeFile filepath (encode states) `catch` \e -> 
             fail ("Caught " ++ show (e :: SomeException))
