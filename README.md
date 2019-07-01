@@ -40,3 +40,35 @@ find person
 EH bedre barcodescanner?
 skal kunne slette billeder individuelt
 skal kunne slette klasser individuelt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+opret elever skole.
+overvej hvad jeg gør ved dump mappe.
+klasser og csv? opret klasser fra csv.
+robustness..
+
+KOntrol af mapper .xmp
+
+
+
+
+
+
+
+

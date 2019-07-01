@@ -231,6 +231,7 @@ resetIt config =
         >> setSession config NoSessions
         >> setShooting config NoShootings
         >> setDoneshooting config NoDoneshooting
+        >> setBuilt' config NoBuilt
 
 mkBuild :: ShakeConfig -> IORef String -> UI (Element, Element)
 mkBuild config idd = do
