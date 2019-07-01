@@ -124,13 +124,11 @@ redoLayout w root stateFile config (States states) = void $ do
     getBody w # set children [ view'', view]
 
 
-recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> EventChannel -> IO ()
-recevier w root conf watchDir' stateFile msgs msgsDumps = void $ do
+recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
+recevier w root conf watchDir' stateFile msgs = void $ do
     msgs' <- liftIO $ dupChan msgs  
-    msgsDumps' <- liftIO $ dupChan msgsDumps
     
     messages <- liftIO $ getChanContents msgs'
-    messageDumps <- liftIO $ getChanContents msgsDumps'
 
     forM_ messages $ \_ -> do 
         -- actually also an try here :S
@@ -188,7 +186,7 @@ main config msgChan dumpChan conf watchDir' stateFile (States states) root w = d
         Main -> starterScreen w root stateFile config (States states)
         _ -> redoLayout w root stateFile config (States states)
     
-    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgChan dumpChan
+    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgChan 
 --    void $ liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgs msgsDumps
 
 
