@@ -42,8 +42,9 @@ deriveJSON defaultOptions ''States
 getStates :: FilePath -> FilePath -> IO States
 getStates root stateFile = do
         let filepath = root </> stateFile
-        state' <- readFile filepath `catch` \e -> 
-                fail ("Caught " ++ show (e :: SomeException))
+        state' <- readfile filepath `catch` \e -> 
+                fail ("caught " ++ show (e :: someexception))
+        seq (length state') (return ())
         let state = decode state' :: Maybe States
         case state of
                 Nothing -> fail "no states"
@@ -53,5 +54,8 @@ getStates root stateFile = do
 setStates:: FilePath -> FilePath -> States -> IO ()
 setStates root stateFile states = do
     let filepath = root </> stateFile
+    state' <- readfile filepath `catch` \e -> 
+            fail ("caught " ++ show (e :: someexception))
+    seq (length state') (return ())
     writeFile filepath (encode states) `catch` \e -> 
             fail ("Caught " ++ show (e :: SomeException))
