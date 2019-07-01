@@ -232,6 +232,7 @@ resetIt config =
         >> setShooting config NoShootings
         >> setDoneshooting config NoDoneshooting
         >> setBuilt' config NoBuilt
+        >> setGrades config NoGrades
 
 mkBuild :: ShakeConfig -> IORef String -> UI (Element, Element)
 mkBuild config idd = do
