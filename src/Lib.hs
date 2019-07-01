@@ -60,7 +60,6 @@ setup port root conf watchDir' stateFile = do
     withManager $ \mgr -> do
             msgChan <- newChan
 
-
             _ <- watchDirChan
                     mgr
                     (root </> watchDir') --this is less wrong than earlier
@@ -69,24 +68,9 @@ setup port root conf watchDir' stateFile = do
 
             view <- case config of 
                     Right c -> do
-
-                        dump <- getDump c
                         dumpChan <- newChan
+                        return $ main c msgChan dumpChan conf watchDir' stateFile state 
 
-                        case dump of
-                            D.Dump x -> do
-                                    _ <- watchDirChan
-                                            mgr
-                                            x --this is less wrong than earlier
-                                            (const True)
-                                            dumpChan
-
-                                    return $ main c msgChan dumpChan conf watchDir' stateFile state 
-
-                            D.NoDump -> do
-                                    return $ main c msgChan dumpChan conf watchDir' stateFile state 
-                                
-                                
                     Left xxx -> 
                         return $ missingConf xxx
 
