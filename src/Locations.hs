@@ -75,7 +75,7 @@ locationsSection root stateFile states config = do
             
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 
-                    runFunction $ ffi $ "require('electron').shell.openItem('" ++ y ++ "')"
+                    runFunction $ ffi $ "require('electron').shell.openItem(" ++ (show y) ++ ")"
 
             --DUMT
             grade <- liftIO $ newIORef ""
