@@ -126,9 +126,11 @@ redoLayout w root stateFile config (States states) = void $ do
 
 recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> EventChannel -> IO ()
 recevier w root conf watchDir' stateFile msgs msgsDumps = void $ do
-    messages <- liftIO $ getChanContents msgs
-
-    messageDumps <- liftIO $ getChanContents msgsDumps 
+    msgs' <- liftIO $ dupChan msgs  
+    msgsDumps' <- liftIO $ dupChan msgsDumps
+    
+    messages <- liftIO $ getChanContents msgs'
+    messageDumps <- liftIO $ getChanContents msgsDumps'
 
     forM_ messages $ \_ -> do 
         -- actually also an try here :S
@@ -182,16 +184,12 @@ main :: ShakeConfig -> EventChannel -> EventChannel -> FilePath -> FilePath -> F
 main config msgChan dumpChan conf watchDir' stateFile (States states) root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
-    msgs <- liftIO $ dupChan msgChan  
-
-    msgsDumps <- liftIO $ dupChan dumpChan
-    
     case focus states of
         Main -> starterScreen w root stateFile config (States states)
         _ -> redoLayout w root stateFile config (States states)
     
-    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgs msgsDumps    
-    void $ liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgs msgsDumps
+    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgChan dumpChan
+--    void $ liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgs msgsDumps
 
 
 
