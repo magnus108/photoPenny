@@ -7,6 +7,8 @@ module Shooting
     , RadioGroup(..)
     ) where
 
+import qualified Control.Concurrent.Chan as Chan
+import Control.Exception
 
 import PhotoShake.Shooting
 
@@ -47,45 +49,49 @@ shootingOverview stateFile states config = do
                               ] 
 
 
-shootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-shootingSection root stateFile states config = do
-
+shootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
+shootingSection root stateFile states config importText = do
         x <- liftIO $ getShootings config
 
         (_, importer) <- mkFilePicker "shootingPicker" "Vælg import fil" $ \file -> do
-            liftIO $ importShootings config file
+            res <- liftIO $ try $ importShootings config file :: IO (Either SomeException ())
+            liftIO $ case res of
+                        Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
+
+                        Right x -> return ()
 
         case x of
-            NoShootings-> do
+                NoShootings -> do
 
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Shooting ikke valgt" ]
-                                    , mkColumn ["is-12"] [ element importer ]
-                                    ]
-                              ] 
+                        mkSection [ mkColumns ["is-multiline"]
+                                        [ mkColumn ["is-12"] [ mkLabel "Shooting ikke valgt" ]
+                                        , mkColumn ["is-12"] [ element importer ]
+                                        ]
+                                  ] 
 
-            Shootings y -> do
+                Shootings y -> do
 
-                    let group = RadioGroup 
-                            { action = \xx _ -> do
-                                    liftIO $ setShooting config $ Shootings xx
-                            , view' = \xx -> UI.string (show (focus xx))
-                            , title' = "shootings"
-                            , items = y
-                            }
+                        let group = RadioGroup 
+                                { action = \xx _ -> do
+                                        liftIO $ setShooting config $ Shootings xx
+                                , view' = \xx -> UI.string (show (focus xx))
+                                , title' = "shootings"
+                                , items = y
+                                }
 
-                    select <- mkRadioGroup group
+                        select <- mkRadioGroup group
 
-                    (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+                        (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+                        on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
 
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]
-                                    , mkColumn ["is-12"] [ element select]
-                                    , mkColumn ["is-12"] [ element importer ]
-                                    , mkColumn ["is-12"] [ element forwardView ]
-                                    ]
-                              ] 
+                        mkSection [ mkColumns ["is-multiline"]
+                                        [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]
+                                        , mkColumn ["is-12"] [ element select]
+                                        , mkColumn ["is-12"] [ element importer ]
+                                        , mkColumn ["is-12"] [ element forwardView ]
+                                        ]
+                                  ] 
+
 
 
 

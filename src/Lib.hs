@@ -45,6 +45,7 @@ import Control.Exception
 import System.FSNotify hiding (defaultConfig)
 import Control.Concurrent
 
+import qualified Control.Concurrent.Chan as Chan
 
 import Utils.Comonad
 import Utils.ListZipper
@@ -81,9 +82,10 @@ setup port root conf watchDir' stateFile = do
  
 
 
-viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> ListZipper State -> UI Element
-viewState root stateFile config w states = do
+viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> ListZipper State -> UI Element
+viewState root stateFile config w chan states = do
     case (focus states) of 
+
             Dump -> dumpSection root stateFile states config
 
             Dagsdato -> dagsdatoSection root stateFile states config 
@@ -94,7 +96,7 @@ viewState root stateFile config w states = do
 
             Session -> sessionSection root stateFile states config
 
-            Shooting -> shootingSection root stateFile states config
+            Shooting -> shootingSection root stateFile states config chan
 
             Location -> locationsSection root stateFile states config
 
@@ -102,10 +104,18 @@ viewState root stateFile config w states = do
 
 
 
+
+
 redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
 redoLayout w root stateFile config (States states) = void $ do
 
-    let views = states =>> viewState root stateFile config w
+    --wauw much dubchan
+    importText <- liftIO $ Chan.newChan
+    --wauw
+
+    let views = states =>> viewState root stateFile config w importText
+
+
     view <- focus views
     let buttons = states =>> (\states' -> do
                         button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
@@ -121,7 +131,22 @@ redoLayout w root stateFile config (States states) = void $ do
 
     view'' <- mkSection [UI.div #. "buttons has-addons" #+ (toList buttons)]
 
-    getBody w # set children [ view'', view]
+    viewt <- mkSection []
+
+    getBody w # set children [ view'', view, viewt]
+
+    --wauw 
+    messageReceiver <- liftIO $ forkIO $ receiveMessages w importText viewt
+    on UI.disconnect w $ const $ liftIO $ killThread messageReceiver
+
+
+receiveMessages :: Window -> (Chan String) -> Element -> IO ()
+receiveMessages w msgs messageArea = do
+    messages <- Chan.getChanContents msgs
+    forM_ messages $ \msg -> do
+        runUI w $ do
+          element messageArea # set text msg
+          flushCallBuffer
 
 
 recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
