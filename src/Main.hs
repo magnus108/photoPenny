@@ -238,7 +238,7 @@ resetIt config =
         >> setSession config NoSessions
         >> setShooting config NoShootings
         >> setDoneshooting config NoDoneshooting
-        >> setBuilt' config NoBuilt
+        -- >> setBuilt' config NoBuilt
         >> setGrades config NoGrades
 
 mkBuild :: ShakeConfig -> IORef String -> UI (Element, Element)
@@ -265,7 +265,7 @@ funci config idd = do
     case find of
             Left errMsg -> do
                     liftIO $ putStrLn "ffzzz"
-                    setBuilt' config (NoFind (show errMsg))
+                    --setBuilt' config (NoFind (show errMsg))
 
             Right photographee -> do
                     time <- getCurrentTime
@@ -273,7 +273,7 @@ funci config idd = do
                     case locationFile of 
                         NoLocation -> do 
                             liftIO $ putStrLn "ffzzzzzz"
-                            setBuilt' config (NoFind (show LocationConfigFileMissing))
+                            --setBuilt' config (NoFind (show LocationConfigFileMissing))
                     
                         Location xxx -> do
                             build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
@@ -281,7 +281,7 @@ funci config idd = do
                             case build of
                                     Left errMsg -> do
                                         liftIO $ putStrLn "fhahgafff"
-                                        setBuilt' config (NoFind (show errMsg))  
+                                        --setBuilt' config (NoFind (show errMsg))  
                                     Right _ -> do
-                                        setBuilt config "Færdig:"  photographee
+                                        --setBuilt config "Færdig:"  photographee
                                         return () 
