@@ -82,19 +82,19 @@ setup port root conf watchDir' stateFile = do
  
 
 
-viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> ListZipper State -> UI Element
-viewState root stateFile config w chan states = do
+viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> Chan String -> Chan String -> ListZipper State -> UI Element
+viewState root stateFile config w chan chanPhotographer chanSession states = do
     case (focus states) of 
 
             Dump -> dumpSection root stateFile states config
 
             Dagsdato -> dagsdatoSection root stateFile states config 
 
-            Photographer -> photographerSection root stateFile states config
+            Photographer -> photographerSection root stateFile states config chanPhotographer
 
             Doneshooting -> doneshootingSection root stateFile states config
 
-            Session -> sessionSection root stateFile states config
+            Session -> sessionSection root stateFile states config chanSession
 
             Shooting -> shootingSection root stateFile states config chan
 
@@ -111,9 +111,11 @@ redoLayout w root stateFile config (States states) = void $ do
 
     --wauw much dubchan
     importText <- liftIO $ Chan.newChan
+    importTextPhotographer <- liftIO $ Chan.newChan
+    importTextSession <- liftIO $ Chan.newChan
     --wauw
 
-    let views = states =>> viewState root stateFile config w importText
+    let views = states =>> viewState root stateFile config w importText importTextPhotographer importTextSession
 
 
     view <- focus views
@@ -132,16 +134,42 @@ redoLayout w root stateFile config (States states) = void $ do
     view'' <- mkSection [UI.div #. "buttons has-addons" #+ (toList buttons)]
 
     viewt <- mkSection []
+    viewPhotographer <- mkSection []
+    viewSession <- mkSection []
 
-    getBody w # set children [ view'', view, viewt]
+    --suchbads
+    getBody w # set children [ view'', view, viewt, viewPhotographer, viewSession]
 
     --wauw 
     messageReceiver <- liftIO $ forkIO $ receiveMessages w importText viewt
+    messageReceiverPhotographer <- liftIO $ forkIO $ receiveMessagesPhotographer w importTextPhotographer viewPhotographer
+    messageReceiverSession <- liftIO $ forkIO $ receiveMessagesSession w importTextSession viewSession
+
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiver
+
+    on UI.disconnect w $ const $ liftIO $ killThread messageReceiverPhotographer 
+
+    on UI.disconnect w $ const $ liftIO $ killThread messageReceiverSession 
 
 
 receiveMessages :: Window -> (Chan String) -> Element -> IO ()
 receiveMessages w msgs messageArea = do
+    messages <- Chan.getChanContents msgs
+    forM_ messages $ \msg -> do
+        runUI w $ do
+          element messageArea # set text msg
+          flushCallBuffer
+
+receiveMessagesPhotographer :: Window -> (Chan String) -> Element -> IO ()
+receiveMessagesPhotographer w msgs messageArea = do
+    messages <- Chan.getChanContents msgs
+    forM_ messages $ \msg -> do
+        runUI w $ do
+          element messageArea # set text msg
+          flushCallBuffer
+
+receiveMessagesSession :: Window -> (Chan String) -> Element -> IO ()
+receiveMessagesSession w msgs messageArea = do
     messages <- Chan.getChanContents msgs
     forM_ messages $ \msg -> do
         runUI w $ do

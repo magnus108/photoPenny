@@ -4,6 +4,8 @@ module Photographer
     , photographerOverview
     ) where
 
+import qualified Control.Concurrent.Chan as Chan
+import Control.Exception
 
 import Prelude hiding (writeFile)
 
@@ -43,13 +45,17 @@ photographerOverview stateFile states config = do
                                     ]
                               ] 
 
-photographerSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-photographerSection root stateFile states config = do
+photographerSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
+photographerSection root stateFile states config importText = do
 
         x <- liftIO $ getPhotographers config
 
         (_, importer) <- mkFilePicker "photographerPicker" "Vælg import fil" $ \file -> do
-                liftIO $ importPhotographers config file
+                res <- liftIO $ try $ importPhotographers config file :: IO (Either SomeException ())
+                liftIO $ case res of
+                            Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
+
+                            Right x -> return ()
 
         case x of
             NoPhotographers -> do

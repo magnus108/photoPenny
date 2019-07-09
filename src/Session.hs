@@ -4,6 +4,9 @@ module Session
     , sessionOverview
     ) where
 
+import qualified Control.Concurrent.Chan as Chan
+import Control.Exception
+
 ---ups
 import Shooting
 ---ups
@@ -48,12 +51,16 @@ sessionOverview stateFile states config = do
 
 
 
-sessionSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-sessionSection root stateFile states config = do
+sessionSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
+sessionSection root stateFile states config importText = do
         x <- liftIO $ getSessions config
 
         (_, importer) <- mkFilePicker "sessionPicker" "Vælg import fil" $ \file -> do
-            liftIO $ importSessions config file
+            res <- liftIO $ try $ importSessions config file :: IO (Either SomeException ())
+            liftIO $ case res of
+                        Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
+
+                        Right x -> return ()
 
         case x of
             NoSessions -> do
