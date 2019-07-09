@@ -57,6 +57,5 @@ setStates root stateFile states = do
     let filepath = root </> stateFile
     state' <- readFile filepath `catch` \e -> 
             fail ("caught " ++ show (e :: SomeException))
-    seq (length state') (return ())
-    writeFile filepath (encode states) `catch` \e -> 
-            fail ("Caught " ++ show (e :: SomeException))
+    seq (length state') (writeFile filepath (encode states) `catch` \e -> 
+            fail ("Caught " ++ show (e :: SomeException)))

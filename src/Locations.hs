@@ -28,7 +28,8 @@ locationsOverview stateFile states config = do
     case x of
         NoLocation -> 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations fil ikke valgt" ]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations fil" ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text "Ikke valgt" ]
                             ]
                       ] 
 

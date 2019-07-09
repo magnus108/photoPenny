@@ -117,7 +117,13 @@ mainSection _ _ config _ = do
 
     --badness 3thousand
     inputViewKinderClass <- case grades of 
-            NoGrades -> UI.div # set text "Ingen stuer/klasser"
+            NoGrades -> do
+                UI.div #. "field" #+
+                        [ UI.label #. "label has-text-info" # set UI.text "Ingen stuer/klasser"
+                        , UI.div # set (attr "style") "width:100%" #. "select" #+ 
+                                [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
+                                ]
+                        ]
             Grades zipper -> do
                     inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
@@ -148,6 +154,7 @@ mainSection _ _ config _ = do
                     button' <- if (not isBuilding) then return button else (element button) # set (attr "disabled") ""
                     
                     on UI.click button' $ \_ -> do
+                        liftIO $ putStrLn "ffgag"
                         _ <- liftIO $ setSession config $ Sessions zipper
                         idd <- liftIO $ readIORef identKinder
                         clas <- liftIO $ readIORef identKinderClass
@@ -246,6 +253,7 @@ funci :: ShakeConfig -> (IORef String) -> IO ()
 funci config idd = do
     --have to look this up from config
     idd2 <- readIORef idd
+    liftIO $ putStrLn "ffgdddd"
     locationFile <- getLocationFile config
     -- kinda bad here
     -- kinda bad here could cause errorr
@@ -256,6 +264,7 @@ funci config idd = do
 
     case find of
             Left errMsg -> do
+                    liftIO $ putStrLn "ffzzz"
                     setBuilt' config (NoFind (show errMsg))
 
             Right photographee -> do
@@ -263,12 +272,16 @@ funci config idd = do
                     -- wtf????
                     case locationFile of 
                         NoLocation -> do 
+                            liftIO $ putStrLn "ffzzzzzz"
                             setBuilt' config (NoFind (show LocationConfigFileMissing))
                     
                         Location xxx -> do
                             build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
+                            liftIO $ putStrLn "fhah"
                             case build of
                                     Left errMsg -> do
+                                        liftIO $ putStrLn "fhahgafff"
                                         setBuilt' config (NoFind (show errMsg))  
                                     Right _ -> do
+                                        setBuilt config "Færdig:"  photographee
                                         return () 
