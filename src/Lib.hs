@@ -6,21 +6,9 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
---import Data.Time.Clock
 
 import State
 import Elements
---import PhotoShake.Photographer
---import PhotoShake.Session
---import PhotoShake.Doneshooting
---import PhotoShake.Shooting
---import PhotoShake.Photographee
---import PhotoShake.ShakeError
---import PhotoShake.Location
----import PhotoShake
-
---import PhotoShake.Dagsdato
---import PhotoShake.Dump
 
 import PhotoShake.ShakeConfig
 import qualified PhotoShake.Dump as D
@@ -51,12 +39,12 @@ import Utils.Comonad
 import Utils.ListZipper
 
 
+--use reader with env
 setup :: Int -> String -> String -> FilePath -> FilePath -> IO ()
 setup port root conf watchDir' stateFile = do
     config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
     -- get appState.
     state <- getStates root stateFile
-
 
     withManager $ \mgr -> do
             msgChan <- newChan
@@ -239,8 +227,12 @@ main config msgChan dumpChan conf watchDir' stateFile (States states) root w = d
         Main -> starterScreen w root stateFile config (States states)
         _ -> redoLayout w root stateFile config (States states)
     
-    void $ liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgChan 
---    void $ liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgs msgsDumps
+    eh <- liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgChan 
+    on UI.disconnect w $ const $ liftIO $ killThread eh
+
+    dumsp <- liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgChan dumpChan
+    on UI.disconnect w $ const $ liftIO $ killThread dumsp
+
 
 
 

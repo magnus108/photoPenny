@@ -52,7 +52,6 @@ locationsSection root stateFile states config = do
     (_, view2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> do
         let empty = mempty :: [Photographee]
         _ <- liftIO $ writeFile file (encode empty)
-
         liftIO $ setLocation config $ Location file
 
     case x of
@@ -92,7 +91,7 @@ locationsSection root stateFile states config = do
             insertedMsg <- UI.p #+ [string gg]
 
             inputViewGrade <- UI.div #. "field" #+
-                [ UI.label #. "label has-text-info" # set UI.text "Stue"
+                [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"
                 , UI.div #. "control" #+ [ element gradeInput' ] 
                 , UI.br --bads
                 , UI.div #+ [ element insertedMsg]
