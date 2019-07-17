@@ -155,7 +155,7 @@ mainSection _ _ config _ = do
                     
                     on UI.click button' $ \_ -> do
                         liftIO $ putStrLn "ffgag"
-                        _ <- liftIO $ setSession config $ Sessions zipper
+                        _ <- liftIO $ setSession config $ Sessions zipper -- det her må man ik?
                         idd <- liftIO $ readIORef identKinder
                         clas <- liftIO $ readIORef identKinderClass
 
@@ -186,12 +186,37 @@ mainSection _ _ config _ = do
                                 Kindergarten t -> (Kindergarten t, wats zipper t)
                                 School -> (School, element viewSchool)
                             ) )
+
+    buttonAlt <- UI.button #. "button" #+ [string "Indsæt ny elev"] 
+
+    buttonAlt' <- if (not isBuilding) then return buttonAlt else (element buttonAlt ) # set (attr "disabled") ""
+    
+    on UI.click buttonAlt' $ \_ -> do
+        --_ <- liftIO $ setSession config $ Sessions zipper
+        idd <- liftIO $ readIORef identKinder
+        clas <- liftIO $ readIORef identKinderClass
+        name <- liftIO $ readIORef identKinderName
+        locationFile <- liftIO $ getLocationFile config
+        -- kinda bad here
+        -- kinda bad here could cause errorr
+        find <- case locationFile of 
+            NoLocation -> return (Left LocationConfigFileMissing)
+            Location xxx -> do
+                liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
+        liftIO $ funci config identKinder
     
     let ss = case sessions of 
             NoSessions -> UI.div 
             Sessions y ->
                     case (focus y) of
-                            School -> UI.div #+ [ s ] --bad
+                            School -> mkColumns ["is-multiline"] 
+                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
+                                            , mkColumn ["is-3"] [element inputViewKinder]
+                                            , mkColumn ["is-3"] [element inputViewKinderName]
+                                            , mkColumn ["is-12"] [element buttonAlt']
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [s] 
+                                            ]
                             Kindergarten t -> mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-3"] [element inputViewKinderClass]
                                             , mkColumn ["is-3"] [element inputViewKinder]
@@ -283,5 +308,5 @@ funci config idd = do
                                         liftIO $ putStrLn "fhahgafff"
                                         setBuilt' config (NoFind (show errMsg))  
                                     Right _ -> do
-                                        setBuilt config "Færdig:"  photographee
+                                        setBuilt' config (Built  photographee "Færdig")
                                         return () 

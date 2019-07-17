@@ -83,12 +83,38 @@ locationsSection root stateFile states config = do
             gradeInput' <- if (not isBuilding) then return gradeInput else (element gradeInput) # set (attr "disabled") ""
 
             gradesr <- liftIO $ getGrades config   
-            let gg = case gradesr of
-                    NoGrades -> "" 
-                    Grades (ListZipper _ x _) -> x 
+
+            identKinderClass <- case gradesr of 
+                        NoGrades -> liftIO $ newIORef "Ingen valg"
+                        Grades (ListZipper _ x _) ->
+                                liftIO $ newIORef x
+
+            insertedMsg <- case gradesr of 
+                    NoGrades -> do
+                        UI.div #. "field" #+
+                                [ UI.label #. "label has-text-info" # set UI.text "Ingen stuer/klasser"
+                                , UI.div # set (attr "style") "width:100%" #. "select" #+ 
+                                        [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
+                                        ]
+                                ]
+                    Grades zipper -> do
+                            inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                            inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
+                            inputViewKinderClass' <- UI.div #. "field" #+
+                                [ UI.label #. "label has-text-info" # set UI.text "Stue"
+                                , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
+                                ]
+
+                            on UI.selectionChange inputKinderClass' $ \xxxx -> do
+                                case xxxx of
+                                    Nothing -> error "this is bad"
+                                    Just n -> do
+                                        let val = toList zipper !! n
+                                        liftIO $  writeIORef identKinderClass val
+
+                            return inputViewKinderClass'
             
             --- SUPER BADNESS
-            insertedMsg <- UI.p #+ [string gg]
 
             inputViewGrade <- UI.div #. "field" #+
                 [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"

@@ -57,8 +57,24 @@ setup port root conf watchDir' stateFile = do
 
             view <- case config of 
                     Right c -> do
-                        dumpChan <- newChan
-                        return $ main c msgChan dumpChan conf watchDir' stateFile state 
+                        --- ok
+                        dumpChan <- Chan.newChan
+                        dump <- getDump c
+                        withManager $ \mgr -> do
+                                case dump of
+                                        D.Dump x -> do
+                                                putStrLn x
+                                                putStrLn root
+                                                _ <- watchDirChan
+                                                        mgr
+                                                        x --this is less wrong than earlier
+                                                        (const True)
+                                                        dumpChan
+                                                return $ main c msgChan dumpChan conf stateFile state 
+                                        D.NoDump -> do
+                                                return $ main c msgChan dumpChan conf stateFile state 
+                        --- ok
+                        --
 
                     Left xxx -> 
                         return $ missingConf xxx
@@ -129,9 +145,12 @@ redoLayout w root stateFile config (States states) = void $ do
     getBody w # set children [ view'', view, viewt, viewPhotographer, viewSession]
 
     --wauw 
+
     messageReceiver <- liftIO $ forkIO $ receiveMessages w importText viewt
     messageReceiverPhotographer <- liftIO $ forkIO $ receiveMessagesPhotographer w importTextPhotographer viewPhotographer
     messageReceiverSession <- liftIO $ forkIO $ receiveMessagesSession w importTextSession viewSession
+
+
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiver
 
@@ -165,8 +184,8 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
-recevier w root conf watchDir' stateFile msgs = void $ do
+recevier  :: Window -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
+recevier w root conf stateFile msgs = void $ do
     msgs' <- liftIO $ dupChan msgs  
     
     messages <- liftIO $ getChanContents msgs'
@@ -177,61 +196,47 @@ recevier w root conf watchDir' stateFile msgs = void $ do
         -- eww
         -- maybe i can hidaway errors on this one and deligate?
         config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
+
         case config of 
-            Right c ->
-                runUI w $ redoLayout w root stateFile c state
-
-            Left _ -> fail "ERROR"
-
-    -- this can almost only lead to bugs
-    -- this can almost only lead to bugs
-    -- this can almost only lead to bugs
-recevier2  :: Window -> FilePath -> FilePath -> FilePath -> FilePath -> EventChannel -> EventChannel -> IO ()
-recevier2 w root conf watchDir' stateFile msgs msgsDumps = void $ do
-
-    messageDumps <- liftIO $ getChanContents msgsDumps 
-
-    forM_ messageDumps $ \_ -> do 
-        -- maybe i can hidaway errors on this one and deligate?
-        config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
-
-        state <- liftIO $ getStates root stateFile
-
-        withManager $ \mgr -> do
-            case config of 
                 Right c -> do
-                    dump <- getDump c
-                    dumpChan <- newChan
+                    runUI w $ redoLayout w root stateFile c state
 
-                    case dump of
-                        D.Dump x -> do
-                                _ <- watchDirChan
-                                        mgr
-                                        x --this is less wrong than earlier
-                                        (const True)
-                                        dumpChan
-                                runUI w $ redoLayout w root stateFile c state
-
-                        D.NoDump -> do
-                                runUI w $ redoLayout w root stateFile c state
+                    -- am i closing this??
 
 
                 Left _ -> fail "ERROR"
 
+    -- this can almost only lead to bugs
+    -- this can almost only lead to bugs
+    -- this can almost only lead to bugs
+recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> IO ()
+recevier2 w root config stateFile msgs = void $ do
+    putStrLn "okkok"     
+    messages <- Chan.getChanContents msgs
+    putStrLn "okkdddd"
+    forM_ messages $ \msg -> do
+        putStrLn "okkd"
+        -- maybe i can hidaway errors on this one and deligate?
+
+        state <- liftIO $ getStates root stateFile
+
+        runUI w $ redoLayout w root stateFile config state
+
+
 -- eww
-main :: ShakeConfig -> EventChannel -> EventChannel -> FilePath -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
-main config msgChan dumpChan conf watchDir' stateFile (States states) root w = do
+main :: ShakeConfig -> EventChannel -> EventChannel -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
+main config msgChan dumpChan conf stateFile (States states) root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     case focus states of
         Main -> starterScreen w root stateFile config (States states)
         _ -> redoLayout w root stateFile config (States states)
     
-    eh <- liftIO $ forkIO $ recevier w root conf watchDir' stateFile msgChan 
-    on UI.disconnect w $ const $ liftIO $ killThread eh
+    eh <- liftIO $ forkIO $ recevier w root conf stateFile msgChan 
+    gg <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan
 
-    dumsp <- liftIO $ forkIO $ recevier2 w root conf watchDir' stateFile msgChan dumpChan
-    on UI.disconnect w $ const $ liftIO $ killThread dumsp
+    on UI.disconnect w $ const $ liftIO $ killThread gg
+    on UI.disconnect w $ const $ liftIO $ killThread eh
 
 
 
