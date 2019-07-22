@@ -6,6 +6,8 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
+import Control.Concurrent.STM.TVar
+import Control.Monad.STM
 
 import State
 import Elements
@@ -57,24 +59,7 @@ setup port root conf watchDir' stateFile = do
 
             view <- case config of 
                     Right c -> do
-                        --- ok
-                        dumpChan <- Chan.newChan
-                        dump <- getDump c
-                        withManager $ \mgr -> do
-                                case dump of
-                                        D.Dump x -> do
-                                                putStrLn x
-                                                putStrLn root
-                                                _ <- watchDirChan
-                                                        mgr
-                                                        x --this is less wrong than earlier
-                                                        (const True)
-                                                        dumpChan
-                                                return $ main c msgChan dumpChan conf stateFile state 
-                                        D.NoDump -> do
-                                                return $ main c msgChan dumpChan conf stateFile state 
-                        --- ok
-                        --
+                        return $ main c msgChan conf stateFile state 
 
                     Left xxx -> 
                         return $ missingConf xxx
@@ -110,14 +95,15 @@ viewState root stateFile config w chan chanPhotographer chanSession states = do
 
 
 
-redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
-redoLayout w root stateFile config (States states) = void $ do
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> States -> UI ()
+redoLayout w root stateFile config tid1 tid2 (States states) = void $ do
 
-    --wauw much dubchan
+    --wauw much dubcha
     importText <- liftIO $ Chan.newChan
     importTextPhotographer <- liftIO $ Chan.newChan
     importTextSession <- liftIO $ Chan.newChan
     --wauw
+    dumpChan <- liftIO $ Chan.newChan
 
     let views = states =>> viewState root stateFile config w importText importTextPhotographer importTextSession
 
@@ -150,13 +136,33 @@ redoLayout w root stateFile config (States states) = void $ do
     messageReceiverPhotographer <- liftIO $ forkIO $ receiveMessagesPhotographer w importTextPhotographer viewPhotographer
     messageReceiverSession <- liftIO $ forkIO $ receiveMessagesSession w importTextSession viewSession
 
+    ehh <- liftIO $ forkIO $ do
+                    dump <- getDump config
+                    withManager $ \mgr -> do
+                            case dump of
+                                    D.Dump x -> do
+                                            watchDirChan
+                                                    mgr
+                                                    x --this is less wrong than earlier
+                                                    (const True)
+                                                    dumpChan
+                                            forever $ threadDelay 1000000
+                                    D.NoDump -> do
+                                            return () --error "lol" -- return $ main c msgChan conf stateFile state 
+                        --- ok
+    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2
 
+    liftIO $ atomically $ writeTVar tid1 ehh
+    liftIO $ atomically $ writeTVar tid2 forkId
+
+    on UI.disconnect w $ const $ liftIO $ killThread ehh
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiver
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiverPhotographer 
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiverSession 
+
 
 
 receiveMessages :: Window -> (Chan String) -> Element -> IO ()
@@ -184,60 +190,59 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> FilePath -> FilePath -> EventChannel -> IO ()
-recevier w root conf stateFile msgs = void $ do
-    msgs' <- liftIO $ dupChan msgs  
-    
-    messages <- liftIO $ getChanContents msgs'
-
+recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> IO ()
+recevier w root config stateFile msgs tid1 tid2 = void $ do 
+    messages <- liftIO $ getChanContents msgs
+    liftIO $ putStrLn "gg"
     forM_ messages $ \_ -> do 
-        -- actually also an try here :S
+        tid1' <- liftIO $ atomically $ readTVar tid1
+        tid2' <- liftIO $ atomically $ readTVar tid2
+        liftIO $ putStrLn $ show tid1'
+        liftIO $ putStrLn $ show tid2'
+        liftIO $ putStrLn "gg2"
         state <- liftIO $ getStates root stateFile
-        -- eww
-        -- maybe i can hidaway errors on this one and deligate?
-        config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
-
-        case config of 
-                Right c -> do
-                    runUI w $ redoLayout w root stateFile c state
-
-                    -- am i closing this??
+        runUI w $ do 
+            liftIO $ putStrLn "gg22"
+            redoLayout w root stateFile config tid1 tid2 state
+            liftIO $ killThread tid1'
+            liftIO $ killThread tid2'
 
 
-                Left _ -> fail "ERROR"
-
-    -- this can almost only lead to bugs
-    -- this can almost only lead to bugs
-    -- this can almost only lead to bugs
-recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> IO ()
-recevier2 w root config stateFile msgs = void $ do
-    putStrLn "okkok"     
+recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> IO ()
+recevier2 w root config stateFile msgs tid1 tid2 = void $ do
     messages <- Chan.getChanContents msgs
-    putStrLn "okkdddd"
+    liftIO $ putStrLn "lola"
     forM_ messages $ \msg -> do
-        putStrLn "okkd"
-        -- maybe i can hidaway errors on this one and deligate?
-
+        liftIO $ putStrLn "lol"
+        tid1' <- liftIO $ atomically $ readTVar tid1
+        tid2' <- liftIO $ atomically $ readTVar tid2
+        liftIO $ putStrLn $ show tid1'
+        liftIO $ putStrLn $ show tid2'
         state <- liftIO $ getStates root stateFile
-
-        runUI w $ redoLayout w root stateFile config state
+        runUI w $ do
+            liftIO $ putStrLn "lol2"
+            redoLayout w root stateFile config tid1 tid2 state 
+            liftIO $ killThread tid1'
+            liftIO $ killThread tid2'
 
 
 -- eww
-main :: ShakeConfig -> EventChannel -> EventChannel -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
-main config msgChan dumpChan conf stateFile (States states) root w = do
+main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
+main config msgChan conf stateFile (States states) root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
+    tid1 <- liftIO $ forkIO $ return ()
+    ggtid1 <- liftIO $ atomically $ newTVar tid1
+
+    tid2 <- liftIO $ forkIO $ return ()
+    ggtid2 <- liftIO $ atomically $ newTVar tid2
+
     case focus states of
-        Main -> starterScreen w root stateFile config (States states)
-        _ -> redoLayout w root stateFile config (States states)
-    
-    eh <- liftIO $ forkIO $ recevier w root conf stateFile msgChan 
-    gg <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan
+            Main -> starterScreen w root stateFile config (States states)
+            _ -> redoLayout w root stateFile config ggtid1 ggtid2 (States states)
 
-    on UI.disconnect w $ const $ liftIO $ killThread gg
+    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2
     on UI.disconnect w $ const $ liftIO $ killThread eh
-
 
 
 
