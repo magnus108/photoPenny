@@ -6,6 +6,7 @@ module Lib
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
+import Control.Concurrent.MVar
 import Control.Concurrent.STM.TVar
 import Control.Monad.STM
 
@@ -95,8 +96,12 @@ viewState root stateFile config w chan chanPhotographer chanSession states = do
 
 
 
-redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> States -> UI ()
-redoLayout w root stateFile config tid1 tid2 (States states) = void $ do
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> UI ()
+redoLayout w root stateFile config tid1 tid2 states'' = void $ do 
+
+    liftIO $ putStrLn "Lol4"
+    (States states) <- liftIO $ readMVar states''
+    liftIO $ putStrLn $ show states 
 
     --wauw much dubcha
     importText <- liftIO $ Chan.newChan
@@ -116,7 +121,10 @@ redoLayout w root stateFile config tid1 tid2 (States states) = void $ do
                             else
                                 return button
 
-                        on UI.click button' $ \_ -> liftIO $ setStates root stateFile (States states')
+                        on UI.click button' $ \_ -> do
+                            liftIO $ putStrLn "gg"
+                            liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States states'))
+                            liftIO $ putStrLn "gg1"
 
                         return button'
                     )
@@ -150,7 +158,9 @@ redoLayout w root stateFile config tid1 tid2 (States states) = void $ do
                                     D.NoDump -> do
                                             return () --error "lol" -- return $ main c msgChan conf stateFile state 
                         --- ok
-    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2
+    liftIO $ putStrLn "Lol6"
+    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states''
+    liftIO $ putStrLn "Lol7"
 
     liftIO $ atomically $ writeTVar tid1 ehh
     liftIO $ atomically $ writeTVar tid2 forkId
@@ -190,38 +200,32 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> IO ()
-recevier w root config stateFile msgs tid1 tid2 = void $ do 
+recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> IO ()
+recevier w root config stateFile msgs tid1 tid2 stateLock = void $ do 
     messages <- liftIO $ getChanContents msgs
-    liftIO $ putStrLn "gg"
+    liftIO $ putStrLn "Lol"
     forM_ messages $ \_ -> do 
+        liftIO $ putStrLn "Lol2"
         tid1' <- liftIO $ atomically $ readTVar tid1
         tid2' <- liftIO $ atomically $ readTVar tid2
-        liftIO $ putStrLn $ show tid1'
-        liftIO $ putStrLn $ show tid2'
-        liftIO $ putStrLn "gg2"
-        state <- liftIO $ getStates root stateFile
+        liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
-            liftIO $ putStrLn "gg22"
-            redoLayout w root stateFile config tid1 tid2 state
+            liftIO $ putStrLn "Lol3"
+            redoLayout w root stateFile config tid1 tid2 stateLock
+            liftIO $ putStrLn "Lol4"
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
 
-recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> IO ()
-recevier2 w root config stateFile msgs tid1 tid2 = void $ do
+recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> IO ()
+recevier2 w root config stateFile msgs tid1 tid2 stateLock = void $ do
     messages <- Chan.getChanContents msgs
-    liftIO $ putStrLn "lola"
     forM_ messages $ \msg -> do
-        liftIO $ putStrLn "lol"
         tid1' <- liftIO $ atomically $ readTVar tid1
         tid2' <- liftIO $ atomically $ readTVar tid2
-        liftIO $ putStrLn $ show tid1'
-        liftIO $ putStrLn $ show tid2'
-        state <- liftIO $ getStates root stateFile
+        liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
-            liftIO $ putStrLn "lol2"
-            redoLayout w root stateFile config tid1 tid2 state 
+            redoLayout w root stateFile config tid1 tid2 stateLock
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
@@ -237,17 +241,20 @@ main config msgChan conf stateFile (States states) root w = do
     tid2 <- liftIO $ forkIO $ return ()
     ggtid2 <- liftIO $ atomically $ newTVar tid2
 
-    case focus states of
-            Main -> starterScreen w root stateFile config (States states)
-            _ -> redoLayout w root stateFile config ggtid1 ggtid2 (States states)
+    states' <- liftIO $ newMVar (States states)
 
-    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2
+    case focus states of
+            Main -> starterScreen w root stateFile config states'
+            _ -> redoLayout w root stateFile config ggtid1 ggtid2 states'
+
+    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states'
     on UI.disconnect w $ const $ liftIO $ killThread eh
 
 
 
-starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> States -> UI ()
-starterScreen w root stateFile config states = void $ do
+starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> UI ()
+starterScreen w root stateFile config states' = void $ do
+
     dump <- dumpOverview root stateFile config
     dagsdato <- dagsdatoOverview root stateFile config 
     photographer <- photographerOverview root stateFile config
@@ -257,7 +264,9 @@ starterScreen w root stateFile config states = void $ do
     location <- locationsOverview root stateFile config
 
     (buttonForward, forwardView) <- mkButton "next" "Ok"
-    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile states
+    on UI.click buttonForward $ \_ -> liftIO $ do
+            withMVar states' $ (\states -> setStates root stateFile states)
+
     view' <- mkSection [ element forwardView]
 
     view <- mkSection [ element dump 
