@@ -99,9 +99,7 @@ viewState root stateFile config w chan chanPhotographer chanSession states = do
 redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> UI ()
 redoLayout w root stateFile config tid1 tid2 states'' = void $ do 
 
-    liftIO $ putStrLn "Lol4"
     (States states) <- liftIO $ readMVar states''
-    liftIO $ putStrLn $ show states 
 
     --wauw much dubcha
     importText <- liftIO $ Chan.newChan
@@ -122,9 +120,7 @@ redoLayout w root stateFile config tid1 tid2 states'' = void $ do
                                 return button
 
                         on UI.click button' $ \_ -> do
-                            liftIO $ putStrLn "gg"
                             liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States states'))
-                            liftIO $ putStrLn "gg1"
 
                         return button'
                     )
@@ -158,9 +154,7 @@ redoLayout w root stateFile config tid1 tid2 states'' = void $ do
                                     D.NoDump -> do
                                             return () --error "lol" -- return $ main c msgChan conf stateFile state 
                         --- ok
-    liftIO $ putStrLn "Lol6"
     forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states''
-    liftIO $ putStrLn "Lol7"
 
     liftIO $ atomically $ writeTVar tid1 ehh
     liftIO $ atomically $ writeTVar tid2 forkId
@@ -203,16 +197,12 @@ receiveMessagesSession w msgs messageArea = do
 recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> IO ()
 recevier w root config stateFile msgs tid1 tid2 stateLock = void $ do 
     messages <- liftIO $ getChanContents msgs
-    liftIO $ putStrLn "Lol"
     forM_ messages $ \_ -> do 
-        liftIO $ putStrLn "Lol2"
         tid1' <- liftIO $ atomically $ readTVar tid1
         tid2' <- liftIO $ atomically $ readTVar tid2
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
-            liftIO $ putStrLn "Lol3"
             redoLayout w root stateFile config tid1 tid2 stateLock
-            liftIO $ putStrLn "Lol4"
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
