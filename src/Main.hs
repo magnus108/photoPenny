@@ -218,11 +218,11 @@ mainSection _ _ config _ = do
                                             , mkColumn ["is-12"] [element buttonAlt']
                                             ]
                             Kindergarten t -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-12"] [s] 
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-3"] [element inputViewKinderClass]
+                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
                                             , mkColumn ["is-3"] [element inputViewKinder]
                                             , mkColumn ["is-3"] [element inputViewKinderName]
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [s] 
                                             ]
 
     -- antal billeder

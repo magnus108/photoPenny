@@ -4,6 +4,8 @@ module Locations
     , locationsOverview
     ) where
 
+import Control.Monad
+
 import Control.Exception
 import Elements
 import PhotoShake.Built
@@ -130,6 +132,15 @@ locationsSection root stateFile states config = do
 
             on UI.keyup inputViewGrade $ \_ -> liftIO . writeIORef grade =<< get value gradeInput'
 
+
+            on UI.keydown inputViewGrade  $ \keycode -> when (keycode == 13) $ do
+                    grade' <- liftIO $ readIORef grade
+                    grades <- liftIO $ getGrades config  
+                    case grades of
+                        NoGrades ->
+                                 liftIO $ setGrades config $ Grades $ ListZipper [] grade' []
+                        Grades (ListZipper ls x rs) ->
+                                 liftIO $ setGrades config $ Grades $ ListZipper ls grade' (x:rs)
 
             on UI.click gradeInsert $ \_ -> do 
                     grade' <- liftIO $ readIORef grade
