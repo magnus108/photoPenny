@@ -72,23 +72,23 @@ setup port root conf watchDir' stateFile = do
  
 
 
-viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> Chan String -> Chan String -> ListZipper State -> UI Element
-viewState root stateFile config w chan chanPhotographer chanSession states = do
+viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> Chan String -> Chan String -> MVar States -> ListZipper State -> UI Element
+viewState root stateFile config w chan chanPhotographer chanSession states'' states = do
     case (focus states) of 
 
-            Dump -> dumpSection root stateFile states config
+            Dump -> dumpSection root stateFile states'' states config 
 
-            Dagsdato -> dagsdatoSection root stateFile states config 
+            Dagsdato -> dagsdatoSection root stateFile states'' states config 
 
-            Photographer -> photographerSection root stateFile states config chanPhotographer
+            Photographer -> photographerSection root stateFile states'' states config chanPhotographer
 
-            Doneshooting -> doneshootingSection root stateFile states config
+            Doneshooting -> doneshootingSection root stateFile states'' states config
 
-            Session -> sessionSection root stateFile states config chanSession
+            Session -> sessionSection root stateFile states'' states config chanSession
 
-            Shooting -> shootingSection root stateFile states config chan
+            Shooting -> shootingSection root stateFile states'' states config chan
 
-            Location -> locationsSection root stateFile states config
+            Location -> locationsSection root stateFile states'' states config
 
             Main -> mainSection root stateFile config w
 
@@ -108,7 +108,7 @@ redoLayout w root stateFile config tid1 tid2 states'' = void $ do
     --wauw
     dumpChan <- liftIO $ Chan.newChan
 
-    let views = states =>> viewState root stateFile config w importText importTextPhotographer importTextSession
+    let views = states =>> viewState root stateFile config w importText importTextPhotographer importTextSession states''
 
 
     view <- focus views

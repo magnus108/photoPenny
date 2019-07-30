@@ -7,6 +7,8 @@ module Shooting
     , RadioGroup(..)
     ) where
 
+import Control.Concurrent.MVar
+
 import qualified Control.Concurrent.Chan as Chan
 import Control.Exception
 
@@ -49,8 +51,8 @@ shootingOverview stateFile states config = do
                               ] 
 
 
-shootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
-shootingSection root stateFile states config importText = do
+shootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
+shootingSection root stateFile states'' states config importText = do
         x <- liftIO $ getShootings config
 
         (_, importer) <- mkFilePicker "shootingPicker" "Vælg import fil" $ \file -> do
@@ -82,7 +84,7 @@ shootingSection root stateFile states config importText = do
                         select <- mkRadioGroup group
 
                         (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                        on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+                        on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
 
                         mkSection [ mkColumns ["is-multiline"]
                                         [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]

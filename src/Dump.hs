@@ -16,6 +16,8 @@ import Graphics.UI.Threepenny.Core
 import Utils.ListZipper
 import State (State, States(..), setStates)
 
+import Control.Concurrent.MVar
+
 dumpOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
 dumpOverview stateFile states config = do
     x <- liftIO $ getDump config
@@ -35,8 +37,8 @@ dumpOverview stateFile states config = do
                       ] 
 
 
-dumpSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-dumpSection root stateFile states config = do
+dumpSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
+dumpSection root stateFile states'' states config = do
     x <- liftIO $ getDump config
 
     (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
@@ -53,7 +55,7 @@ dumpSection root stateFile states config = do
 
         Dump y -> do
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]

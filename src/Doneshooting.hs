@@ -7,6 +7,8 @@ module Doneshooting
 import Elements
 import PhotoShake.Doneshooting
 
+import Control.Concurrent.MVar
+
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
@@ -34,8 +36,8 @@ doneshootingOverview stateFile states config = do
                       ] 
 
 
-doneshootingSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-doneshootingSection root stateFile states config = do
+doneshootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
+doneshootingSection root stateFile states'' states config = do
     x <- liftIO $ getDoneshooting config
 
     (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
@@ -52,7 +54,7 @@ doneshootingSection root stateFile states config = do
         Doneshooting y -> do
 
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]

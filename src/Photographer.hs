@@ -25,6 +25,7 @@ import PhotoShake.ShakeConfig
 
 import State (State, States(..), setStates)
 
+import Control.Concurrent.MVar
 
 photographerOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
 photographerOverview stateFile states config = do
@@ -45,8 +46,8 @@ photographerOverview stateFile states config = do
                                     ]
                               ] 
 
-photographerSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
-photographerSection root stateFile states config importText = do
+photographerSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
+photographerSection root stateFile states'' states config importText = do
 
         x <- liftIO $ getPhotographers config
 
@@ -78,7 +79,7 @@ photographerSection root stateFile states config importText = do
                     select <- mkRadioGroup group
 
                     (buttonForward, forwardView) <- mkButton "next" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+                    on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
 
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]

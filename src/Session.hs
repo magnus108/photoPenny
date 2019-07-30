@@ -4,6 +4,8 @@ module Session
     , sessionOverview
     ) where
 
+import Control.Concurrent.MVar
+
 import qualified Control.Concurrent.Chan as Chan
 import Control.Exception
 
@@ -51,8 +53,8 @@ sessionOverview stateFile states config = do
 
 
 
-sessionSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
-sessionSection root stateFile states config importText = do
+sessionSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
+sessionSection root stateFile states'' states config importText = do
         x <- liftIO $ getSessions config
 
         (_, importer) <- mkFilePicker "sessionPicker" "Vælg import fil" $ \file -> do
@@ -92,7 +94,7 @@ sessionSection root stateFile states config importText = do
                     select <- mkRadioGroup group'
 
                     (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+                    on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
 
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Sessions type" # set (attr "id") "sessionOK" ]

@@ -5,6 +5,7 @@ module Locations
     ) where
 
 import Control.Monad
+import Control.Concurrent.MVar
 
 import Control.Exception
 import Elements
@@ -43,8 +44,8 @@ locationsOverview stateFile states config = do
                       ] 
 
 
-locationsSection :: FilePath -> FilePath -> ListZipper State -> ShakeConfig -> UI Element
-locationsSection root stateFile states config = do
+locationsSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
+locationsSection root stateFile states'' states config = do
 
     x <- liftIO $ getLocationFile config
 
@@ -73,7 +74,7 @@ locationsSection root stateFile states config = do
                                 Building _ _ -> True
                                 Built _ _ -> False
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ setStates root stateFile (States (forward states))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
             
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 
