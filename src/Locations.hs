@@ -116,9 +116,14 @@ locationsSection root stateFile states config = do
             
             --- SUPER BADNESS
 
+            (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj"
+            (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
+
             inputViewGrade <- UI.div #. "field" #+
                 [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"
                 , UI.div #. "control" #+ [ element gradeInput' ] 
+                , UI.br --bads
+                , UI.div #. "buttons has-addons" #+ [element gradeInsert, element gradeDelete]
                 , UI.br --bads
                 , UI.div #+ [ element insertedMsg]
                 ]
@@ -126,7 +131,6 @@ locationsSection root stateFile states config = do
             on UI.keyup inputViewGrade $ \_ -> liftIO . writeIORef grade =<< get value gradeInput'
 
 
-            (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj"
             on UI.click gradeInsert $ \_ -> do 
                     grade' <- liftIO $ readIORef grade
                     grades <- liftIO $ getGrades config  
@@ -139,7 +143,6 @@ locationsSection root stateFile states config = do
                                 
 
             
-            (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
             on UI.click gradeDelete $ \_ -> do 
                     liftIO $ setGrades config NoGrades
 
@@ -150,7 +153,6 @@ locationsSection root stateFile states config = do
                             , mkColumn ["is-12"] [ UI.p # set UI.text y]
                             , mkColumn ["is-12"] [ element openView ]
                             , mkColumn ["is-4"] [ element inputViewGrade ]
-                            , mkColumn ["is-12"] [ UI.div #. "buttons has-addons" #+ [element gradeInsert, element gradeDelete] ]
                             , mkColumn ["is-12"] [ element forwardView ]
                             ]
                       ] 

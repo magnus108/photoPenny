@@ -210,18 +210,19 @@ mainSection _ _ config _ = do
             Sessions y ->
                     case (focus y) of
                             School -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
+                                            [ mkColumn ["is-12"] [s] 
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-3"] [element inputViewKinderClass]
                                             , mkColumn ["is-3"] [element inputViewKinder]
                                             , mkColumn ["is-3"] [element inputViewKinderName]
                                             , mkColumn ["is-12"] [element buttonAlt']
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [s] 
                                             ]
                             Kindergarten t -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
+                                            [ mkColumn ["is-12"] [s] 
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-3"] [element inputViewKinderClass]
                                             , mkColumn ["is-3"] [element inputViewKinder]
                                             , mkColumn ["is-3"] [element inputViewKinderName]
-                                            , mkColumn ["is-12"] [s] 
                                             ]
 
     -- antal billeder
