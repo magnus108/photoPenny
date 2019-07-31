@@ -96,7 +96,7 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 
 
 
-redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> UI ()
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> UI ()
 redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan = void $ do 
 
 
@@ -154,10 +154,10 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan = void $
                         --- ok
     forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states'' config''
 
-    liftIO $ atomically $ writeTVar tid1 ehh
-    liftIO $ atomically $ writeTVar tid2 forkId
+    liftIO $ putMVar tid1 ehh
+    liftIO $ putMVar tid2 forkId
 
-    on UI.disconnect w $ const $ liftIO $ killThread ehh
+--    on UI.disconnect w $ const $ liftIO $ killThread ehh
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiver
 
@@ -192,30 +192,30 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> IO ()
+recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> IO ()
 recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan = void $ do 
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
-        tid1' <- liftIO $ atomically $ readTVar tid1
-        tid2' <- liftIO $ atomically $ readTVar tid2
+        liftIO $ withMVar tid1 $ (\t -> killThread t)
+        liftIO $ withMVar tid2 $ (\t -> killThread t)
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
-            redoLayout w root stateFile config tid1 tid2 stateLock configLock dumpChan
-            liftIO $ killThread tid1'
-            liftIO $ killThread tid2'
+            gg <- liftIO $ newEmptyMVar
+            gg2 <- liftIO $ newEmptyMVar
+            redoLayout w root stateFile config gg gg2 stateLock configLock dumpChan
 
 
-recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> IO ()
+recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> IO ()
 recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock = void $ do
     messages <- Chan.getChanContents msgs
     forM_ messages $ \msg -> do
-        tid1' <- liftIO $ atomically $ readTVar tid1
-        tid2' <- liftIO $ atomically $ readTVar tid2
+        liftIO $ withMVar tid1 $ (\t -> killThread t)
+        liftIO $ withMVar tid2 $ (\t -> killThread t)
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
-            redoLayout w root stateFile config tid1 tid2 stateLock configLock msgs
-            liftIO $ killThread tid1'
-            liftIO $ killThread tid2'
+            gg <- liftIO $ newEmptyMVar
+            gg2 <- liftIO $ newEmptyMVar
+            redoLayout w root stateFile config gg gg2 stateLock configLock msgs
 
 
 -- eww
@@ -223,11 +223,9 @@ main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> States -> FilePat
 main config msgChan conf stateFile (States states) root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
-    tid1 <- liftIO $ forkIO $ return ()
-    ggtid1 <- liftIO $ atomically $ newTVar tid1
+    ggtid1 <- liftIO $ newEmptyMVar
 
-    tid2 <- liftIO $ forkIO $ return ()
-    ggtid2 <- liftIO $ atomically $ newTVar tid2
+    ggtid2 <- liftIO $ newEmptyMVar
 
     states' <- liftIO $ newMVar (States states)
     
