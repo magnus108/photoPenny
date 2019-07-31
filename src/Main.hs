@@ -46,7 +46,7 @@ mainSection _ _ config config' _ = do
                         Built _ _ -> False
                         
     ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild config ident
+    (_, buildView) <- mkBuild config' ident
 
     input <- UI.input #. "input" # set UI.type_ "text" 
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") ""
@@ -72,7 +72,7 @@ mainSection _ _ config config' _ = do
 
 
 
-    (_, viewReset)<- mkReset config
+    (_, viewReset)<- mkReset config'
 
     viewReset2 <- mkSection $ 
                     [ mkColumns ["is-multiline"]
@@ -169,7 +169,7 @@ mainSection _ _ config config' _ = do
                             NoLocation -> return (Left LocationConfigFileMissing)
                             Location xxx -> do
                                 liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
-                        liftIO $ funci config identKinder
+                        liftIO $ funci config' identKinder
 
                     return button'
             ) 
@@ -205,7 +205,7 @@ mainSection _ _ config config' _ = do
             NoLocation -> return (Left LocationConfigFileMissing)
             Location xxx -> do
                 liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
-        liftIO $ funci config identKinder
+        liftIO $ funci config' identKinder
     
     let ss = case sessions of 
             NoSessions -> UI.div 
@@ -250,26 +250,26 @@ mainSection _ _ config config' _ = do
     UI.div #+ [ element inputView2, element dumpSize, element viewReset2]
 
 
-mkReset :: ShakeConfig -> UI (Element, Element)
+mkReset :: MVar ShakeConfig -> UI (Element, Element)
 mkReset config = do
     (button, view) <- mkButton "reset" "Reset konfiguration"
     on UI.click button $ \_ -> liftIO $ resetIt config
     return (button, view)
 
 
-resetIt :: ShakeConfig -> IO ()
+resetIt :: MVar ShakeConfig -> IO ()
 resetIt config = 
-        setDump config NoDump
-        >> setDagsdato config NoDagsdato
-        >> setPhotographers config NoPhotographers
-        >> setLocation config NoLocation
-        >> setSession config NoSessions
-        >> setShooting config NoShootings
-        >> setDoneshooting config NoDoneshooting
-        >> setBuilt' config NoBuilt
-        >> setGrades config NoGrades
+        (withMVar config $ (\conf -> setDump conf NoDump))
+        >> (withMVar config $ (\conf -> setDagsdato conf NoDagsdato))
+        >> (withMVar config $ (\conf -> setPhotographers conf NoPhotographers))
+        >> (withMVar config $ (\conf -> setLocation conf NoLocation))
+        >> (withMVar config $ (\conf -> setSession conf NoSessions))
+        >> (withMVar config $ (\conf -> setShooting conf NoShootings))
+        >> (withMVar config $ (\conf -> setDoneshooting conf NoDoneshooting))
+        >> (withMVar config $ (\conf -> setBuilt' conf NoBuilt))
+        >> (withMVar config $ (\conf -> setGrades conf NoGrades))
 
-mkBuild :: ShakeConfig -> IORef String -> UI (Element, Element)
+mkBuild :: MVar ShakeConfig -> IORef String -> UI (Element, Element)
 mkBuild config idd = do
     --- with pattern
     (button, view) <- mkButton "mover" "Flyt filer"
@@ -277,12 +277,11 @@ mkBuild config idd = do
     return (button, view)
 
 
-funci :: ShakeConfig -> (IORef String) -> IO ()
+funci :: MVar ShakeConfig -> (IORef String) -> IO ()
 funci config idd = do
     --have to look this up from config
     idd2 <- readIORef idd
-    liftIO $ putStrLn "ffgdddd"
-    locationFile <- getLocationFile config
+    locationFile <- withMVar config $ (\conf -> getLocationFile conf)
     -- kinda bad here
     -- kinda bad here could cause errorr
     find <- case locationFile of 
@@ -292,24 +291,20 @@ funci config idd = do
 
     case find of
             Left errMsg -> do
-                    liftIO $ putStrLn "ffzzz"
-                    setBuilt' config (NoFind (show errMsg))
+                    withMVar config $ (\conf -> setBuilt' conf (NoFind (show errMsg)))
 
             Right photographee -> do
                     time <- getCurrentTime
                     -- wtf????
                     case locationFile of 
                         NoLocation -> do 
-                            liftIO $ putStrLn "ffzzzzzz"
-                            setBuilt' config (NoFind (show LocationConfigFileMissing))
+                            withMVar config $ (\conf -> setBuilt' conf (NoFind (show LocationConfigFileMissing)))
                     
                         Location xxx -> do
-                            build <- try $ myShake config photographee (takeBaseName xxx) time :: IO (Either ShakeError ())
-                            liftIO $ putStrLn "fhah"
+                            build <- try $ withMVar config (\conf -> myShake conf photographee (takeBaseName xxx) time ) :: IO (Either ShakeError ())
                             case build of
                                     Left errMsg -> do
-                                        liftIO $ putStrLn "fhahgafff"
-                                        setBuilt' config (NoFind (show errMsg))  
+                                        withMVar config (\conf -> setBuilt' conf (NoFind (show errMsg))  )
                                     Right _ -> do
-                                        setBuilt' config (Built  photographee "Færdig")
+                                        withMVar config (\conf -> setBuilt' conf (Built  photographee "Færdig"))
                                         return () 

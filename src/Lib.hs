@@ -96,23 +96,21 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 
 
 
-redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> UI ()
-redoLayout w root stateFile config tid1 tid2 states'' config'' = void $ do 
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> UI ()
+redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan = void $ do 
 
-    (States states) <- liftIO $ readMVar states''
 
     --wauw much dubcha
     importText <- liftIO $ Chan.newChan
     importTextPhotographer <- liftIO $ Chan.newChan
     importTextSession <- liftIO $ Chan.newChan
-    --wauw
-    dumpChan <- liftIO $ Chan.newChan
 
-    let views = states =>> viewState root stateFile config w importText importTextPhotographer importTextSession states'' config''
+    (States statesa) <- liftIO $ readMVar states''
+    let views = statesa =>> viewState root stateFile config w importText importTextPhotographer importTextSession states'' config''
 
 
     view <- focus views
-    let buttons = states =>> (\states' -> do
+    buttons <- liftIO $ withMVar states'' $ (\(States states) -> return $ states =>> (\states' -> do
                         button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
                         button' <- if (states' == states) then
                                 set (UI.attr  "class") "button is-info is-selected" (element button)
@@ -123,7 +121,7 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' = void $ do
                             liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States states'))
 
                         return button'
-                    )
+                    ))
 
     view'' <- mkSection [UI.div #. "buttons has-addons" #+ (toList buttons)]
 
@@ -194,15 +192,15 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> IO ()
-recevier w root config stateFile msgs tid1 tid2 stateLock configLock = void $ do 
+recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> IO ()
+recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan = void $ do 
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
         tid1' <- liftIO $ atomically $ readTVar tid1
         tid2' <- liftIO $ atomically $ readTVar tid2
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
-            redoLayout w root stateFile config tid1 tid2 stateLock configLock
+            redoLayout w root stateFile config tid1 tid2 stateLock configLock dumpChan
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
@@ -215,7 +213,7 @@ recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock = void $ d
         tid2' <- liftIO $ atomically $ readTVar tid2
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
-            redoLayout w root stateFile config tid1 tid2 stateLock configLock
+            redoLayout w root stateFile config tid1 tid2 stateLock configLock msgs
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
@@ -235,11 +233,14 @@ main config msgChan conf stateFile (States states) root w = do
     
     config' <- liftIO $ newMVar config
 
+    --wauw
+    dumpChan <- liftIO $ Chan.newChan
+
     case focus states of
             Main -> starterScreen w root stateFile config states' config'
-            _ -> redoLayout w root stateFile config ggtid1 ggtid2 states' config'
+            _ -> redoLayout w root stateFile config ggtid1 ggtid2 states' config' dumpChan
 
-    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states' config'
+    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states' config' dumpChan
     on UI.disconnect w $ const $ liftIO $ killThread eh
 
 
