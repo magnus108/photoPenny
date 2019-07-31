@@ -235,7 +235,7 @@ main config msgChan conf stateFile (States states) root w = do
     dumpChan <- liftIO $ Chan.newChan
 
     case focus states of
-            Main -> starterScreen w root stateFile config states' config'
+            Main -> starterScreen w root stateFile config states' config' ggtid1 ggtid2
             _ -> redoLayout w root stateFile config ggtid1 ggtid2 states' config' dumpChan
 
     eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states' config' dumpChan
@@ -243,8 +243,8 @@ main config msgChan conf stateFile (States states) root w = do
 
 
 
-starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> MVar ShakeConfig -> UI ()
-starterScreen w root stateFile config states' config' = void $ do
+starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> MVar ShakeConfig -> MVar ThreadId -> MVar ThreadId -> UI ()
+starterScreen w root stateFile config states' config' tid1 tid2 = void $ do
 
     dump <- dumpOverview root stateFile config config'
     dagsdato <- dagsdatoOverview root stateFile config config'
@@ -271,6 +271,11 @@ starterScreen w root stateFile config states' config' = void $ do
                       ]
 
     getBody w # set children [ view ]
+
+    t1 <- liftIO $ forkIO $ forever $ threadDelay 1000000
+    t2 <- liftIO $ forkIO $ forever $ threadDelay 1000000
+    liftIO $ putMVar tid1 t1
+    liftIO $ putMVar tid2 t2
 
 
 
