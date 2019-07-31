@@ -46,13 +46,12 @@ photographerOverview stateFile states config config' = do
                                     ]
                               ] 
 
-photographerSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
-photographerSection root stateFile states'' states config importText = do
-
-        x <- liftIO $ getPhotographers config
+photographerSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> Chan.Chan String -> UI Element
+photographerSection root stateFile states'' states config config' importText = do
+        x <- liftIO $ withMVar config' $ (\conf -> getPhotographers conf)
 
         (_, importer) <- mkFilePicker "photographerPicker" "Vælg import fil" $ \file -> do
-                res <- liftIO $ try $ importPhotographers config file :: IO (Either SomeException ())
+                res <- liftIO $ try $ withMVar config' $ (\conf -> importPhotographers conf file) :: IO (Either SomeException ())
                 liftIO $ case res of
                             Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
 
@@ -70,7 +69,7 @@ photographerSection root stateFile states'' states config importText = do
             Photographers y -> do
                     let group = RadioGroup 
                             { action = \xx _ -> do
-                                    liftIO $ setPhotographers config $ Photographers xx
+                                    liftIO $ withMVar config' $ (\conf -> setPhotographers conf $ Photographers xx)
                             , view' = \xx -> UI.string (name (focus xx))
                             , title' = "photographers"
                             , items = y 

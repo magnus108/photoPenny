@@ -37,12 +37,12 @@ doneshootingOverview stateFile states config config' = do
                       ] 
 
 
-doneshootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
-doneshootingSection root stateFile states'' states config = do
-    x <- liftIO $ getDoneshooting config
+doneshootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
+doneshootingSection root stateFile states'' states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDoneshooting conf)
 
     (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
-            liftIO $ setDoneshooting config $ Doneshooting folder
+            liftIO $ withMVar config' $ (\conf -> setDoneshooting conf $ Doneshooting folder)
 
     case x of
         NoDoneshooting -> do

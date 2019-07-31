@@ -35,12 +35,12 @@ dagsdatoOverview stateFile states config config' = do
                             ]
                       ] 
 
-dagsdatoSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
-dagsdatoSection  root stateFile states'' states config =  do
-    x <- liftIO $ getDagsdato config
+dagsdatoSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
+dagsdatoSection  root stateFile states'' states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDagsdato conf)
 
     (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder ->
-        liftIO $ setDagsdato config $ Dagsdato folder
+        liftIO $ withMVar config' $ (\conf -> setDagsdato conf $ Dagsdato folder)
 
     case x of
         NoDagsdato ->

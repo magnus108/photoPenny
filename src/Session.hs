@@ -53,12 +53,12 @@ sessionOverview stateFile states config config' = do
 
 
 
-sessionSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
-sessionSection root stateFile states'' states config importText = do
-        x <- liftIO $ getSessions config
+sessionSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> Chan.Chan String -> UI Element
+sessionSection root stateFile states'' states config config' importText = do
+        x <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
 
         (_, importer) <- mkFilePicker "sessionPicker" "Vælg import fil" $ \file -> do
-            res <- liftIO $ try $ importSessions config file :: IO (Either SomeException ())
+            res <- liftIO $ try $ withMVar config' $ (\conf -> importSessions conf file) :: IO (Either SomeException ())
             liftIO $ case res of
                         Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
 
@@ -85,7 +85,7 @@ sessionSection root stateFile states'' states config importText = do
 
                     let group' = RadioGroup 
                             { action = \xx _ -> do
-                                    liftIO $ setSession config $ Sessions (focus $ fmap snd xx)
+                                    liftIO $ withMVar config' $ (\conf -> setSession conf $ Sessions (focus $ fmap snd xx))
                             , view' = \xx -> UI.string (focus (fmap fst xx))
                             , title' = "sessions"
                             , items = widgets'

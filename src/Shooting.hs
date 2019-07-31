@@ -51,12 +51,13 @@ shootingOverview stateFile states config config' = do
                               ] 
 
 
-shootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> Chan.Chan String -> UI Element
-shootingSection root stateFile states'' states config importText = do
-        x <- liftIO $ getShootings config
+shootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> Chan.Chan String -> UI Element
+shootingSection root stateFile states'' states config config'  importText = do
+        x <- liftIO $ withMVar config' $ (\conf -> getShootings conf)
 
         (_, importer) <- mkFilePicker "shootingPicker" "Vælg import fil" $ \file -> do
-            res <- liftIO $ try $ importShootings config file :: IO (Either SomeException ())
+            res <- liftIO $ try $ withMVar config' $ (\conf -> importShootings conf file) :: IO (Either SomeException ())
+
             liftIO $ case res of
                         Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
 
@@ -75,7 +76,7 @@ shootingSection root stateFile states'' states config importText = do
 
                         let group = RadioGroup 
                                 { action = \xx _ -> do
-                                        liftIO $ setShooting config $ Shootings xx
+                                        liftIO $ withMVar config' $ (\conf -> setShooting conf $ Shootings xx)
                                 , view' = \xx -> UI.string (show (focus xx))
                                 , title' = "shootings"
                                 , items = y

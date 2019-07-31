@@ -37,12 +37,12 @@ dumpOverview stateFile states config config' = do
                       ] 
 
 
-dumpSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
-dumpSection root stateFile states'' states config = do
-    x <- liftIO $ getDump config
+dumpSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
+dumpSection root stateFile states'' states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDump conf)
 
     (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
-            liftIO $ setDump config $ Dump folder
+            liftIO $ withMVar config' $ (\conf -> setDump conf $ Dump folder)
 
 
     case x of

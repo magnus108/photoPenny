@@ -45,18 +45,17 @@ locationsOverview stateFile states config config' = do
                       ] 
 
 
-locationsSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> UI Element
-locationsSection root stateFile states'' states config = do
-
-    x <- liftIO $ getLocationFile config
+locationsSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
+locationsSection root stateFile states'' states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
 
     (_, view) <- mkFilePicker "locationsPicker" "Vælg eksisterende CSV fil" $ \file -> do
-        liftIO $ setLocation config $ Location file
+        liftIO $ withMVar config' $ (\conf -> setLocation conf $ Location file)
 
     (_, view2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> do
         let empty = mempty :: [Photographee]
         _ <- liftIO $ writeFile file (encode empty)
-        liftIO $ setLocation config $ Location file
+        liftIO $ withMVar config' $ (\conf -> setLocation conf $ Location file)
 
     case x of
         NoLocation -> 
@@ -68,7 +67,7 @@ locationsSection root stateFile states'' states config = do
 
         Location y -> do
             --dumt
-            built <- liftIO $ getBuilt config
+            built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
             let isBuilding = case built of
                                 NoBuilt -> False
                                 NoFind s -> False
@@ -86,7 +85,7 @@ locationsSection root stateFile states'' states config = do
             gradeInput <- UI.input #. "input" # set UI.type_ "text" 
             gradeInput' <- if (not isBuilding) then return gradeInput else (element gradeInput) # set (attr "disabled") ""
 
-            gradesr <- liftIO $ getGrades config   
+            gradesr <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
 
             identKinderClass <- case gradesr of 
                         NoGrades -> liftIO $ newIORef "Ingen valg"
@@ -137,27 +136,27 @@ locationsSection root stateFile states'' states config = do
 
             on UI.keydown inputViewGrade  $ \keycode -> when (keycode == 13) $ do
                     grade' <- liftIO $ readIORef grade
-                    grades <- liftIO $ getGrades config  
+                    grades <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
                     case grades of
                         NoGrades ->
-                                 liftIO $ setGrades config $ Grades $ ListZipper [] grade' []
+                                  liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper [] grade' [])
                         Grades (ListZipper ls x rs) ->
-                                 liftIO $ setGrades config $ Grades $ ListZipper ls grade' (x:rs)
+                                  liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper ls grade' (x:rs))
 
             on UI.click gradeInsert $ \_ -> do 
                     grade' <- liftIO $ readIORef grade
-                    grades <- liftIO $ getGrades config  
+                    grades <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
                     case grades of
                         NoGrades ->
-                                 liftIO $ setGrades config $ Grades $ ListZipper [] grade' []
+                                 liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper [] grade' [])
                         Grades (ListZipper ls x rs) ->
                                  --dette er en insert
-                                 liftIO $ setGrades config $ Grades $ ListZipper ls grade' (x:rs)
+                                 liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper ls grade' (x:rs))
                                 
 
             
             on UI.click gradeDelete $ \_ -> do 
-                    liftIO $ setGrades config NoGrades
+                    liftIO $ withMVar config' $ (\conf -> setGrades conf NoGrades)
 
 
             mkSection [ mkColumns ["is-multiline"]
