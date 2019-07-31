@@ -90,7 +90,7 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 
             Location -> locationsSection root stateFile states'' states config config'' 
 
-            Main -> mainSection root stateFile config w
+            Main -> mainSection root stateFile config config'' w
 
 
 

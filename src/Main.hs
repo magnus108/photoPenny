@@ -4,6 +4,7 @@ module Main
     ) where
 import Elements
 import PhotoShake.Dagsdato
+import Control.Concurrent.MVar
 
 import Data.List
 
@@ -33,10 +34,11 @@ import Utils.ListZipper
 import Utils.Comonad
 
 
-mainSection :: FilePath -> FilePath -> ShakeConfig -> Window -> UI Element
-mainSection _ _ config _ = do
+mainSection :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI Element
+mainSection _ _ config config' _ = do
 
-    built <- liftIO $ getBuilt config
+    built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
+
     let isBuilding = case built of
                         NoBuilt -> False
                         NoFind s -> False
@@ -78,7 +80,7 @@ mainSection _ _ config _ = do
                     ]
     
 
-    sessions <- liftIO $ getSessions config
+    sessions <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
 
 
     viewSchool <- mkColumns ["is-multiline"]
@@ -107,7 +109,7 @@ mainSection _ _ config _ = do
     on UI.keyup inputKinderName' $ \_ -> liftIO . writeIORef identKinderName =<< get value inputKinderName'
 
     --BAD can throw error
-    grades <- liftIO $ getGrades config  
+    grades <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
 
     identKinderClass <- case grades of 
                 NoGrades -> liftIO $ newIORef "Ingen valg"
@@ -155,12 +157,12 @@ mainSection _ _ config _ = do
                     
                     on UI.click button' $ \_ -> do
                         liftIO $ putStrLn "ffgag"
-                        _ <- liftIO $ setSession config $ Sessions zipper -- det her må man ik?
+                        _ <- liftIO $ withMVar config' $ (\conf -> setSession conf $ Sessions zipper )-- det her må man ik?
                         idd <- liftIO $ readIORef identKinder
                         clas <- liftIO $ readIORef identKinderClass
 
                         name <- liftIO $ readIORef identKinderName
-                        locationFile <- liftIO $ getLocationFile config
+                        locationFile <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
                         -- kinda bad here
                         -- kinda bad here could cause errorr
                         find <- case locationFile of 
@@ -196,7 +198,7 @@ mainSection _ _ config _ = do
         idd <- liftIO $ readIORef identKinder
         clas <- liftIO $ readIORef identKinderClass
         name <- liftIO $ readIORef identKinderName
-        locationFile <- liftIO $ getLocationFile config
+        locationFile <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
         -- kinda bad here
         -- kinda bad here could cause errorr
         find <- case locationFile of 
@@ -226,7 +228,7 @@ mainSection _ _ config _ = do
                                             ]
 
     -- antal billeder
-    dumps <- liftIO $ getDumpFiles config
+    dumps <- liftIO $ withMVar config' $ (\conf -> getDumpFiles conf)
     let dumps' = length $ fmap fst dumps
     label <- mkLabel "Antal billeder i dump:"
     dumpSize <- mkSection 
