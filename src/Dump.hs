@@ -18,9 +18,9 @@ import State (State, States(..), setStates)
 
 import Control.Concurrent.MVar
 
-dumpOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-dumpOverview stateFile states config = do
-    x <- liftIO $ getDump config
+dumpOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+dumpOverview stateFile states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDump conf)
 
     case x of
         NoDump -> 

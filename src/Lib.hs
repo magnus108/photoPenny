@@ -96,8 +96,8 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' sta
 
 
 
-redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> UI ()
-redoLayout w root stateFile config tid1 tid2 states'' = void $ do 
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> UI ()
+redoLayout w root stateFile config tid1 tid2 states'' config'' = void $ do 
 
     (States states) <- liftIO $ readMVar states''
 
@@ -154,7 +154,7 @@ redoLayout w root stateFile config tid1 tid2 states'' = void $ do
                                     D.NoDump -> do
                                             return () --error "lol" -- return $ main c msgChan conf stateFile state 
                         --- ok
-    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states''
+    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states'' config''
 
     liftIO $ atomically $ writeTVar tid1 ehh
     liftIO $ atomically $ writeTVar tid2 forkId
@@ -194,28 +194,28 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> IO ()
-recevier w root config stateFile msgs tid1 tid2 stateLock = void $ do 
+recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> IO ()
+recevier w root config stateFile msgs tid1 tid2 stateLock configLock = void $ do 
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
         tid1' <- liftIO $ atomically $ readTVar tid1
         tid2' <- liftIO $ atomically $ readTVar tid2
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
-            redoLayout w root stateFile config tid1 tid2 stateLock
+            redoLayout w root stateFile config tid1 tid2 stateLock configLock
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
 
-recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> IO ()
-recevier2 w root config stateFile msgs tid1 tid2 stateLock = void $ do
+recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> TVar ThreadId -> TVar ThreadId -> MVar States -> MVar ShakeConfig -> IO ()
+recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock = void $ do
     messages <- Chan.getChanContents msgs
     forM_ messages $ \msg -> do
         tid1' <- liftIO $ atomically $ readTVar tid1
         tid2' <- liftIO $ atomically $ readTVar tid2
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
-            redoLayout w root stateFile config tid1 tid2 stateLock
+            redoLayout w root stateFile config tid1 tid2 stateLock configLock
             liftIO $ killThread tid1'
             liftIO $ killThread tid2'
 
@@ -232,26 +232,28 @@ main config msgChan conf stateFile (States states) root w = do
     ggtid2 <- liftIO $ atomically $ newTVar tid2
 
     states' <- liftIO $ newMVar (States states)
+    
+    config' <- liftIO $ newMVar config
 
     case focus states of
-            Main -> starterScreen w root stateFile config states'
-            _ -> redoLayout w root stateFile config ggtid1 ggtid2 states'
+            Main -> starterScreen w root stateFile config states' config'
+            _ -> redoLayout w root stateFile config ggtid1 ggtid2 states' config'
 
-    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states'
+    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states' config'
     on UI.disconnect w $ const $ liftIO $ killThread eh
 
 
 
-starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> UI ()
-starterScreen w root stateFile config states' = void $ do
+starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> MVar ShakeConfig -> UI ()
+starterScreen w root stateFile config states' config' = void $ do
 
-    dump <- dumpOverview root stateFile config
-    dagsdato <- dagsdatoOverview root stateFile config 
-    photographer <- photographerOverview root stateFile config
-    doneshooting <- doneshootingOverview root stateFile config
-    session <- sessionOverview root stateFile config
-    shooting <- shootingOverview root stateFile config
-    location <- locationsOverview root stateFile config
+    dump <- dumpOverview root stateFile config config'
+    dagsdato <- dagsdatoOverview root stateFile config config'
+    photographer <- photographerOverview root stateFile config config'
+    doneshooting <- doneshootingOverview root stateFile config config'
+    session <- sessionOverview root stateFile config config' 
+    shooting <- shootingOverview root stateFile config config' 
+    location <- locationsOverview root stateFile config config'
 
     (buttonForward, forwardView) <- mkButton "next" "Ok"
     on UI.click buttonForward $ \_ -> liftIO $ do

@@ -25,9 +25,10 @@ import Graphics.UI.Threepenny.Core hiding (empty)
 import Utils.ListZipper
 import State (State, States(..), setStates)
 
-locationsOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-locationsOverview stateFile states config = do
-    x <- liftIO $ getLocationFile config
+locationsOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+locationsOverview stateFile states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
+    
     case x of
         NoLocation -> 
             mkSection [ mkColumns ["is-multiline"]

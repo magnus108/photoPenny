@@ -27,9 +27,9 @@ import State (State, States(..), setStates)
 
 import Control.Concurrent.MVar
 
-photographerOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-photographerOverview stateFile states config = do
-        x <- liftIO $ getPhotographers config
+photographerOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+photographerOverview stateFile states config config' = do
+        x <- liftIO $ withMVar config' $ (\conf -> getPhotographers conf)
 
         case x of
             NoPhotographers -> do

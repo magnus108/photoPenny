@@ -29,9 +29,9 @@ import PhotoShake.ShakeConfig
 
 import State (State, States(..), setStates)
 
-sessionOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-sessionOverview stateFile states config = do
-        x <- liftIO $ getSessions config
+sessionOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+sessionOverview stateFile states config config' = do
+        x <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
 
         case x of
             NoSessions -> do

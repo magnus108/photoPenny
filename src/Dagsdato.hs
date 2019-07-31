@@ -18,9 +18,9 @@ import State (State, States(..), setStates)
 import PhotoShake.ShakeConfig
 
 
-dagsdatoOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-dagsdatoOverview stateFile states config = do
-    x <- liftIO $ getDagsdato config
+dagsdatoOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+dagsdatoOverview stateFile states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDagsdato conf)
     case x of
         NoDagsdato ->
             mkSection [ mkColumns ["is-multiline"]

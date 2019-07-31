@@ -26,9 +26,9 @@ import PhotoShake.ShakeConfig
 
 import State (State, States(..), setStates)
 
-shootingOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-shootingOverview stateFile states config = do
-        x <- liftIO $ getShootings config
+shootingOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+shootingOverview stateFile states config config' = do
+        x <- liftIO $ withMVar config' $ (\conf -> getShootings conf)
 
         case x of
             NoShootings-> do

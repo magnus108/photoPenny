@@ -18,9 +18,10 @@ import Utils.ListZipper
 import State (State, States(..), setStates)
 
 
-doneshootingOverview :: FilePath -> FilePath -> ShakeConfig -> UI Element
-doneshootingOverview stateFile states config = do
-    x <- liftIO $ getDoneshooting config
+doneshootingOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
+doneshootingOverview stateFile states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDoneshooting conf)
+    
     case x of
         NoDoneshooting -> do
             mkSection [ mkColumns ["is-multiline"]
