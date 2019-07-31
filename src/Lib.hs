@@ -210,12 +210,12 @@ recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock = void $ d
     messages <- Chan.getChanContents msgs
     forM_ messages $ \msg -> do
         liftIO $ withMVar tid1 $ (\t -> killThread t)
-        liftIO $ withMVar tid2 $ (\t -> killThread t)
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
             gg <- liftIO $ newEmptyMVar
             gg2 <- liftIO $ newEmptyMVar
             redoLayout w root stateFile config gg gg2 stateLock configLock msgs
+            liftIO $ withMVar tid2 $ (\t -> killThread t)
 
 
 -- eww
