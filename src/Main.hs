@@ -228,13 +228,16 @@ mainSection _ _ config config' _ = do
                                             ]
 
     -- antal billeder
-    dumps <- liftIO $ withMVar config' $ (\conf -> getDumpFiles conf)
-    let dumps' = length $ fmap fst dumps
+    dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles conf) :: UI (Either ShakeError [(FilePath, FilePath)])
+    let dumps' = case dumps of 
+            Left e -> show e 
+            Right x -> show $ length $ fmap fst x
+
     label <- mkLabel "Antal billeder i dump:"
     dumpSize <- mkSection 
                     [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-12"] [ element label ]
-                        , mkColumn ["is-12"] [ UI.string (show dumps') #. "is-size-1 has-text-danger has-text-weight-bold" ]
+                        , mkColumn ["is-12"] [ UI.string dumps' #. "is-size-1 has-text-danger has-text-weight-bold" ]
                         ]
                     ]
 
@@ -301,7 +304,7 @@ funci config idd = do
                             withMVar config $ (\conf -> setBuilt' conf (NoFind (show LocationConfigFileMissing)))
                     
                         Location xxx -> do
-                            build <- try $ withMVar config (\conf -> myShake conf photographee (takeBaseName xxx) time ) :: IO (Either ShakeError ())
+                            build <- try $ withMVar config (\conf -> myShake conf photographee (takeBaseName xxx) time True) :: IO (Either ShakeError ())
                             case build of
                                     Left errMsg -> do
                                         withMVar config (\conf -> setBuilt' conf (NoFind (show errMsg))  )
