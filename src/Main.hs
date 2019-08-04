@@ -34,6 +34,7 @@ import Utils.ListZipper
 import Utils.Comonad
 
 
+
 mainSection :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI Element
 mainSection _ _ config config' _ = do
 
@@ -57,6 +58,8 @@ mainSection _ _ config config' _ = do
         ]
 
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
+    
+    UI.setFocus ( getElement input')
 
     builtMsg <- UI.p # set text (case built of
                                     NoBuilt -> ""
@@ -130,7 +133,7 @@ mainSection _ _ config config' _ = do
                     inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Stue"
+                        [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
                         ]
 
@@ -142,6 +145,44 @@ mainSection _ _ config config' _ = do
                                 liftIO $  writeIORef identKinderClass val
 
                     return inputViewKinderClass'
+
+    --BAD can throw error
+    liftIO $ putStrLn "lOL"
+
+    gradeSelection <- liftIO $ withMVar config' $ (\conf -> getGradeSelection conf)
+    
+    liftIO $ putStrLn "lOL"
+    
+{-}
+    inputViewKinderClasssCopy <- case grades of 
+            NoGrades -> do
+                UI.div #. "field" #+
+                        [ UI.label #. "label has-text-info" # set UI.text "Find elev. Der er ingen stuer/klasser"
+                        , UI.div # set (attr "style") "width:100%" #. "select" #+ 
+                                [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
+                                ]
+                        ]
+            Grades zipper -> do
+                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                    inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
+                    inputViewKinderClass' <- UI.div #. "field" #+
+                        [ UI.label #. "label has-text-info" # set UI.text "Find elev"
+                        , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
+                        ]
+
+                    on UI.selectionChange inputKinderClass' $ \xxxx -> do
+                            case xxxx of
+                                Nothing -> error "this is bad"
+                                Just n -> do
+                                    let val = toList zipper !! n
+                                    liftIO $ withMVar config' $ (\conf -> do
+                                                liftIO $ setGradeSelection conf val
+                                        )
+                            return ()
+        
+
+                    return inputViewKinderClass'
+                    -}
 
     let wats = (\zipper item -> do
 
@@ -162,14 +203,17 @@ mainSection _ _ config config' _ = do
                         clas <- liftIO $ readIORef identKinderClass
 
                         name <- liftIO $ readIORef identKinderName
-                        locationFile <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
-                        -- kinda bad here
-                        -- kinda bad here could cause errorr
-                        find <- case locationFile of 
-                            NoLocation -> return (Left LocationConfigFileMissing)
-                            Location xxx -> do
-                                liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
-                        liftIO $ funci config' identKinder
+                        _ <- liftIO $ withMVar config' $ (\conf -> do
+                                locationFile <- getLocationFile conf
+                                -- kinda bad here could cause errorr
+                                case locationFile of 
+                                    NoLocation -> return (Left LocationConfigFileMissing)
+                                    Location xxx -> do
+                                        liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
+
+                                )
+                        liftIO $ modifyIORef identKinder (\x -> "SYS_" ++ x)
+                        liftIO $ funci2 config' (identKinder)
 
                     return button'
             ) 
@@ -198,15 +242,27 @@ mainSection _ _ config config' _ = do
         idd <- liftIO $ readIORef identKinder
         clas <- liftIO $ readIORef identKinderClass
         name <- liftIO $ readIORef identKinderName
-        locationFile <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
-        -- kinda bad here
-        -- kinda bad here could cause errorr
-        find <- case locationFile of 
-            NoLocation -> return (Left LocationConfigFileMissing)
-            Location xxx -> do
-                liftIO $ try $ insertPhotographee xxx idd clas name --- SUCHBAD
-        liftIO $ funci config' identKinder
+        _ <- liftIO $ withMVar config' $ (\conf -> do
+                        locationFile <- getLocationFile conf
+                        case locationFile of 
+                            NoLocation -> return (Left LocationConfigFileMissing)
+                            Location xxx -> do
+                                liftIO $ try $ insertPhotographee xxx idd clas name
+                    )
+        liftIO $ modifyIORef identKinder (\x -> "SYS_" ++ x)
+        liftIO $ funci2 config' identKinder
     
+
+   -- locationFile <- getLocationFile conf
+            -- kinda bad here could cause errorr
+      --      case locationFile of 
+            --    NoLocation -> return (Left LocationConfigFileMissing)
+              --  Location xxx -> do
+               --     students <- liftIO $ parsePhotographees xxx val  --- SUCHBAD
+
+
+    kidsInGradeView <- mkSection [] -- $ fmap (\c -> string (_name c)) kidsInGrade 
+
     let ss = case sessions of 
             NoSessions -> UI.div 
             Sessions y ->
@@ -218,6 +274,9 @@ mainSection _ _ config config' _ = do
                                             , mkColumn ["is-3"] [element inputViewKinder]
                                             , mkColumn ["is-3"] [element inputViewKinderName]
                                             , mkColumn ["is-12"] [element buttonAlt']
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                         --   , mkColumn ["is-12"] [element inputViewKinderClasssCopy]-- ffs
+                                            , mkColumn ["is-12"] [element kidsInGradeView]-- ffs
                                             ]
                             Kindergarten t -> mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-3"] [element inputViewKinderClass]
@@ -291,6 +350,39 @@ funci config idd = do
         NoLocation -> return (Left LocationConfigFileMissing)
         Location xxx -> do
             try $ findPhotographee xxx idd2 :: IO (Either ShakeError Photographee)
+
+    case find of
+            Left errMsg -> do
+                    withMVar config $ (\conf -> setBuilt' conf (NoFind (show errMsg)))
+
+            Right photographee -> do
+                    time <- getCurrentTime
+                    -- wtf????
+                    case locationFile of 
+                        NoLocation -> do 
+                            withMVar config $ (\conf -> setBuilt' conf (NoFind (show LocationConfigFileMissing)))
+                    
+                        Location xxx -> do
+                            build <- try $ withMVar config (\conf -> myShake conf photographee (takeBaseName xxx) time True) :: IO (Either ShakeError ())
+                            case build of
+                                    Left errMsg -> do
+                                        withMVar config (\conf -> setBuilt' conf (NoFind (show errMsg))  )
+                                    Right _ -> do
+                                        withMVar config (\conf -> setBuilt' conf (Built  photographee "Færdig"))
+                                        return () 
+
+
+funci2 :: MVar ShakeConfig -> (IORef String) -> IO ()
+funci2 config idd = do
+    --have to look this up from config
+    idd2 <- readIORef idd
+    locationFile <- withMVar config $ (\conf -> getLocationFile conf)
+    -- kinda bad here
+    -- kinda bad here could cause errorr
+    find <- case locationFile of 
+        NoLocation -> return (Left LocationConfigFileMissing)
+        Location xxx -> do
+            try $ findPhotographee2 xxx idd2 :: IO (Either ShakeError Photographee)
 
     case find of
             Left errMsg -> do
