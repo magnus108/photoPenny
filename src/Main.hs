@@ -233,7 +233,7 @@ mainSection _ _ config config' _ = do
                                 School -> (School, element viewSchool)
                             ) )
 
-    buttonAlt <- UI.button #. "button" #+ [string "Indsæt ny elev"] 
+    buttonAlt <- UI.button #. "button" #+ [string "Opret og flyt"] 
 
     buttonAlt' <- if (not isBuilding) then return buttonAlt else (element buttonAlt ) # set (attr "disabled") ""
     
