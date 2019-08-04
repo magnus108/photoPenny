@@ -27,6 +27,7 @@ import Session
 import Shooting
 import Doneshooting
 import Locations
+import Control
 
 
 import Control.Monad 
@@ -92,6 +93,7 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 
             Main -> mainSection root stateFile config config'' w
 
+            Control -> controlSection root states'' config'' 
 
 
 
