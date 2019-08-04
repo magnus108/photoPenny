@@ -51,6 +51,7 @@ mainSection _ _ config config' _ = do
 
     input <- UI.input #. "input" # set UI.type_ "text" 
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") ""
+    
 
     inputView <- UI.div #. "field" #+
         [ UI.label #. "label has-text-info" # set UI.text "Nummer"
@@ -58,8 +59,8 @@ mainSection _ _ config config' _ = do
         ]
 
     on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
-    
-    UI.setFocus ( getElement input')
+
+
 
     builtMsg <- UI.p # set text (case built of
                                     NoBuilt -> ""
@@ -138,6 +139,7 @@ mainSection _ _ config config' _ = do
                         ]
 
                     on UI.selectionChange inputKinderClass' $ \xxxx -> do
+          
                         case xxxx of
                             Nothing -> error "this is bad"
                             Just n -> do
@@ -147,13 +149,8 @@ mainSection _ _ config config' _ = do
                     return inputViewKinderClass'
 
     --BAD can throw error
-    liftIO $ putStrLn "lOL"
-
     gradeSelection <- liftIO $ withMVar config' $ (\conf -> getGradeSelection conf)
-    
-    liftIO $ putStrLn "lOL"
-    
-{-}
+
     inputViewKinderClasssCopy <- case grades of 
             NoGrades -> do
                 UI.div #. "field" #+
@@ -175,14 +172,17 @@ mainSection _ _ config config' _ = do
                                 Nothing -> error "this is bad"
                                 Just n -> do
                                     let val = toList zipper !! n
-                                    liftIO $ withMVar config' $ (\conf -> do
-                                                liftIO $ setGradeSelection conf val
+                                    if gradeSelection == (GradeSelection val) then
+                                            return ()
+                                    else
+                                        liftIO $ withMVar config' $ (\conf -> do
+                                                liftIO $ setGradeSelection conf (GradeSelection val)
+                                                liftIO $ setGrades conf (Grades $ ListZipper [] val (toList zipper))
                                         )
-                            return ()
         
 
                     return inputViewKinderClass'
-                    -}
+                    
 
     let wats = (\zipper item -> do
 
@@ -253,38 +253,21 @@ mainSection _ _ config config' _ = do
         liftIO $ funci2 config' identKinder
     
 
-   -- locationFile <- getLocationFile conf
+    locationFile <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
             -- kinda bad here could cause errorr
-      --      case locationFile of 
-            --    NoLocation -> return (Left LocationConfigFileMissing)
-              --  Location xxx -> do
-               --     students <- liftIO $ parsePhotographees xxx val  --- SUCHBAD
+    kidsInGrade <- case locationFile of 
+        NoLocation -> throw LocationConfigFileMissing
+        Location xxx -> do
+            liftIO $ withMVar config' $ (\conf -> do
+                val <- liftIO $ getGradeSelection conf
+                liftIO $ parsePhotographees xxx val)
 
 
-    kidsInGradeView <- mkSection [] -- $ fmap (\c -> string (_name c)) kidsInGrade 
 
-    let ss = case sessions of 
-            NoSessions -> UI.div 
-            Sessions y ->
-                    case (focus y) of
-                            School -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-12"] [s] 
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-3"] [element inputViewKinderClass]
-                                            , mkColumn ["is-3"] [element inputViewKinder]
-                                            , mkColumn ["is-3"] [element inputViewKinderName]
-                                            , mkColumn ["is-12"] [element buttonAlt']
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                         --   , mkColumn ["is-12"] [element inputViewKinderClasssCopy]-- ffs
-                                            , mkColumn ["is-12"] [element kidsInGradeView]-- ffs
-                                            ]
-                            Kindergarten t -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
-                                            , mkColumn ["is-3"] [element inputViewKinder]
-                                            , mkColumn ["is-3"] [element inputViewKinderName]
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [s] 
-                                            ]
+    kidsInGradeView <- mkSection $ fmap 
+            (\c -> UI.div #+ 
+                [setNumber input' ident (_ident c) (_name c ++ ", " ++ _ident c)]
+            ) kidsInGrade 
 
     -- antal billeder
     dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles conf) :: UI (Either ShakeError [(FilePath, FilePath)])
@@ -300,16 +283,49 @@ mainSection _ _ config config' _ = do
                         ]
                     ]
 
+    let ss = case sessions of 
+            NoSessions -> UI.div 
+            Sessions y ->
+                    case (focus y) of
+                            School -> mkColumns ["is-multiline"] 
+                                            [ mkColumn ["is-12"] [s] 
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-3"] [element inputViewKinderClass]
+                                            , mkColumn ["is-3"] [element inputViewKinder]
+                                            , mkColumn ["is-3"] [element inputViewKinderName]
+                                            , mkColumn ["is-12"] [element buttonAlt']
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [element msg] 
+                                            , mkColumn ["is-12"] [element builtMsg]
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [element dumpSize]-- ffs
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [element inputViewKinderClasssCopy]-- ffs
+                                            , mkColumn ["is-12"] [element kidsInGradeView]-- ffs
+                                            ]
+                            Kindergarten t -> mkColumns ["is-multiline"] 
+                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
+                                            , mkColumn ["is-3"] [element inputViewKinder]
+                                            , mkColumn ["is-3"] [element inputViewKinderName]
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [s] 
+                                            ,  mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [element dumpSize]-- ff
+                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , mkColumn ["is-12"] [element msg] 
+                                            , mkColumn ["is-12"] [element builtMsg]
+                                            ]
+
+
 
     inputView2 <- mkSection $ 
                    [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-12"] [ss] 
-                        , mkColumn ["is-12"] [element msg] 
-                        , mkColumn ["is-12"] [element builtMsg]
                         ]
                     ]
 
-    UI.div #+ [ element inputView2, element dumpSize, element viewReset2]
+    UI.div #+ [ element inputView2, element viewReset2]
+
 
 
 mkReset :: MVar ShakeConfig -> UI (Element, Element)
@@ -317,6 +333,17 @@ mkReset config = do
     (button, view) <- mkButton "reset" "Reset konfiguration"
     on UI.click button $ \_ -> liftIO $ resetIt config
     return (button, view)
+
+
+setNumber :: Element -> IORef String -> String -> String -> UI Element
+setNumber input' ident tea s = do
+    (button, view) <- mkButton s s
+    on UI.click button $ \_ -> do 
+         liftIO $ writeIORef ident tea
+         set (attr "value") tea (element input')
+    return view
+
+
 
 
 resetIt :: MVar ShakeConfig -> IO ()
@@ -330,6 +357,7 @@ resetIt config =
         >> (withMVar config $ (\conf -> setDoneshooting conf NoDoneshooting))
         >> (withMVar config $ (\conf -> setBuilt' conf NoBuilt))
         >> (withMVar config $ (\conf -> setGrades conf NoGrades))
+        >> (withMVar config $ (\conf -> setGradeSelection conf NoSelection))
 
 mkBuild :: MVar ShakeConfig -> IORef String -> UI (Element, Element)
 mkBuild config idd = do
