@@ -253,15 +253,21 @@ mainSection _ _ config config' _ = do
         liftIO $ funci2 config' identKinder
     
 
-    locationFile <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
+    locationFile <- liftIO $ try $ withMVar config' $ (\conf -> getLocationFile conf) :: UI (Either ShakeError Location)
             -- kinda bad here could cause errorr
-    kidsInGrade <- case locationFile of 
-        NoLocation -> throw LocationConfigFileMissing
-        Location xxx -> do
-            liftIO $ withMVar config' $ (\conf -> do
-                val <- liftIO $ getGradeSelection conf
-                liftIO $ parsePhotographees xxx val)
 
+    kidsInGrade <- case locationFile of 
+        Left e -> return []
+        Right loc ->
+            case loc of 
+                NoLocation -> return [] 
+                Location xxx -> do
+                    liftIO $ withMVar config' $ (\conf -> do
+                        val <- liftIO $ try $ getGradeSelection conf :: IO (Either ShakeError GradeSelection)
+                        case val of
+                            Left e -> return []
+                            Right vv ->
+                                liftIO $ parsePhotographees xxx vv)
 
 
     kidsInGradeView <- mkSection $ fmap 

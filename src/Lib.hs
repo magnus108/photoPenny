@@ -97,11 +97,31 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 
 
 
+redoLayout2 :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> MVar () -> UI ()
+redoLayout2 w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLock = void $ do 
+    ehh <- liftIO $ forkIO $ do
+                    dump <- liftIO $ withMVar config'' $ (\conf -> getDump conf)
+                    withManager $ \mgr -> do
+                            case dump of
+                                    D.Dump x -> do
+                                            watchDirChan
+                                                    mgr
+                                                    x --this is less wrong than earlier
+                                                    (const True)
+                                                    dumpChan
+                                            forever $ threadDelay 1000000
+                                    D.NoDump -> do
+                                            return () --error "lol" -- return $ main c msgChan conf stateFile state 
+                        --- ok
+    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states'' config'' layoutLock
 
-redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> UI ()
-redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan = void $ do 
+    liftIO $ putMVar tid1 ehh
+    liftIO $ putMVar tid2 forkId
 
+    redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLock
 
+redoLayout :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> MVar () -> UI ()
+redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLock = void $ do 
     --wauw much dubcha
     importText <- liftIO $ Chan.newChan
     importTextPhotographer <- liftIO $ Chan.newChan
@@ -140,32 +160,15 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan = void $
     messageReceiverPhotographer <- liftIO $ forkIO $ receiveMessagesPhotographer w importTextPhotographer viewPhotographer
     messageReceiverSession <- liftIO $ forkIO $ receiveMessagesSession w importTextSession viewSession
 
-    ehh <- liftIO $ forkIO $ do
-                    dump <- liftIO $ withMVar config'' $ (\conf -> getDump conf)
-                    withManager $ \mgr -> do
-                            case dump of
-                                    D.Dump x -> do
-                                            watchDirChan
-                                                    mgr
-                                                    x --this is less wrong than earlier
-                                                    (const True)
-                                                    dumpChan
-                                            forever $ threadDelay 1000000
-                                    D.NoDump -> do
-                                            return () --error "lol" -- return $ main c msgChan conf stateFile state 
-                        --- ok
-    forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states'' config''
 
-    liftIO $ putMVar tid1 ehh
-    liftIO $ putMVar tid2 forkId
-
---    on UI.disconnect w $ const $ liftIO $ killThread ehh
+    liftIO $ putMVar layoutLock ()
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiver
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiverPhotographer 
 
     on UI.disconnect w $ const $ liftIO $ killThread messageReceiverSession 
+
 
 
 
@@ -194,30 +197,31 @@ receiveMessagesSession w msgs messageArea = do
           flushCallBuffer
 
 
-recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> IO ()
-recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan = void $ do 
+recevier  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> MVar () -> IO ()
+recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan layoutLock = void $ do 
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
+        liftIO $ takeMVar layoutLock
         liftIO $ withMVar tid1 $ (\t -> killThread t)
         liftIO $ withMVar tid2 $ (\t -> killThread t)
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
             gg <- liftIO $ newEmptyMVar
             gg2 <- liftIO $ newEmptyMVar
-            redoLayout w root stateFile config gg gg2 stateLock configLock dumpChan
+            redoLayout2 w root stateFile config gg gg2 stateLock configLock dumpChan layoutLock
 
 
-recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> IO ()
-recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock = void $ do
+
+recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> MVar () -> IO ()
+recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock layoutLock = void $ do
     messages <- Chan.getChanContents msgs
     forM_ messages $ \msg -> do
-        liftIO $ withMVar tid1 $ (\t -> killThread t)
+        liftIO $ takeMVar layoutLock
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
             gg <- liftIO $ newEmptyMVar
             gg2 <- liftIO $ newEmptyMVar
-            redoLayout w root stateFile config gg gg2 stateLock configLock msgs
-            liftIO $ withMVar tid2 $ (\t -> killThread t)
+            redoLayout w root stateFile config gg gg2 stateLock configLock msgs layoutLock
 
 
 -- eww
@@ -233,20 +237,22 @@ main config msgChan conf stateFile (States states) root w = do
     
     config' <- liftIO $ newMVar config
 
+    layoutLock <- liftIO $ newEmptyMVar
+
     --wauw
     dumpChan <- liftIO $ Chan.newChan
 
     case focus states of
-            Main -> starterScreen w root stateFile config states' config' ggtid1 ggtid2
-            _ -> redoLayout w root stateFile config ggtid1 ggtid2 states' config' dumpChan
+            Main -> starterScreen w root stateFile config states' config' ggtid1 ggtid2 layoutLock
+            _ -> redoLayout2 w root stateFile config ggtid1 ggtid2 states' config' dumpChan layoutLock
 
-    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states' config' dumpChan
+    eh <- liftIO $ forkIO $ recevier w root config stateFile msgChan ggtid1 ggtid2 states' config' dumpChan layoutLock
     on UI.disconnect w $ const $ liftIO $ killThread eh
 
 
 
-starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> MVar ShakeConfig -> MVar ThreadId -> MVar ThreadId -> UI ()
-starterScreen w root stateFile config states' config' tid1 tid2 = void $ do
+starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> MVar ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar () -> UI ()
+starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = void $ do
 
     dump <- dumpOverview root stateFile config config'
     dagsdato <- dagsdatoOverview root stateFile config config'
@@ -276,8 +282,10 @@ starterScreen w root stateFile config states' config' tid1 tid2 = void $ do
 
     t1 <- liftIO $ forkIO $ forever $ threadDelay 1000000
     t2 <- liftIO $ forkIO $ forever $ threadDelay 1000000
+
     liftIO $ putMVar tid1 t1
     liftIO $ putMVar tid2 t2
+    liftIO $ putMVar layoutLock ()
 
 
 
