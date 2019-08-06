@@ -127,8 +127,8 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLo
     importTextPhotographer <- liftIO $ Chan.newChan
     importTextSession <- liftIO $ Chan.newChan
 
-    (States statesa) <- liftIO $ readMVar states''
-    let views = statesa =>> viewState root stateFile config w importText importTextPhotographer importTextSession states'' config''
+    views <- liftIO $ withMVar states'' $ (\(States states) -> do
+            return $ states =>> viewState root stateFile config w importText importTextPhotographer importTextSession states'' config'')
 
 
     view <- focus views
@@ -202,13 +202,15 @@ recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan la
     messages <- liftIO $ getChanContents msgs
     forM_ messages $ \_ -> do 
         liftIO $ takeMVar layoutLock
-        liftIO $ withMVar tid1 $ (\t -> killThread t)
-        liftIO $ withMVar tid2 $ (\t -> killThread t)
+
+        tt1 <- liftIO $ takeMVar tid1 
+        liftIO $ killThread tt1
+        tt2 <- liftIO $ takeMVar tid2
+        liftIO $ killThread tt2
+
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do 
-            gg <- liftIO $ newEmptyMVar
-            gg2 <- liftIO $ newEmptyMVar
-            redoLayout2 w root stateFile config gg gg2 stateLock configLock dumpChan layoutLock
+            redoLayout2 w root stateFile config tid1 tid2 stateLock configLock dumpChan layoutLock
 
 
 
@@ -219,9 +221,7 @@ recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock layoutLock
         liftIO $ takeMVar layoutLock
         liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
         runUI w $ do
-            gg <- liftIO $ newEmptyMVar
-            gg2 <- liftIO $ newEmptyMVar
-            redoLayout w root stateFile config gg gg2 stateLock configLock msgs layoutLock
+            redoLayout w root stateFile config tid1 tid2 stateLock configLock msgs layoutLock
 
 
 -- eww
