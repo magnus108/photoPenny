@@ -197,7 +197,6 @@ mainSection _ _ config config' _ = do
                     button' <- if (not isBuilding) then return button else (element button) # set (attr "disabled") ""
                     
                     on UI.click button' $ \_ -> do
-                        liftIO $ putStrLn "ffgag"
                         _ <- liftIO $ withMVar config' $ (\conf -> setSession conf $ Sessions zipper )-- det her må man ik?
                         idd <- liftIO $ readIORef identKinder
                         clas <- liftIO $ readIORef identKinderClass

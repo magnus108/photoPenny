@@ -13,6 +13,7 @@ import Control.Monad.STM
 import State
 import Elements
 
+import Utils.Debounce
 import PhotoShake.ShakeConfig
 import qualified PhotoShake.Dump as D
 
@@ -217,11 +218,18 @@ recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan la
 recevier2  :: Window -> FilePath -> ShakeConfig -> FilePath -> EventChannel -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> MVar () -> IO ()
 recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock layoutLock = void $ do
     messages <- Chan.getChanContents msgs
-    forM_ messages $ \msg -> do
-        liftIO $ takeMVar layoutLock
-        liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
-        runUI w $ do
-            redoLayout w root stateFile config tid1 tid2 stateLock configLock msgs layoutLock
+
+    drawAgain <- mkDebounce defaultDebounceSettings
+                 { debounceAction = do 
+                        liftIO $ takeMVar layoutLock
+                        liftIO $ modifyMVar_ stateLock $ (\_ -> getStates root stateFile)
+                        runUI w $ do
+                            redoLayout w root stateFile config tid1 tid2 stateLock configLock msgs layoutLock
+                 , debounceFreq = 3000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    forM_ messages $ \_ -> drawAgain 
 
 
 -- eww
