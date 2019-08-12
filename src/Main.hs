@@ -325,15 +325,18 @@ mainSection _ _ config config' w = do
         idd <- liftIO $ readIORef identKinder
         clas <- liftIO $ readIORef identKinderClass
         name <- liftIO $ readIORef identKinderName
-        _ <- liftIO $ withMVar config' $ (\conf -> do
-                        locationFile <- getLocationFile conf
-                        case locationFile of 
-                            NoLocation -> return (Left LocationConfigFileMissing)
-                            Location xxx -> do
-                                liftIO $ try $ insertPhotographee xxx idd clas name
-                    )
-        liftIO $ modifyIORef identKinder (\x -> "SYS_" ++ x)
-        liftIO $ funci2 config' identKinder
+        case (idd /= "" || name /= "") of
+            True -> do
+                    _ <- liftIO $ withMVar config' $ (\conf -> do
+                                    locationFile <- getLocationFile conf
+                                    case locationFile of 
+                                        NoLocation -> return (Left LocationConfigFileMissing)
+                                        Location xxx -> do
+                                            liftIO $ try $ insertPhotographee xxx idd clas name
+                            )
+                    liftIO $ modifyIORef identKinder (\x -> "SYS_" ++ x)
+                    liftIO $ funci2 config' identKinder
+            False -> return ()
     
 
     locationFile <- liftIO $ try $ withMVar config' $ (\conf -> getLocationFile conf) :: UI (Either ShakeError Location)
