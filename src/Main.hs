@@ -5,6 +5,7 @@ module Main
 import Elements
 import PhotoShake.Dagsdato
 import Control.Concurrent.MVar
+import Data.List
 
 import Data.List
 
@@ -35,8 +36,8 @@ import Utils.Comonad
 
 
 
-mainSection :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI Element
-mainSection _ _ config config' _ = do
+mainSection :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI (Element, Element)
+mainSection _ _ config config' w = do
 
     built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
 
@@ -46,19 +47,69 @@ mainSection _ _ config config' _ = do
                         Building _ _ -> True
                         Built _ _ -> False
                         
-    ident <- liftIO $ newIORef ""
-    (_, buildView) <- mkBuild config' ident
-
-    input <- UI.input #. "input" # set UI.type_ "text" 
-    input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") ""
+    (Idd ident) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
     
+
+    (_, buildView) <- mkBuild config' (Idd ident)
+
+    input <- UI.input #. "input" # set UI.type_ "text" # set (attr "value") ident
+    input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
 
     inputView <- UI.div #. "field" #+
         [ UI.label #. "label has-text-info" # set UI.text "Nummer"
         , UI.div #. "control" #+ [ element input' ] 
         ]
 
-    on UI.keyup input $ \_ -> liftIO . writeIORef ident =<< get value input
+    val <- get value input
+    idenName <- liftIO $ do
+        liftIO $ withMVar config' $ (\conf -> do
+                setIdSelection conf (Idd val))
+        locationFile <- try $ withMVar config' $ (\conf -> do
+                getLocationFile conf 
+                ) :: IO (Either ShakeError Location)
+        case locationFile of 
+            Left e -> newIORef ""
+            Right loc -> do
+                case loc of
+                    NoLocation -> newIORef ""
+                    Location xxx -> do
+                            liftIO $ withMVar config' $ (\conf -> do
+                                    what <- findPhotographee3 xxx val
+                                    case what of
+                                        Nothing -> newIORef ""
+                                        Just iddd ->  newIORef (_name iddd))
+
+    on UI.keyup input $ \_ -> do
+        val <- get value input
+        liftIO $ withMVar config' $ (\conf -> do
+                setIdSelection conf (Idd val))
+        locationFile <- liftIO $ try $ withMVar config' $ (\conf -> do
+                getLocationFile conf 
+                ) :: UI (Either ShakeError Location)
+        case locationFile of 
+            Left e -> return ()
+            Right loc -> do
+                case loc of
+                    NoLocation -> return () --return (Left LocationConfigFileMissing)
+                    Location xxx -> do
+                            liftIO $ withMVar config' $ (\conf -> do
+                                    what <- findPhotographee3 xxx val
+                                    case what of
+                                        Nothing -> do
+                                            waba <- readIORef idenName
+                                            case waba of
+                                                "" -> return ()
+                                                zzzzz -> do
+                                                    hack <- getDagsdato conf
+                                                    setDagsdato conf hack
+                                                    return ()
+                                        Just iddd -> do 
+                                            hack <- getDagsdato conf
+                                            setDagsdato conf hack
+
+                                            modifyIORef idenName (\x -> (_name iddd))
+                                            return ())
+                
 
 
 
@@ -87,9 +138,12 @@ mainSection _ _ config config' _ = do
     sessions <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
 
 
+    nameIden <- liftIO $ readIORef idenName
+
     viewSchool <- mkColumns ["is-multiline"]
                 [ mkColumn ["is-12"] [element inputView]
                 , mkColumn ["is-12"] [element buildView]
+                , if nameIden == "" then mkColumn ["is-12"] [string ""] else mkColumn ["is-12"] [string ("Navn: " ++ nameIden)]
                 ]
 
     identKinder <- liftIO $ newIORef ""
@@ -131,7 +185,22 @@ mainSection _ _ config config' _ = do
                                 ]
                         ]
             Grades zipper -> do
-                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                    let toto = (zipper =>> 
+                                    (\z -> do
+                                        opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
+                                        opt' <- if (z == zipper) then
+                                                set (UI.attr "selected") "" (element opt)
+                                            else
+                                                return opt
+                                        return (focus z, opt')
+                                    )
+                            )
+
+                    jada <- sequence toto
+
+                    let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
+
+                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
                         [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"
@@ -143,7 +212,7 @@ mainSection _ _ config config' _ = do
                         case xxxx of
                             Nothing -> error "this is bad"
                             Just n -> do
-                                let val = toList zipper !! n
+                                let val = (sort $ toList zipper) !! n
                                 liftIO $  writeIORef identKinderClass val
 
                     return inputViewKinderClass'
@@ -160,7 +229,22 @@ mainSection _ _ config config' _ = do
                                 ]
                         ]
             Grades zipper -> do
-                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                    let toto = (zipper =>> 
+                                    (\z -> do
+                                        opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
+                                        opt' <- if (z == zipper) then
+                                                set (UI.attr "selected") "" (element opt)
+                                            else
+                                                return opt
+                                        return (focus z, opt')
+                                    )
+                            )
+
+                    jada <- sequence toto
+
+                    let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
+
+                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
                         [ UI.label #. "label has-text-info" # set UI.text "Find elev"
@@ -171,13 +255,13 @@ mainSection _ _ config config' _ = do
                             case xxxx of
                                 Nothing -> error "this is bad"
                                 Just n -> do
-                                    let val = toList zipper !! n
+                                    let val = (sort $ toList zipper) !! n
                                     if gradeSelection == (GradeSelection val) then
                                             return ()
                                     else
                                         liftIO $ withMVar config' $ (\conf -> do
                                                 liftIO $ setGradeSelection conf (GradeSelection val)
-                                                liftIO $ setGrades conf (Grades $ ListZipper [] val (toList zipper))
+                                                liftIO $ setGrades conf (Grades $ ListZipper [] val (sort $ toList zipper))
                                         )
         
 
@@ -271,8 +355,8 @@ mainSection _ _ config config' _ = do
 
     kidsInGradeView <- mkSection $ fmap 
             (\c -> UI.div #+ 
-                [setNumber input' ident (_ident c) (_name c ++ ", " ++ _ident c)]
-            ) kidsInGrade 
+                [setNumber config' input' (Idd ident) (_ident c) (_name c ++ ", " ++ _ident c)]
+            ) $ sortBy (\x y -> compare (_name x) (_name y)) kidsInGrade 
 
     -- antal billeder
     dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles conf) :: UI (Either ShakeError [(FilePath, FilePath)])
@@ -329,7 +413,9 @@ mainSection _ _ config config' _ = do
                         ]
                     ]
 
-    UI.div #+ [ element inputView2, element viewReset2]
+    contents <- UI.div #+ [ element inputView2, element viewReset2]
+    
+    return (contents, input)
 
 
 
@@ -340,12 +426,15 @@ mkReset config = do
     return (button, view)
 
 
-setNumber :: Element -> IORef String -> String -> String -> UI Element
-setNumber input' ident tea s = do
+setNumber :: MVar ShakeConfig -> Element -> Idd -> String -> String -> UI Element
+setNumber config' input' ident tea s = do
     (button, view) <- mkButton s s
     on UI.click button $ \_ -> do 
-         liftIO $ writeIORef ident tea
-         set (attr "value") tea (element input')
+        liftIO $ withMVar config' $ (\conf -> do
+                liftIO $ setIdSelection conf (Idd tea)
+                hack <- liftIO $ getDagsdato conf
+                setDagsdato conf hack
+                )
     return view
 
 
@@ -364,7 +453,7 @@ resetIt config =
         >> (withMVar config $ (\conf -> setGrades conf NoGrades))
         >> (withMVar config $ (\conf -> setGradeSelection conf NoSelection))
 
-mkBuild :: MVar ShakeConfig -> IORef String -> UI (Element, Element)
+mkBuild :: MVar ShakeConfig -> Idd -> UI (Element, Element)
 mkBuild config idd = do
     --- with pattern
     (button, view) <- mkButton "mover" "Flyt filer"
@@ -372,10 +461,9 @@ mkBuild config idd = do
     return (button, view)
 
 
-funci :: MVar ShakeConfig -> (IORef String) -> IO ()
-funci config idd = do
+funci :: MVar ShakeConfig -> Idd -> IO ()
+funci config (Idd idd2) = do
     --have to look this up from config
-    idd2 <- readIORef idd
     locationFile <- withMVar config $ (\conf -> getLocationFile conf)
     -- kinda bad here
     -- kinda bad here could cause errorr

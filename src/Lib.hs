@@ -74,27 +74,43 @@ setup port root conf watchDir' stateFile = do
  
 
 
-viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> Chan String -> Chan String -> MVar States -> MVar ShakeConfig -> ListZipper State -> UI Element
+viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> Chan String -> Chan String -> MVar States -> MVar ShakeConfig -> ListZipper State -> UI (Element, Element)
 viewState root stateFile config w chan chanPhotographer chanSession states'' config'' states = do
+    tmp <- UI.div
     case (focus states) of 
+            Dump -> do
+                c <- dumpSection root stateFile states'' states config config''
+                return (c,tmp)
 
-            Dump -> dumpSection root stateFile states'' states config config''
+            Dagsdato -> do
+                c <- dagsdatoSection root stateFile states'' states config  config''
+                return (c,tmp)
 
-            Dagsdato -> dagsdatoSection root stateFile states'' states config  config''
+            Photographer -> do 
+                c <- photographerSection root stateFile states'' states config config'' chanPhotographer
+                return (c,tmp)
 
-            Photographer -> photographerSection root stateFile states'' states config config'' chanPhotographer
+            Doneshooting -> do
+                c <- doneshootingSection root stateFile states'' states config config''
+                return (c,tmp)
 
-            Doneshooting -> doneshootingSection root stateFile states'' states config config''
+            Session -> do
+                c <- sessionSection root stateFile states'' states config config'' chanSession
+                return (c,tmp)
 
-            Session -> sessionSection root stateFile states'' states config config'' chanSession
+            Shooting -> do
+                c <- shootingSection root stateFile states'' states config config'' chan
+                return (c,tmp)
 
-            Shooting -> shootingSection root stateFile states'' states config config'' chan
-
-            Location -> locationsSection root stateFile states'' states config config'' 
+            Location -> do
+                c <- locationsSection root stateFile states'' states config config'' 
+                return (c,tmp)
 
             Main -> mainSection root stateFile config config'' w
 
-            Control -> controlSection root states'' config'' 
+            Control -> do
+                c <- controlSection root states'' config'' 
+                return (c,tmp)
 
 
 
@@ -153,8 +169,11 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLo
     viewSession <- mkSection []
 
     --suchbads
-    getBody w # set children [ view'', view, viewt, viewPhotographer, viewSession]
+    getBody w # set children [ view'', (fst view), viewt, viewPhotographer, viewSession]
 
+    lol <- get value $ snd view
+    UI.setFocus $ snd view
+    UI.set value lol (element $ snd view)
     --wauw 
 
     messageReceiver <- liftIO $ forkIO $ receiveMessages w importText viewt

@@ -7,6 +7,8 @@ module Locations
 import Control.Monad
 import Control.Concurrent.MVar
 
+import Data.List
+
 import Control.Exception
 import Elements
 import PhotoShake.Built
@@ -22,6 +24,7 @@ import PhotoShake.Location
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core hiding (empty)
 
+import Utils.Comonad
 import Utils.ListZipper
 import State (State, States(..), setStates)
 
@@ -101,7 +104,22 @@ locationsSection root stateFile states'' states config config' = do
                                         ]
                                 ]
                     Grades zipper -> do
-                            inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                            let toto = (zipper =>> 
+                                            (\z -> do
+                                                opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
+                                                opt' <- if (z == zipper) then
+                                                        set (UI.attr "selected") "" (element opt)
+                                                    else
+                                                        return opt
+                                                return (focus z, opt')
+                                            )
+                                    )
+
+                            jada <- sequence toto
+
+                            let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
+
+                            inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
                             inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                             inputViewKinderClass' <- UI.div #. "field" #+
                                 [ UI.label #. "label has-text-info" # set UI.text "Stue"

@@ -3,6 +3,8 @@ module Control
     ( controlSection
     ) where
 
+import Data.List
+
 import Control.Concurrent.MVar
 
 import qualified Control.Concurrent.Chan as Chan
@@ -24,6 +26,7 @@ import PhotoShake.Built
 
 import State (State, States(..), setStates)
 
+import Control.Monad
 
 controlSection :: FilePath -> MVar States -> MVar ShakeConfig ->  UI Element
 controlSection root states'' config'  = do
@@ -46,7 +49,23 @@ controlSection root states'' config'  = do
                                 ]
                         ]
             Grades zipper -> do
-                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ (fmap (\x -> UI.option # set (attr "value") x # set text x) (toList zipper))
+                    let toto = (zipper =>> 
+                                    (\z -> do
+                                        opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
+                                        opt' <- if (z == zipper) then
+                                                set (UI.attr "selected") "" (element opt)
+                                            else
+                                                return opt
+                                        return (focus z, opt')
+                                    )
+                            )
+
+                    jada <- sequence toto
+
+                    let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
+
+                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
+
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
                         [ UI.label #. "label has-text-info" # set UI.text "Find elev"
@@ -57,13 +76,13 @@ controlSection root states'' config'  = do
                             case xxxx of
                                 Nothing -> error "this is bad"
                                 Just n -> do
-                                    let val = toList zipper !! n
+                                    let val = (sort $ toList zipper) !! n
                                     if gradeSelection == (GradeSelection val) then
                                             return ()
                                     else
                                         liftIO $ withMVar config' $ (\conf -> do
                                                 liftIO $ setGradeSelection conf (GradeSelection val)
-                                                liftIO $ setGrades conf (Grades $ ListZipper [] val (toList zipper))
+                                                liftIO $ setGrades conf (Grades $ ListZipper [] val (sort $ toList zipper))
                                         )
         
 
@@ -82,6 +101,12 @@ controlSection root states'' config'  = do
                                 mkSection [ mkColumns ["is-multiline"]
                                         [ mkColumn ["is-12"] [ mkLabel "Control" ]
                                         , mkColumn ["is-12"] [ string "xmp tjek er ok"]
+                                        ]
+                                    ]
+                            Empty ->
+                                mkSection [ mkColumns ["is-multiline"]
+                                        [ mkColumn ["is-12"] [ mkLabel "Control" ]
+                                        , mkColumn ["is-12"] [ string "Ingen xmp"]
                                         ]
                                     ]
                             Errors xs -> do
