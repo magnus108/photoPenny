@@ -113,26 +113,26 @@ mainSection _ _ config config' w = do
 
 
 
-    builtMsg <- UI.p # set text (case built of
-                                    NoBuilt -> ""
-                                    NoFind s -> s
-                                    Built _ s -> s
-                                    Building _ s -> s)
+    builtMsg <- case built of
+                        NoBuilt -> UI.div
+                        NoFind s -> mkColumn ["is-12"] [UI.p # set text s]
+                        Built _ s ->mkColumn ["is-12"] [ UI.p # set text s]
+                        Building _ s -> mkColumn ["is-12"] [UI.p # set text s]
 
-    msg <- UI.p # set text (case built of
-                                    NoBuilt -> ""
-                                    NoFind _ -> ""
-                                    Built p _ -> _name p
-                                    Building p _ -> _name p)
+    msg <- case built of
+                    NoBuilt -> UI.div 
+                    NoFind _ -> UI.div
+                    Built p _ -> mkColumn ["is-12"] [UI.p # set text (_name p)]
+                    Building p _ -> mkColumn ["is-12"] [UI.p # set text (_name p)]
 
 
 
-    (_, viewReset)<- mkReset config'
+    --(_, viewReset)<- mkReset config'
 
-    viewReset2 <- mkSection $ 
-                    [ mkColumns ["is-multiline"]
-                        [ mkColumn ["is-4"] [element viewReset] ]
-                    ]
+    --viewReset2 <- mkSection $ 
+      --              [ mkColumns ["is-multiline"]
+        --                [ mkColumn ["is-4"] [element viewReset] ]
+          --          ]
     
 
     sessions <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
@@ -143,7 +143,7 @@ mainSection _ _ config config' w = do
     viewSchool <- mkColumns ["is-multiline"]
                 [ mkColumn ["is-12"] [element inputView]
                 , mkColumn ["is-12"] [element buildView]
-                , if nameIden == "" then mkColumn ["is-12"] [string ""] else mkColumn ["is-12"] [string ("Navn: " ++ nameIden)]
+                , if nameIden == "" then UI.div else mkColumn ["is-12"] [UI.p #. "is-size-3" #+ [string ("Navn: " ++ nameIden)]]
                 ]
 
     identKinder <- liftIO $ newIORef ""
@@ -356,7 +356,7 @@ mainSection _ _ config config' w = do
                                 liftIO $ parsePhotographees xxx vv)
 
 
-    kidsInGradeView <- mkSection $ fmap 
+    kidsInGradeView <- mkColumn ["is-12"] $ fmap 
             (\c -> UI.div #+ 
                 [setNumber config' input' (Idd ident) (_ident c) (_name c ++ ", " ++ _ident c)]
             ) $ sortBy (\x y -> compare (_name x) (_name y)) kidsInGrade 
@@ -368,7 +368,7 @@ mainSection _ _ config config' w = do
             Right x -> show $ length $ fmap fst x
 
     label <- mkLabel "Antal billeder i dump:"
-    dumpSize <- mkSection 
+    dumpSize <- mkColumn ["is-12"] 
                     [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-12"] [ element label ]
                         , mkColumn ["is-12"] [ UI.string dumps' #. "is-size-1 has-text-danger has-text-weight-bold" ]
@@ -381,31 +381,25 @@ mainSection _ _ config config' w = do
                     case (focus y) of
                             School -> mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-12"] [s] 
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
+                                            , element msg
+                                            , element builtMsg
+                                            , element dumpSize
                                             , mkColumn ["is-3"] [element inputViewKinderClass]
                                             , mkColumn ["is-3"] [element inputViewKinder]
                                             , mkColumn ["is-3"] [element inputViewKinderName]
                                             , mkColumn ["is-12"] [element buttonAlt']
                                             , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [element msg] 
-                                            , mkColumn ["is-12"] [element builtMsg]
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [element dumpSize]-- ffs
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [element inputViewKinderClasssCopy]-- ffs
-                                            , mkColumn ["is-12"] [element kidsInGradeView]-- ffs
+                                            , mkColumn ["is-9"] [element inputViewKinderClasssCopy]-- ffs
+                                            , element kidsInGradeView
                                             ]
                             Kindergarten t -> mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-3"] [element inputViewKinderClass]
                                             , mkColumn ["is-3"] [element inputViewKinder]
                                             , mkColumn ["is-3"] [element inputViewKinderName]
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
                                             , mkColumn ["is-12"] [s] 
-                                            ,  mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [element dumpSize]-- ff
-                                            , mkColumn ["is-12"] [UI.br]-- ffs
-                                            , mkColumn ["is-12"] [element msg] 
-                                            , mkColumn ["is-12"] [element builtMsg]
+                                            , element dumpSize
+                                            , element msg
+                                            , element builtMsg
                                             ]
 
 
@@ -416,7 +410,7 @@ mainSection _ _ config config' w = do
                         ]
                     ]
 
-    contents <- UI.div #+ [ element inputView2, element viewReset2]
+    contents <- UI.div #+ [ element inputView2] --, element viewReset2]
     
     return (contents, input)
 
