@@ -6,6 +6,7 @@ import Elements
 import PhotoShake.Dagsdato
 import Control.Concurrent.MVar
 import Data.List
+import Control.Monad
 
 import Data.List
 
@@ -52,13 +53,18 @@ mainSection _ _ config config' w = do
 
     (_, buildView) <- mkBuild config' (Idd ident)
 
+
     input <- UI.input #. "input" # set UI.type_ "text" # set (attr "value") ident
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
+
 
     inputView <- UI.div #. "field" #+
         [ UI.label #. "label has-text-info" # set UI.text "Nummer"
         , UI.div #. "control" #+ [ element input' ] 
         ]
+
+    on UI.keydown inputView $ \keycode -> when (keycode == 13) $ do
+        liftIO $ funci config' (Idd ident)
 
     val <- get value input
     idenName <- liftIO $ do

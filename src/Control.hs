@@ -113,9 +113,9 @@ controlSection root states'' config'  = do
                                 contets <- mapM (\(sys, antal, five, one) -> 
                                      mkSection [ mkColumns ["is-multiline"]
                                             [ mkColumn ["is-12"] [ mkLabel sys ]
-                                            , mkColumn ["is-12"] [ string (if antal then "antal xmp ok" else "antal xmp ikke ok")]
-                                            , mkColumn ["is-12"] [ string (if five then "antal 5 stjerner ok" else "antal 5 stjerner ikke ok")]
-                                            , mkColumn ["is-12"] [ string (if one then "antal 1 stjerner ok" else "antal 1 stjerner ikke ok")]
+                                            , mkColumn ["is-12"] [ if antal then UI.p #. "has-text-success" #+ [string "antal xmp ok"] else UI.p #. "has-text-danger" #+ [string "antal xmp ikke ok"]]
+                                            , mkColumn ["is-12"] [ if five then UI.p #. "has-text-success" #+ [string "antal 5 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 5 stjerner ikke ok"]]
+                                            , mkColumn ["is-12"] [ if one then UI.p #. "has-text-success" #+ [string "antal 1 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 1 stjerner ikke ok"]]
                                             ]
                                         ]
                                     ) xs
