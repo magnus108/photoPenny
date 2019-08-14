@@ -48,23 +48,27 @@ mainSection _ _ config config' w = do
                         Building _ _ -> True
                         Built _ _ -> False
                         
-    (Idd ident) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
     
 
-    (_, buildView) <- mkBuild config' (Idd ident)
+    (_, buildView) <- mkBuild config'
 
+
+    (Idd ident) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
 
     input <- UI.input #. "input" # set UI.type_ "text" # set (attr "value") ident
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
 
 
     inputView <- UI.div #. "field" #+
-        [ UI.label #. "label has-text-info" # set UI.text "Nummer"
+        [ UI.label #. "label has-text-info" # set UI.text "Foto Id"
         , UI.div #. "control" #+ [ element input' ] 
         ]
 
     on UI.keydown inputView $ \keycode -> when (keycode == 13) $ do
-        liftIO $ funci config' (Idd ident)
+        (Idd ident2) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
+        liftIO $ withMVar config' $ (\conf -> do
+                setIdSelection conf (Idd ""))
+        liftIO $ funci config' (Idd ident2)
 
     val <- get value input
     idenName <- liftIO $ do
@@ -364,7 +368,7 @@ mainSection _ _ config config' w = do
 
     kidsInGradeView <- mkColumn ["is-12"] $ fmap 
             (\c -> UI.div #+ 
-                [setNumber config' input' (Idd ident) (_ident c) (_name c ++ ", " ++ _ident c)]
+                [setNumber config' input' (_ident c) (_name c ++ ", " ++ _ident c)]
             ) $ sortBy (\x y -> compare (_name x) (_name y)) kidsInGrade 
 
     -- antal billeder
@@ -429,8 +433,8 @@ mkReset config = do
     return (button, view)
 
 
-setNumber :: MVar ShakeConfig -> Element -> Idd -> String -> String -> UI Element
-setNumber config' input' ident tea s = do
+setNumber :: MVar ShakeConfig -> Element -> String -> String -> UI Element
+setNumber config' input' tea s = do
     (button, view) <- mkButton s s
     on UI.click button $ \_ -> do 
         liftIO $ withMVar config' $ (\conf -> do
@@ -456,11 +460,13 @@ resetIt config =
         >> (withMVar config $ (\conf -> setGrades conf NoGrades))
         >> (withMVar config $ (\conf -> setGradeSelection conf NoSelection))
 
-mkBuild :: MVar ShakeConfig -> Idd -> UI (Element, Element)
-mkBuild config idd = do
+mkBuild :: MVar ShakeConfig -> UI (Element, Element)
+mkBuild config = do
     --- with pattern
     (button, view) <- mkButton "mover" "Flyt filer"
-    on UI.click button $ \_ -> liftIO $ funci config idd
+    on UI.click button $ \_ -> do
+        idd <- liftIO $ withMVar config $ (\conf -> getIdSelection conf)
+        liftIO $ funci config idd
     return (button, view)
 
 

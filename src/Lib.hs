@@ -31,6 +31,7 @@ import Locations
 import Control
 
 
+import PhotoShake.Photographee
 import Control.Monad 
 
 import Control.Exception
@@ -171,9 +172,10 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLo
     --suchbads
     getBody w # set children [ view'', (fst view), viewt, viewPhotographer, viewSession]
 
-    lol <- get value $ snd view
+    --lol <- get value $ snd view
+    (Idd ident) <- liftIO $ withMVar config'' $ (\conf -> getIdSelection conf)
     UI.setFocus $ snd view
-    UI.set value lol (element $ snd view)
+    UI.set value ident (element $ snd view)
     --wauw 
 
     messageReceiver <- liftIO $ forkIO $ receiveMessages w importText viewt
