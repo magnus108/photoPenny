@@ -50,14 +50,15 @@ mainSection _ _ config config' w = do
                         
     
 
-    (_, buildView) <- mkBuild config'
+    (builderButton, buildView) <- mkBuild config'
+    
 
 
-    (Idd ident) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
 
-    input <- UI.input #. "input" # set UI.type_ "text" # set (attr "value") ident
+    (Idd identi) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
+
+    input <- UI.input #. "input" # set UI.type_ "text" # set (attr "value") identi
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
-
 
     inputView <- UI.div #. "field" #+
         [ UI.label #. "label has-text-info" # set UI.text "Foto Id"
@@ -65,15 +66,13 @@ mainSection _ _ config config' w = do
         ]
 
     on UI.keydown inputView $ \keycode -> when (keycode == 13) $ do
-        (Idd ident2) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
-        liftIO $ withMVar config' $ (\conf -> do
-                setIdSelection conf (Idd ""))
-        liftIO $ funci config' (Idd ident2)
+        UI.setFocus (builderButton) 
+        runFunction $ ffi "$('#builderButton').trigger('click')"
+        return ()
 
-    val <- get value input
+    (Idd val) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
+
     idenName <- liftIO $ do
-        liftIO $ withMVar config' $ (\conf -> do
-                setIdSelection conf (Idd val))
         locationFile <- try $ withMVar config' $ (\conf -> do
                 getLocationFile conf 
                 ) :: IO (Either ShakeError Location)
@@ -464,9 +463,13 @@ mkBuild :: MVar ShakeConfig -> UI (Element, Element)
 mkBuild config = do
     --- with pattern
     (button, view) <- mkButton "mover" "Flyt filer"
+    set (attr "id") "builderButton" (element button)
     on UI.click button $ \_ -> do
-        idd <- liftIO $ withMVar config $ (\conf -> getIdSelection conf)
-        liftIO $ funci config idd
+        (Idd idd) <- liftIO $ withMVar config $ (\conf -> getIdSelection conf)
+        liftIO $ withMVar config $ (\conf -> setIdSelection conf (Idd ""))
+        case (idd == "" ) of
+            False -> liftIO $ funci config (Idd idd)
+            True -> return ()
     return (button, view)
 
 
