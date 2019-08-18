@@ -98,7 +98,7 @@ locationsSection root stateFile states'' states config config' = do
             insertedMsg <- case gradesr of 
                     NoGrades -> do
                         UI.div #. "field" #+
-                                [ UI.label #. "label has-text-info" # set UI.text "Ingen stuer/klasser"
+                                [ UI.label #. "label has-text-dark" # set UI.text "Ingen stuer/klasser"
                                 , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                         [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                         ]
@@ -122,7 +122,7 @@ locationsSection root stateFile states'' states config config' = do
                             inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
                             inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                             inputViewKinderClass' <- UI.div #. "field" #+
-                                [ UI.label #. "label has-text-info" # set UI.text "Stue"
+                                [ UI.label #. "label has-text-dark" # set UI.text "Stue"
                                 , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
                                 ]
 
@@ -141,7 +141,7 @@ locationsSection root stateFile states'' states config config' = do
             (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
 
             inputViewGrade <- UI.div #. "field" #+
-                [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"
+                [ UI.label #. "label has-text-dark" # set UI.text "Stue/Klasser"
                 , UI.div #. "control" #+ [ element gradeInput' ] 
                 , UI.br --bads
                 , UI.div #. "buttons has-addons" #+ [element gradeInsert, element gradeDelete]

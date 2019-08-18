@@ -43,7 +43,7 @@ controlSection root states'' config'  = do
     inputViewKinderClasssCopy <- case grades of 
             NoGrades -> do
                 UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Find elev. Der er ingen stuer/klasser"
+                        [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen stuer/klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                 [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                 ]
@@ -68,7 +68,7 @@ controlSection root states'' config'  = do
 
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Find elev"
+                        [ UI.label #. "label has-text-dark" # set UI.text "Find elev"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
                         ]
 

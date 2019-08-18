@@ -153,7 +153,7 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLo
     buttons <- liftIO $ withMVar states'' $ (\(States states) -> return $ states =>> (\states' -> do
                         button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
                         button' <- if (states' == states) then
-                                set (UI.attr  "class") "button is-info is-selected" (element button)
+                                set (UI.attr  "class") "button is-dark is-selected" (element button)
                             else
                                 return button
 

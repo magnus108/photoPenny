@@ -61,7 +61,7 @@ mainSection _ _ config config' w = do
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
 
     inputView <- UI.div #. "field" #+
-        [ UI.label #. "label has-text-info" # set UI.text "Foto Id"
+        [ UI.label #. "label has-text-dark" # set UI.text "Foto Id"
         , UI.div #. "control" #+ [ element input' ] 
         ]
 
@@ -159,7 +159,7 @@ mainSection _ _ config config' w = do
     inputKinder <- UI.input #. "input" # set UI.type_ "text" 
     inputKinder' <- if (not isBuilding) then return inputKinder else (element inputKinder) # set (attr "disabled") ""
     inputViewKinder <- UI.div #. "field" #+
-        [ UI.label #. "label has-text-info" # set UI.text "Nummer"
+        [ UI.label #. "label has-text-dark" # set UI.text "Nummer"
         , UI.div #. "control" #+ [ element inputKinder' ] 
         ]
 
@@ -169,7 +169,7 @@ mainSection _ _ config config' w = do
     inputKinderName <- UI.input #. "input" # set UI.type_ "text" 
     inputKinderName' <- if (not isBuilding) then return inputKinderName else (element inputKinderName) # set (attr "disabled") ""
     inputViewKinderName <- UI.div #. "field" #+
-        [ UI.label #. "label has-text-info" # set UI.text "Navn"
+        [ UI.label #. "label has-text-dark" # set UI.text "Navn"
         , UI.div #. "control" #+ [ element inputKinderName' ] 
         ]
 
@@ -188,7 +188,7 @@ mainSection _ _ config config' w = do
     inputViewKinderClass <- case grades of 
             NoGrades -> do
                 UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Ingen stuer/klasser"
+                        [ UI.label #. "label has-text-dark" # set UI.text "Ingen stuer/klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                 [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                 ]
@@ -212,7 +212,7 @@ mainSection _ _ config config' w = do
                     inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Stue/Klasser"
+                        [ UI.label #. "label has-text-dark" # set UI.text "Stue/Klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
                         ]
 
@@ -232,7 +232,7 @@ mainSection _ _ config config' w = do
     inputViewKinderClasssCopy <- case grades of 
             NoGrades -> do
                 UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Find elev. Der er ingen stuer/klasser"
+                        [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen stuer/klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                 [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                 ]
@@ -256,7 +256,7 @@ mainSection _ _ config config' w = do
                     inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
                     inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
                     inputViewKinderClass' <- UI.div #. "field" #+
-                        [ UI.label #. "label has-text-info" # set UI.text "Find elev"
+                        [ UI.label #. "label has-text-dark" # set UI.text "Find elev"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
                         ]
 

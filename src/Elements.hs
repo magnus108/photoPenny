@@ -46,7 +46,7 @@ mkButton idd x = do
 
 mkLabel :: String -> UI Element
 mkLabel s =
-    UI.p #. "has-text-info has-text-weight-bold" # set UI.text s
+    UI.p #. "has-text-dark has-text-weight-bold" # set UI.text s
 
 
 mkColumns :: [String] -> [UI Element] -> UI Element
@@ -63,7 +63,7 @@ mkInput :: String -> UI (Element, Element)
 mkInput s = do
     input <- UI.input #. "input" # set UI.type_ "text" 
     view <- UI.div #. "field" #+
-        [ UI.label #. "label has-text-info" # set UI.text s
+        [ UI.label #. "label has-text-dark" # set UI.text s
         , UI.div #. "control" #+ [ element input ] 
         ]
     return (input, view)
