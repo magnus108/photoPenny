@@ -16,7 +16,6 @@ import Text.Show
 import Data.Maybe
 import Data.Eq
 import GHC.Generics
-import System.IO (IO)
 import Control.Monad
     
 import Data.Aeson
@@ -25,7 +24,7 @@ import System.FilePath
 
 import Utils.ListZipper
 
-import Data.ByteString.Lazy (readFile, writeFile, length)
+import Utils.Actions
 
 data State
     = Dump
@@ -43,14 +42,14 @@ data States = States (ListZipper State)
     deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 
-getStates :: FilePath -> FilePath -> IO States
+getStates :: FilePath -> FilePath -> TerminalM States
 getStates root stateFile = do
-        let filepath = root </> stateFile
-        state <- readFile filepath
-        return (fromJust (decode state))
+    let filepath = root </> stateFile
+    state <- readFile filepath
+    return (fromJust (decode state))
 
 
-setStates:: FilePath -> FilePath -> States -> IO ()
+setStates:: FilePath -> FilePath -> States -> TerminalM ()
 setStates root stateFile states = do
     let filepath = root </> stateFile
     writeFile filepath (encode states)

@@ -26,6 +26,7 @@ import Graphics.UI.Threepenny.Core hiding (empty)
 
 import Utils.Comonad
 import Utils.ListZipper
+import Utils.Actions (interpret)
 import State (State, States(..), setStates)
 
 locationsOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
@@ -77,7 +78,7 @@ locationsSection root stateFile states'' states config config' = do
                                 Building _ _ -> True
                                 Built _ _ -> False
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates root stateFile (States (forward states)))
             
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 

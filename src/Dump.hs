@@ -18,6 +18,8 @@ import State (State, States(..), setStates)
 
 import Control.Concurrent.MVar
 
+import Utils.Actions
+
 dumpOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
 dumpOverview stateFile states config config' = do
     x <- liftIO $ withMVar config' $ (\conf -> getDump conf)
@@ -55,7 +57,7 @@ dumpSection root stateFile states'' states config config' = do
 
         Dump y -> do
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> setStates root stateFile (States (forward states)))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates root stateFile (States (forward states)))
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
