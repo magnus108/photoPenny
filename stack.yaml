@@ -39,7 +39,7 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- archive: https://github.com/magnus108/photoShake/archive/master.zip#1232211111
+- archive: https://github.com/magnus108/photoShake/archive/master.zip#123221111111
 - jmacro-0.6.16
 - strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c
 

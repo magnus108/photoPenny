@@ -6,18 +6,18 @@
 packages:
 - completed:
     size: 33305
-    url: https://github.com/magnus108/photoShake/archive/master.zip#1232211111
+    url: https://github.com/magnus108/photoShake/archive/master.zip#123221111111
     cabal-file:
       size: 3840
       sha256: 270c4ad75201beba33c5ac93715342ee7a5428346cd9559290112f3218e0ab60
     name: photoShake
     version: 0.1.0.0
-    sha256: c0f2e48f43cc1295e5e1f6d5521d16306d397e5f2e458c1f1f939c05ec8e63ee
+    sha256: 4678d495bb8d927c4118e9dcb827beae855887f7e1bdd8184bc2a5942f6fb0f8
     pantry-tree:
       size: 4354
-      sha256: 75a281cb87964746e3ade04938af3b58d91f114e12526960d5fdc87f77f402c0
+      sha256: fb583aad7a7d0146aebb7402bdfd3f996021e02ccb1d4d9e80e11efc8845aaa9
   original:
-    url: https://github.com/magnus108/photoShake/archive/master.zip#1232211111
+    url: https://github.com/magnus108/photoShake/archive/master.zip#123221111111
 - completed:
     hackage: jmacro-0.6.16@sha256:180f6115f699546178c7339dbbdbd70242fb937c71eedabc81304b8ac6b1ee3c,2979
     pantry-tree:
