@@ -30,14 +30,6 @@ import Utils.ListZipper
 import Utils.Actions
 
 
-import System.IO (IO)
-import           Data.ByteString         (ByteString)
-import qualified Data.ByteString         as B
-import Prelude (error)
-import Data.Conduit.Attoparsec
-import           Data.Aeson              (FromJSON, Result (..), eitherDecodeStrict',
-                                          fromJSON, json, Value)
-
 data State
     = Dump
     | Dagsdato
@@ -52,22 +44,6 @@ data State
 
 data States = States (ListZipper State)
     deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-
-
-sinkFromJSON :: (MonadThrow m, FromJSON a) => ConduitM ByteString o m a
-sinkFromJSON = do
-    value <- sinkParser json
-    case fromJSON value of
-        Error e -> error e
-        Success x -> return x
-
-
-getStates2 :: FilePath -> FilePath -> IO States
-getStates2 root stateFile = do
-    let filepath = root </> stateFile
-    runConduitRes $ sourceFileBS filepath
-                 .| sinkFromJSON 
 
 
 getStates :: FilePath -> FilePath -> TerminalM States
