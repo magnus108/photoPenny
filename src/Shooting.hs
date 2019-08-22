@@ -19,6 +19,7 @@ import Graphics.UI.Threepenny.Core
 
 import Elements
 
+import Utils.FP
 import Utils.ListZipper 
 import Utils.Comonad
 import Utils.Actions
@@ -86,7 +87,7 @@ shootingSection root stateFile states'' states config config'  importText = do
                         select <- mkRadioGroup group
 
                         (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                        on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates root stateFile (States (forward states)))
+                        on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
                         mkSection [ mkColumns ["is-multiline"]
                                         [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]

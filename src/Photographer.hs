@@ -16,6 +16,7 @@ import Graphics.UI.Threepenny.Core
 
 import Elements
 
+import Utils.FP 
 import Utils.ListZipper 
 import Utils.Actions 
 
@@ -79,7 +80,7 @@ photographerSection root stateFile states'' states config config' importText = d
                     select <- mkRadioGroup group
 
                     (buttonForward, forwardView) <- mkButton "next" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates root stateFile (States (forward states)))
+                    on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
                     mkSection [ mkColumns ["is-multiline"]
                                     [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]

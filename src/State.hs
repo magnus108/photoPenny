@@ -26,8 +26,12 @@ import Data.Conduit.Combinators
 
 import Data.Aeson
 
+import Utils.Comonad
 import Utils.ListZipper
+import Utils.Env
 import Utils.Actions
+
+import Utils.FP
 
 
 data State
@@ -46,14 +50,9 @@ data States = States (ListZipper State)
     deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 
-getStates :: FilePath -> FilePath -> TerminalM States
-getStates root stateFile = do
-    let filepath = root </> stateFile
-    state <- readFile filepath
-    return (fromJust (decode state))
+getStates :: FP -> TerminalM States States
+getStates = readFile 
 
 
-setStates:: FilePath -> FilePath -> States -> TerminalM ()
-setStates root stateFile states = do
-    let filepath = root </> stateFile
-    writeFile filepath (encode states)
+setStates:: FP -> States -> TerminalM States ()
+setStates = writeFile 

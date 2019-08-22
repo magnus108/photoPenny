@@ -14,6 +14,7 @@ import Graphics.UI.Threepenny.Core
 
 import Utils.ListZipper
 import Utils.Actions
+import Utils.FP
 import State (State, States(..), setStates)
 
 import PhotoShake.ShakeConfig
@@ -53,7 +54,7 @@ dagsdatoSection  root stateFile states'' states config config' = do
 
         Dagsdato y -> do
             (buttonForward, forwardView) <- mkButton "next" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates root stateFile (States (forward states)))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" # set (attr "id") "dagsdatoOK" ]
