@@ -43,9 +43,9 @@ main = do
             fmap and $  forM [1..40] (\iter -> do
                 openPage "http://localhost:9000"
 
-                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Location [Main, Control])
+                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Location [Main, Main2, Control])
 
-                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Location, Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Main [Control])
+                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Main, Location, Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Main2 [Control])
 
                 {-
                 forM_ [1..6] (\x -> do

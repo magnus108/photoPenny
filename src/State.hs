@@ -43,6 +43,7 @@ data State
     | Session
     | Location
     | Main
+    | Main2
     | Control
     deriving (Show, Eq, Generic, ToJSON, FromJSON)
 

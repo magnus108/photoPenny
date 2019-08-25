@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main2
-    ( mainSection 
+    ( mainSection2
     ) where
 import Elements
 import PhotoShake.Dagsdato
@@ -37,22 +37,28 @@ import Utils.Comonad
 
 
 
-mainSection :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI (Element, Element)
-mainSection _ _ config config' w = do
+mainSection2 :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI (Element, Element)
+mainSection2 _ _ config config' w = do
 
     built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
+
+    let isBuilding = case built of
+                        NoBuilt -> False
+                        NoFind s -> False
+                        Building _ _ -> True
+                        Built _ _ -> False
 
     (builderButton, buildView) <- mkBuild config'
     
     (Idd identi) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
 
-    liftIO $ putStrLn identi
 
     input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" # set (attr "value") identi
+    input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
 
     inputView <- UI.div #. "field" #+
         [ UI.label #. "label has-text-dark" # set UI.text "Foto Id"
-        , UI.div #. "control" #+ [ element input ] 
+        , UI.div #. "control" #+ [ element input' ] 
         ]
 
     on UI.keydown inputView $ \keycode -> when (keycode == 13) $ do
@@ -65,11 +71,20 @@ mainSection _ _ config config' w = do
         liftIO $ withMVar config' $ (\conf -> do
                 setIdSelection conf (Idd val))
 
-    viewSchool <- mkColumns ["is-multiline"]
-                [ mkColumn ["is-12"] [element inputView]
-                , mkColumn ["is-12"] [element buildView]
-                ]
-    
+    builtMsg <- case built of
+                        NoBuilt -> UI.div
+                        NoFind s -> mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result" ]
+                        Built _ s ->mkColumn ["is-12"] [ UI.p # set text s # set (attr "id") "result" ]
+                        Building _ s -> mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result"]
+
+    msg <- case built of
+                    NoBuilt -> UI.div 
+                    NoFind _ -> UI.div
+                    Built p _ -> mkColumn ["is-12"] [UI.p # set text (_name p)]
+                    Building p _ -> mkColumn ["is-12"] [UI.p # set text (_name p)]
+
+
+
     -- antal billeder
     dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles conf) :: UI (Either ShakeError [(FilePath, FilePath)])
     let dumps' = case dumps of 
@@ -86,9 +101,74 @@ mainSection _ _ config config' w = do
 
 
 
+
+
+
+
+    (Idd val) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
+
+    idenName <- liftIO $ do
+        locationFile <- try $ withMVar config' $ (\conf -> do
+                getLocationFile conf 
+                ) :: IO (Either ShakeError Location)
+        case locationFile of 
+            Left e -> newIORef ""
+            Right loc -> do
+                case loc of
+                    NoLocation -> newIORef ""
+                    Location xxx -> do
+                            liftIO $ withMVar config' $ (\conf -> do
+                                    what <- findPhotographee3 xxx val
+                                    case what of
+                                        Nothing -> newIORef ""
+                                        Just iddd ->  newIORef (_name iddd))
+
+    on UI.keyup input' $ \keycode -> when (keycode /= 13) $ do
+        val <- get value input
+        liftIO $ withMVar config' $ (\conf -> do
+                setIdSelection conf (Idd val))
+        locationFile <- liftIO $ try $ withMVar config' $ (\conf -> do
+                getLocationFile conf 
+                ) :: UI (Either ShakeError Location)
+        case locationFile of 
+            Left e -> return ()
+            Right loc -> do
+                case loc of
+                    NoLocation -> return () --return (Left LocationConfigFileMissing)
+                    Location xxx -> do
+                            wuba <-liftIO $ withMVar config' $ (\conf -> do
+                                    findPhotographee3 xxx val)
+                            case wuba of
+                                Nothing -> do
+                                    waba <- liftIO $ readIORef idenName
+                                    case waba of
+                                        "" -> return ()
+                                        zzzzz -> do
+                                            hack <- liftIO $ withMVar config' $ (\conf -> getDagsdato conf)
+                                            liftIO $ withMVar config' $ (\conf -> setDagsdato conf hack)
+                                            return ()
+                                Just iddd -> do 
+                                    hack <- liftIO $ withMVar config' $ (\conf -> getDagsdato conf)
+                                    liftIO $ withMVar config' $ (\conf -> setDagsdato conf hack)
+
+                                    liftIO $ modifyIORef idenName (\x -> (_name iddd))
+                                    return ()
+
+
+
+    nameIden <- liftIO $ readIORef idenName
+
+    viewSchool <- mkColumns ["is-multiline"]
+                [ mkColumn ["is-12"] [element inputView]
+                , mkColumn ["is-12"] [element buildView]
+                , if nameIden == "" then UI.div else mkColumn ["is-12"] [UI.p #. "is-size-3" #+ [string ("Navn: " ++ nameIden)]]
+                ]
+    
     inputView2 <- mkSection $ 
                    [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-12"] [element viewSchool] 
+                        , mkColumn ["is-12"] [element msg] 
+                        , mkColumn ["is-12"] [element builtMsg] 
                         , mkColumn ["is-12"] [element dumpSize] 
                         ]
                     ]
