@@ -79,7 +79,7 @@ locationsSection root stateFile states'' states config config' = do
                                 Building _ _ -> True
                                 Built _ _ -> False
             (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates (mkFP root stateFile) (States (forward states)))
+            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
             
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 

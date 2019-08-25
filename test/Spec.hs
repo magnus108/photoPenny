@@ -43,42 +43,58 @@ main = do
             fmap and $  forM [1..40] (\iter -> do
                 openPage "http://localhost:9000"
 
-
-                liftBase $ threadDelay 400000
                 _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Location [Main, Control])
-
-                liftBase $ threadDelay 400000
 
                 _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Location, Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Main [Control])
 
-                liftBase $ threadDelay 400000
+                {-
+                forM_ [1..6] (\x -> do
+                    liftBase $ threadDelay 1000000
+                    waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
+                    liftBase $ threadDelay 1000000
+                    waitUntil 1000000 $ findElem ( ById "tabPhotographer" ) >>= click
+                    liftBase $ threadDelay 1000000
+                    waitUntil 1000000 $ findElem ( ById "tabDoneshooting" ) >>= click
+                    liftBase $ threadDelay 1000000
+                    waitUntil 1000000 $ findElem ( ById "tabShooting" ) >>= click
+                    liftBase $ threadDelay 1000000
+                    waitUntil 1000000 $ findElem ( ById "tabLocation" ) >>= click
+                    liftBase $ threadDelay 1000000
+                    waitUntil 1000000 $ findElem ( ById "tabMain" ) >>= click
+                    )
+                -}
 
                 liftBase $ forM_ [1..40] (\x -> do
-                    writeFile ("test/files/input" ++ (show x) ++ ".CR2") (show [1..50000]) -- create the source file
-                    liftBase $ threadDelay 400000
-                    writeFile ("test/files/input" ++ (show x) ++ ".JPG") (show [1..50000])-- create the source file
-                    liftBase $ threadDelay 400000
+                    writeFile ("test/files/input" ++ (show x) ++ ".CR2") (show [1..8000000]) -- create the source file
+                    writeFile ("test/files/input" ++ (show x) ++ ".JPG") (show [1..8000000])-- create the source file
                     )
 
                 liftBase $ setIdSelection config (Idd "")
                 liftBase $ setBuilt' config (NoBuilt)
 
                 liftBase $ threadDelay 4000000
-                searchInput <- waitUntil 10000 $ findElem ( ById "fotoId" )
+                searchInput <- waitUntil 100000 $ findElem ( ById "fotoId" )
                 sendKeys "1234" searchInput
 
                 liftBase $ threadDelay 400000 -- vent for text alfredvestved
                 --mover <- waitUntil 100000 $ findElem ( ById "builderButton" )
+                --click mover
                 searchInput2 <- waitUntil 10000 $ findElem ( ById "fotoId" )
                 sendKeys enter searchInput2 
-                liftBase $ threadDelay 400000 -- vent for text alfredvestved
 
-                msg <- waitUntil 1000000 $ findElem ( ById "result" )
-                result <- getText msg
-                expect (result == "Færdig")
+                liftBase $ putStrLn "gg2"
+                liftBase $ threadDelay 30000000
+                liftBase $ putStrLn "gg"
+                liftBase $ threadDelay 100000
+                liftBase $ putStrLn "gg"
+                --msg <- waitUntil 1000000 $ findElem ( ById "result" )
+                --result <- getText msg
+                --expect (result == "Færdig")
 
-                liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/doneshooting/"
-                liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/dagsdato/"
+                --WWHAT???
+                --liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/doneshooting/"
+                --liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/dagsdato/"
+
 
                 return True
                 )

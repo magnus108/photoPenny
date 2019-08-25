@@ -177,7 +177,7 @@ redoLayout w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLo
                                 return button
 
                         on UI.click button' $ \_ -> do
-                            liftIO $ withMVar states'' $ (\_ -> interpret $ setStates (mkFP root stateFile) (States states'))
+                            liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States states'))
 
                         return button'
                     ))
@@ -244,12 +244,15 @@ recevier w root config stateFile msgs tid1 tid2 stateLock configLock dumpChan la
     forM_ messages $ \_ -> do 
         liftIO $ takeMVar layoutLock
 
+        conf <- liftIO $ takeMVar configLock
+        liftIO $ putMVar configLock conf
+
         tt1 <- liftIO $ takeMVar tid1 
         liftIO $ killThread tt1
         tt2 <- liftIO $ takeMVar tid2
         liftIO $ killThread tt2
 
-        liftIO $ modifyMVar_ stateLock $ (\_ -> interpret $ getStates (mkFP root stateFile))
+        liftIO $ modifyMVar_ stateLock $ (\_ ->  interpret $ getStates (mkFP root stateFile))
         runUI w $ do 
             redoLayout2 w root stateFile config tid1 tid2 stateLock configLock dumpChan layoutLock
 
@@ -262,7 +265,9 @@ recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock layoutLock
     drawAgain <- mkDebounce defaultDebounceSettings
                  { debounceAction = do 
                         liftIO $ takeMVar layoutLock
-                        liftIO $ modifyMVar_ stateLock $ (\_ -> interpret $ getStates (mkFP root stateFile))
+                        liftIO $ modifyMVar_ stateLock $ (\_ ->  interpret $ getStates (mkFP root stateFile))
+                        conf <- liftIO $ takeMVar configLock
+                        liftIO $ putMVar configLock conf
                         runUI w $ do
                             redoLayout w root stateFile config tid1 tid2 stateLock configLock msgs layoutLock
                  , debounceFreq = 3000000 -- 5 seconds
@@ -312,7 +317,7 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
 
     (buttonForward, forwardView) <- mkButton "next" "Ok"
     on UI.click buttonForward $ \_ -> liftIO $ do
-            withMVar states' $ (\states -> interpret $ setStates (mkFP root stateFile) states)
+            withMVar states' $ (\states ->  interpret $ setStates (mkFP root stateFile) states)
 
     view' <- mkSection [ element forwardView]
 
