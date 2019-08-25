@@ -41,11 +41,22 @@ import Control.Concurrent
 
 import qualified Control.Concurrent.Chan as Chan
 
+import Utils.Env
 import Utils.Comonad
 import Utils.ListZipper
 import Utils.Actions
 import Utils.FP
 
+
+data E 
+    = Production Configuration 
+    | Test Configuration
+
+data Configuration = Configuration
+    { root :: String
+    }
+
+newtype App a = App { unApp :: Env E a }
 
 
 --use reader with env
@@ -53,6 +64,11 @@ setup :: Int -> String -> String -> FilePath -> FilePath -> IO ()
 setup port root conf watchDir' stateFile = do
     config <- try $ toShakeConfig (Just root) conf :: IO (Either SomeException ShakeConfig)
     -- get appState.
+
+    -----
+    let prod = Production (Configuration root) 
+    let app = App (env prod 1)
+    -----
     state <- interpret $ getStates (mkFP root stateFile)
 
     withManager $ \mgr -> do
@@ -66,7 +82,7 @@ setup port root conf watchDir' stateFile = do
 
             view <- case config of 
                     Right c -> do
-                        return $ main c msgChan conf stateFile state 
+                        return $ main app c msgChan conf stateFile state 
 
                     Left xxx -> 
                         return $ missingConf xxx
@@ -257,8 +273,8 @@ recevier2 w root config stateFile msgs tid1 tid2 stateLock configLock layoutLock
 
 
 -- eww
-main :: ShakeConfig -> EventChannel -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
-main config msgChan conf stateFile (States states) root w = do
+main :: App a -> ShakeConfig -> EventChannel -> FilePath -> FilePath -> States -> FilePath -> Window -> UI ()
+main app config msgChan conf stateFile (States states) root w = do
     _ <- addStyleSheet w root "bulma.min.css"
 
     ggtid1 <- liftIO $ newEmptyMVar

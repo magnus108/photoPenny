@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-13.17
+resolver: lts-14.2
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,8 +39,7 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- archive: https://github.com/magnus108/photoShake/archive/master.zip#123221111111111
-- jmacro-0.6.16
+- archive: https://github.com/magnus108/photoShake/archive/master.zip#12322111111111111
 - strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c
 
 # Override default flag values for local packages and extra-deps

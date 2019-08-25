@@ -57,7 +57,7 @@ mainSection _ _ config config' w = do
 
     (Idd identi) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
 
-    input <- UI.input #. "input" # set UI.type_ "text" # set (attr "value") identi
+    input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" # set (attr "value") identi
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
 
     inputView <- UI.div #. "field" #+
@@ -124,9 +124,9 @@ mainSection _ _ config config' w = do
 
     builtMsg <- case built of
                         NoBuilt -> UI.div
-                        NoFind s -> mkColumn ["is-12"] [UI.p # set text s]
-                        Built _ s ->mkColumn ["is-12"] [ UI.p # set text s]
-                        Building _ s -> mkColumn ["is-12"] [UI.p # set text s]
+                        NoFind s -> mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result" ]
+                        Built _ s ->mkColumn ["is-12"] [ UI.p # set text s # set (attr "id") "result" ]
+                        Building _ s -> mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result"]
 
     msg <- case built of
                     NoBuilt -> UI.div 

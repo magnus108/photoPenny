@@ -5,26 +5,19 @@
 
 packages:
 - completed:
-    size: 34507
-    url: https://github.com/magnus108/photoShake/archive/master.zip#123221111111111
+    size: 34506
+    url: https://github.com/magnus108/photoShake/archive/master.zip#12322111111111111
     cabal-file:
       size: 4057
-      sha256: 885a25098d3ad3356233e1f3a3de56a192d11d8ad73f0686517bc7501b8105b4
+      sha256: 57d148fcf594cdf898272f94d0152f6b2de86c415afb7255e512edd0230b4027
     name: photoShake
     version: 0.1.0.0
-    sha256: 50e8d15907f0480a08db666af6ace0d33d4a42c95e697f72650e1b587a9aa217
+    sha256: d7452fde64f14585fc3a857082599fef778cc1aef653b35df00ba10319868287
     pantry-tree:
       size: 4467
-      sha256: 386e8ec9c3cbf36879f0ba2829bab23dd068167970297addc770bc4d4d81d6c7
+      sha256: 913a9c51de3cba70203675adeff2df608d6b7c3fa6e79b25325e7cadfe41c477
   original:
-    url: https://github.com/magnus108/photoShake/archive/master.zip#123221111111111
-- completed:
-    hackage: jmacro-0.6.16@sha256:180f6115f699546178c7339dbbdbd70242fb937c71eedabc81304b8ac6b1ee3c,2979
-    pantry-tree:
-      size: 919
-      sha256: 1a8b6d1d386dfb7dd8f51bd732e007c0000b90955c22ac4e7d4a3860499b90e9
-  original:
-    hackage: jmacro-0.6.16
+    url: https://github.com/magnus108/photoShake/archive/master.zip#12322111111111111
 - completed:
     hackage: strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c,1617
     pantry-tree:
@@ -34,7 +27,7 @@ packages:
     hackage: strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c
 snapshots:
 - completed:
-    size: 497508
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/17.yaml
-    sha256: 3d8fabe77d4f7618554cfb1001c820b9859820b8639bfd6f02a1c41660afb53b
-  original: lts-13.17
+    size: 523454
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/2.yaml
+    sha256: 593deeb8366fd69b9e3b7611759ecee87d0d76c08c2ba363b38b7fb119e9fc22
+  original: lts-14.2

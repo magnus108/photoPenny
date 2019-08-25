@@ -3,20 +3,29 @@
 import Test.WebDriver hiding (setLocation)
 import Control.Monad.Base
 import Test.WebDriver.Commands.Wait
+import Utils.FP
 
+import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
 import Lib
 
+import System.Directory
+
+
+import Test.WebDriver.Common.Keys (enter)
+
+
+import State
+
 import PhotoShake.ShakeConfig
-import PhotoShake.Dump
-import PhotoShake.Dagsdato
-import PhotoShake.Photographer
-import PhotoShake.Doneshooting
-import PhotoShake.Shooting
-import PhotoShake.Session
-import PhotoShake.Location
+import PhotoShake.Photographee
+import PhotoShake.Built
+
+
+import Control.Monad
 
 import Utils.ListZipper
+import qualified Utils.Actions as A
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -30,6 +39,51 @@ main = do
     -- dangerous difference between these params
     race_ (setup 9000 "" "test/config.cfg" "test/config" "test/config/state.json")
         (runSessionThenClose $ do                      
+            -- copy in pictures
+            fmap and $  forM [1..40] (\iter -> do
+                openPage "http://localhost:9000"
+
+
+                liftBase $ threadDelay 400000
+                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Location [Main, Control])
+
+                liftBase $ threadDelay 400000
+
+                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Location, Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Main [Control])
+
+                liftBase $ threadDelay 400000
+
+                liftBase $ forM_ [1..40] (\x -> do
+                    writeFile ("test/files/input" ++ (show x) ++ ".CR2") (show [1..50000]) -- create the source file
+                    liftBase $ threadDelay 400000
+                    writeFile ("test/files/input" ++ (show x) ++ ".JPG") (show [1..50000])-- create the source file
+                    liftBase $ threadDelay 400000
+                    )
+
+                liftBase $ setIdSelection config (Idd "")
+                liftBase $ setBuilt' config (NoBuilt)
+
+                liftBase $ threadDelay 4000000
+                searchInput <- waitUntil 10000 $ findElem ( ById "fotoId" )
+                sendKeys "1234" searchInput
+
+                liftBase $ threadDelay 400000 -- vent for text alfredvestved
+                --mover <- waitUntil 100000 $ findElem ( ById "builderButton" )
+                searchInput2 <- waitUntil 10000 $ findElem ( ById "fotoId" )
+                sendKeys enter searchInput2 
+                liftBase $ threadDelay 400000 -- vent for text alfredvestved
+
+                msg <- waitUntil 1000000 $ findElem ( ById "result" )
+                result <- getText msg
+                expect (result == "Færdig")
+
+                liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/doneshooting/"
+                liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/dagsdato/"
+
+                return True
+                )
+        )
+        {-
             _ <- liftBase $ setDump config $ NoDump -- reset or i will get stales
             _ <- liftBase $ setDagsdato config $ NoDagsdato -- reset or i will get stales
             _ <- liftBase $ setPhotographers config $ NoPhotographers -- reset or i will get stales
@@ -110,3 +164,4 @@ main = do
             _ <- liftBase $ putStrLn "complete"
             expect True
         )
+        -}
