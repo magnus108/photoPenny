@@ -37,7 +37,9 @@ import Utils.FP
 data State
     = Dump
     | Dagsdato
+    | DagsdatoBackup
     | Doneshooting
+    | DoneshootingBackup
     | Photographer
     | Shooting
     | Session

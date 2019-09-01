@@ -24,10 +24,12 @@ import Main
 import Main2
 import Dump
 import Dagsdato
+import DagsdatoBackup
 import Photographer
 import Session
 import Shooting
 import Doneshooting
+import DoneshootingBackup
 import Locations
 import Control
 
@@ -107,12 +109,20 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
                 c <- dagsdatoSection root stateFile states'' states config  config''
                 return (c,tmp)
 
+            DagsdatoBackup -> do
+                c <- dagsdatoBackupSection root stateFile states'' states config  config''
+                return (c,tmp)
+
             Photographer -> do 
                 c <- photographerSection root stateFile states'' states config config'' chanPhotographer
                 return (c,tmp)
 
             Doneshooting -> do
                 c <- doneshootingSection root stateFile states'' states config config''
+                return (c,tmp)
+
+            DoneshootingBackup -> do
+                c <- doneshootingBackupSection root stateFile states'' states config config''
                 return (c,tmp)
 
             Session -> do
@@ -312,8 +322,12 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
 
     dump <- dumpOverview root stateFile config config'
     dagsdato <- dagsdatoOverview root stateFile config config'
+    dagsdatoBackup <- dagsdatoBackupOverview root stateFile config config'
+    
     photographer <- photographerOverview root stateFile config config'
     doneshooting <- doneshootingOverview root stateFile config config'
+    doneshootingBackup <- doneshootingBackupOverview root stateFile config config'
+
     session <- sessionOverview root stateFile config config' 
     shooting <- shootingOverview root stateFile config config' 
     location <- locationsOverview root stateFile config config'
@@ -326,7 +340,9 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
 
     view <- mkSection [ element dump 
                       , element dagsdato
+                      , element dagsdatoBackup
                       , element doneshooting
+                      , element doneshootingBackup
                       , element session
                       , element photographer
                       , element shooting
