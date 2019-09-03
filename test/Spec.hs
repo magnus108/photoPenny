@@ -4,10 +4,11 @@ import Test.WebDriver hiding (setLocation)
 import Control.Monad.Base
 import Test.WebDriver.Commands.Wait
 import Utils.FP
+import qualified Control.Concurrent.Chan as Chan
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
-import Lib
+import qualified Lib2 as L
 
 import System.Directory
 
@@ -15,6 +16,7 @@ import System.Directory
 import Test.WebDriver.Common.Keys (enter)
 
 
+import Message (block)
 import State
 
 import PhotoShake.ShakeConfig
@@ -26,6 +28,15 @@ import Control.Monad
 
 import Utils.ListZipper
 import qualified Utils.Actions as A
+import qualified Model.E as A
+import Utils.Env
+
+
+import Control.Concurrent
+
+import Utils.ListZipper
+import Utils.FP
+import State 
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -37,33 +48,57 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg"    
     -- dangerous difference between these params
-    race_ (setup 9000 "" "test/config.cfg" "test/config" "test/config/state.json")
+    let app = A.app $ env A.production (A.model Nothing "config" (fp $ start "") "config/state.json")
+    app' <- newMVar app
+    messages <- Chan.newChan
+
+    race_ (L.main 9000 messages app' )--"" "test/config.cfg" "test/config" "test/config/state.json")
         (runSessionThenClose $ do                      
             -- copy in pictures
-            fmap and $  forM [1..40] (\iter -> do
-                openPage "http://localhost:9000"
+            openPage "http://localhost:9000"
 
-                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Location [Main, Main2, Control])
+            empty <- liftBase newEmptyMVar
+            forM_ [1..60] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
 
-                _ <- liftBase $ A.interpret $ setStates (mkFP "" "test/config/state.json") (States $ ListZipper [Main, Location, Session,Shooting,Doneshooting,Dagsdato,Dump,Photographer] Main2 [Control])
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
+
+            --fmap and $  forM [1..40] (\iter -> do
+                    --_ <- liftBase $ putMVar app' app''
+{-
+                    app'' <- liftBase $ takeMVar app'
+                    empty <- liftBase newEmptyMVar
+                    liftBase $ writeChan messages (block empty)
+                    liftBase $ readMVar empty
+                    waitUntil 10000000 $ findElem ( ById "tabDoneshooting" ) >>= click
+                    _ <- liftBase $ putMVar app' app''
+                    app'' <- liftBase $ takeMVar app'
+                    empty <- liftBase newEmptyMVar
+                    liftBase $ writeChan messages (block empty)
+                    liftBase $ readMVar empty
+                    waitUntil 10000000 $ findElem ( ById "tabShooting" ) >>= click
+                    _ <- liftBase $ putMVar app' app''
+                    app'' <- liftBase $ takeMVar app'
+                    empty <- liftBase newEmptyMVar
+                    liftBase $ writeChan messages (block empty)
+                    liftBase $ readMVar empty
+                    waitUntil 10000000 $ findElem ( ById "tabLocation" ) >>= click
+                    _ <- liftBase $ putMVar app' app''
+                    app'' <- liftBase $ takeMVar app'
+                    empty <- liftBase newEmptyMVar
+                    liftBase $ writeChan messages (block empty)
+                    liftBase $ readMVar empty
+                    waitUntil 10000000 $ findElem ( ById "tabMain" ) >>= click
+                    liftBase $ putMVar app' app''
+                    -}
+           --         )
+                
 
                 {-
-                forM_ [1..6] (\x -> do
-                    liftBase $ threadDelay 1000000
-                    waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
-                    liftBase $ threadDelay 1000000
-                    waitUntil 1000000 $ findElem ( ById "tabPhotographer" ) >>= click
-                    liftBase $ threadDelay 1000000
-                    waitUntil 1000000 $ findElem ( ById "tabDoneshooting" ) >>= click
-                    liftBase $ threadDelay 1000000
-                    waitUntil 1000000 $ findElem ( ById "tabShooting" ) >>= click
-                    liftBase $ threadDelay 1000000
-                    waitUntil 1000000 $ findElem ( ById "tabLocation" ) >>= click
-                    liftBase $ threadDelay 1000000
-                    waitUntil 1000000 $ findElem ( ById "tabMain" ) >>= click
-                    )
-                -}
-
                 liftBase $ forM_ [1..40] (\x -> do
                     writeFile ("test/files/input" ++ (show x) ++ ".CR2") (show [1..8000000]) -- create the source file
                     writeFile ("test/files/input" ++ (show x) ++ ".JPG") (show [1..8000000])-- create the source file
@@ -87,6 +122,7 @@ main = do
                 liftBase $ putStrLn "gg"
                 liftBase $ threadDelay 100000
                 liftBase $ putStrLn "gg"
+                -}
                 --msg <- waitUntil 1000000 $ findElem ( ById "result" )
                 --result <- getText msg
                 --expect (result == "Færdig")

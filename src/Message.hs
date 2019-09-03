@@ -1,19 +1,33 @@
 module Message
     ( Message(..) -- bad
-    , configChange
-    , getState
+    , block
+    , getStates
+    , setStates
+    , getDump
     ) where
 
 
+import State (States)
+
+import Control.Concurrent.MVar
+
 data Message 
-    = Unit
-    | ConfigChange
-    | GetState
+    = Block (MVar ())
+    | GetStates
+    | SetStates States
+
+    | GetDump
 
 
-configChange :: Message
-configChange = ConfigChange
+block :: MVar () -> Message
+block = Block
+
+getStates :: Message
+getStates = GetStates
+
+setStates :: States -> Message
+setStates = SetStates
 
 
-getState :: Message
-getState = GetState
+getDump :: Message
+getDump = GetDump

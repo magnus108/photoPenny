@@ -3,9 +3,17 @@ module Lib2
     ( main
     ) where
 
+import Control.Concurrent.MVar
+
+import qualified State as S
+import Utils.ListZipper
+import Utils.FP
+import Utils.Comonad
+import Utils.Actions
+
 
 import Model.E
-import Message
+import qualified Message as Msg
 
 import Elements
 
@@ -17,61 +25,198 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import System.FSNotify hiding (defaultConfig)
+import System.FilePath hiding (combine)
 
 
-main :: Int -> App FilePath -> IO ()
-main port app = do 
+import Data.Function ((&))
+
+
+import Control.Exception
+import PhotoShake.ShakeConfig
+import PhotoShake.Dump
+
+
+main :: Int -> Chan Msg.Message -> MVar (App Model) -> IO ()
+main port messages app = do 
     manager <- startManager
-    messages <- Chan.newChan
     startGUI defaultConfig { jsPort = Just port
                            , jsWindowReloadOnDisconnect = False
                            } $ setup manager messages app
 
 
 
-setupListener :: WatchManager -> Chan Message -> App FilePath -> IO StopListening --- ??? STOP
-setupListener manager msgChan app = 
-    watchDir manager (_configs app) (const True) (\_ -> writeChan msgChan configChange)
+setupStateListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupStateListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    stateConfig <- withMVar app (\app' -> return (_stateFile app'))
+    watchDir manager fpConfig 
+        (\e -> takeFileName (eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getStates)
 
 
 
-setup :: WatchManager -> Chan Message -> App FilePath -> Window -> UI ()
+
+getStates :: Chan Msg.Message -> UI ()
+getStates msgChan = liftIO $ writeChan msgChan Msg.getStates
+
+setStates :: Chan Msg.Message -> S.States -> UI ()
+setStates msgChan states = liftIO $ writeChan msgChan (Msg.setStates states) 
+
+
+
+
+
+setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
 setup manager msgChan app w = do
     msgs <- liftIO $ Chan.dupChan msgChan
-    _ <- liftIO $ setupListener manager msgs app
+    _ <- liftIO $ setupStateListener manager msgs app
 
     _ <- getStates msgs 
 
-    receiver <- liftIO $ forkIO $ receive w msgs 
+    receiver <- liftIO $ forkIO $ receive w msgs app
 
     on UI.disconnect w $ const $ liftIO $ killThread receiver
     on UI.disconnect w $ const $ liftIO $ stopManager manager
 
 
-receive :: Window -> Chan Message -> IO ()
-receive w msgs = do
+--mountCmd :: Chan Msg.Message -> S.States -> IO ()
+-- Thesemessage does not use liftIO
+--S.Dump -> writeChan msgChan
+-- maybe i dont have to write
+mountCmd :: Chan Msg.Message -> App Model ->  IO (App Model)
+mountCmd msgs app = do
+    case _states app of
+        Nothing -> return app
+        Just (S.States states) ->  
+            case focus states of
+                S.Dump -> do
+                    config <- toShakeConfig Nothing "config.cfg" :: IO ShakeConfig -- Bad and unsafe
+                    dump <- getDump config
+                    let app' = _setDump app dump
+                    return app'
+                    
+                _ -> return app
+
+
+receive :: Window -> Chan Msg.Message -> MVar (App Model) -> IO ()
+receive w msgs app = do
     messages <- getChanContents msgs
     
-    forM_ messages $ \msg -> do 
+    forM_ messages $ \ msg -> do 
         case msg of
-            GetState -> do
-                state <- return 1
+            Msg.GetStates -> do                
+                app' <- takeMVar app 
+                let root = _root app'
+                let stateFile = _stateFile app'
+                states <- interpret $ S.getStates $ fp $ unFP root =>> combine stateFile
+                let app'' = _setStates app' (Just states)
+
+                app''' <- mountCmd msgs app''
+
                 runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
-                    redoLayout body -- app her skal det være case of
-            _ -> runUI w $ do
-                body <- getBody w
-                redoLayout body
+                    redoLayout body msgs app'''
+
+                putMVar app app'''
+
+            Msg.SetStates states -> do
+                app' <- takeMVar app 
+                let root = _root app'
+                let stateFile = _stateFile app'
+                interpret $ S.setStates (fp (unFP root =>> combine stateFile)) states
+                --let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app'
+                putMVar app app'
+    
+            Msg.Block x -> do -- i can maybe do something good with this.
+                putMVar x () 
 
 
-redoLayout :: Element -> UI ()
-redoLayout body = void $ do
-    layout <- string "Redrawn"
-    element body # set children [layout]
+redoLayout :: Element -> Chan Msg.Message -> App Model -> UI ()
+redoLayout body msgs app = void $ do
+    
+    let states = _states app
+
+    case states of
+        Just (S.States states) -> do
+            let buttons = states =>> (\ states' -> do
+                                button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
+
+                                button' <- if (states' == states) then
+                                    set (UI.attr  "class") "button is-dark is-selected" (element button)
+                                else
+                                    return button
+
+                                on UI.click button' $ \_ -> do
+                                    setStates msgs (S.States states')
+
+                                return button')
+
+            menu <- mkSection [UI.div #. "buttons has-addons" #+ (toList buttons)]
+
+            view <- states =>> viewState msgs app & focus
+
+            element body # set children [menu, view]
+                 
+
+        Nothing -> do
+            element body # set children []
 
 
-getStates :: Chan Message -> UI ()
-getStates msgChan = liftIO $ writeChan msgChan getState
+--viewState :: Element -> Chan Msg.Message -> App Model > UI (Element, Element)
+viewState :: Chan Msg.Message -> App Model -> (ListZipper S.State) -> UI Element
+viewState msgs app states = do
+    case (focus states) of 
+            S.Dump -> dumpSection msgs app
+            _ -> do
+                string "bob"
+
+
+dumpSection :: Chan Msg.Message -> App Model -> UI Element
+dumpSection msgs app = do
+    let dump = _dump app
+    --(_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
+    --        liftIO $ withMVar config' $ (\conf -> setDump conf $ Dump folder)
+
+
+    case dump of
+        NoDump -> 
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" ]
+            --                , mkColumn ["is-12"] [ element picker ]
+                            ]
+                      ] 
+
+        Dump y -> do
+            ---(buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+            --on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
+
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
+                            --, mkColumn ["is-12"] [ element picker ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                            --, mkColumn ["is-12"] [ element forwardView ]
+                            ]
+                      ] 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 --display :: Chan Message -> App FilePath -> Window -> UI Element
