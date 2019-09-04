@@ -49,7 +49,6 @@ data Model = Model
 
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
-    , stateFile :: FilePath -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
     }
@@ -78,7 +77,7 @@ _configs :: App Model -> FilePath -- deleteme
 _configs = dir1 . extract . unApp
 
 _stateFile :: App Model -> FilePath -- deleteme
-_stateFile  = stateFile . extract . unApp
+_stateFile  = _stateConfig . _shakeConfig
 
 _states:: App Model -> Maybe States -- deleteme
 _states = states . extract . unApp

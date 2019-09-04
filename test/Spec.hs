@@ -50,7 +50,7 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing NoDump "test/config" (fp $ start "") "test/config/state.json" config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing NoDump "test/config" (fp $ start "") config)
     messages <- Chan.newChan
 
     race_ (L.main 9000 messages app )--"" "test/config.cfg" "test/config" "test/config/state.json")

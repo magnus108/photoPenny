@@ -29,7 +29,7 @@ main = do
     config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
 
     app <- newMVar $ A.app $ env A.production 
-        (A.model Nothing NoDump "config" (fp $ start root) "config/state.json" config)
+        (A.model Nothing NoDump "config" (fp $ start root) config)
 
     messages <- Chan.newChan
     L.main (read port) messages app
