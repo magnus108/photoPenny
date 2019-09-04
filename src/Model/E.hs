@@ -15,6 +15,7 @@ module Model.E
     , _setDump
     , _dump
     , _stateFile
+    , _shakeConfig
     , _root
     ) where
 
@@ -26,6 +27,7 @@ import State
 
 import Utils.FP
 import PhotoShake.Dump 
+import PhotoShake.ShakeConfig 
 
 data E = Production | Test
 
@@ -48,6 +50,8 @@ data Model = Model
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
     , stateFile :: FilePath -- deleteme
+
+    , shakeConfig :: ShakeConfig --question me
     }
 
 
@@ -90,3 +94,7 @@ _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )
 
 _dump :: App Model -> Dump -- deleteme
 _dump = dump . extract . unApp
+
+
+_shakeConfig :: App Model -> ShakeConfig -- deleteme
+_shakeConfig = shakeConfig . extract . unApp

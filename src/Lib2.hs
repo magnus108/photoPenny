@@ -62,9 +62,6 @@ setStates :: Chan Msg.Message -> S.States -> UI ()
 setStates msgChan states = liftIO $ writeChan msgChan (Msg.setStates states) 
 
 
-
-
-
 setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
 setup manager msgChan app w = do
     msgs <- liftIO $ Chan.dupChan msgChan
@@ -89,11 +86,10 @@ mountCmd msgs app = do
         Just (S.States states) ->  
             case focus states of
                 S.Dump -> do
-                    config <- toShakeConfig Nothing "config.cfg" :: IO ShakeConfig -- Bad and unsafe
-                    dump <- getDump config
+                    let shakeConfig = _shakeConfig app
+                    dump <- getDump shakeConfig
                     let app' = _setDump app dump
                     return app'
-   --                   return app
                     
                 _ -> return app
 
