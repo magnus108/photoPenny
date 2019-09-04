@@ -93,6 +93,7 @@ mountCmd msgs app = do
                     dump <- getDump config
                     let app' = _setDump app dump
                     return app'
+   --                   return app
                     
                 _ -> return app
 
@@ -124,10 +125,10 @@ receive w msgs app = do
                 let root = _root app'
                 let stateFile = _stateFile app'
                 interpret $ S.setStates (fp (unFP root =>> combine stateFile)) states
-                --let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
-                    redoLayout body msgs app'
+                    redoLayout body msgs app''
                 putMVar app app'
     
             Msg.Block x -> do -- i can maybe do something good with this.

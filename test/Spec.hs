@@ -38,6 +38,8 @@ import Utils.ListZipper
 import Utils.FP
 import State 
 
+import PhotoShake.Dump
+
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
 
@@ -48,7 +50,7 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg"    
     -- dangerous difference between these params
-    let app = A.app $ env A.production (A.model Nothing "config" (fp $ start "") "config/state.json")
+    let app = A.app $ env A.production (A.model Nothing NoDump "config" (fp $ start "") "config/state.json")
     app' <- newMVar app
     messages <- Chan.newChan
 
@@ -58,13 +60,19 @@ main = do
             openPage "http://localhost:9000"
 
             empty <- liftBase newEmptyMVar
-            forM_ [1..60] (\x -> do
+            forM_ [1..600] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
+                --
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
+                
+                -- msg <- findElem ( ById "dumpOK" ) i should be able to do this
+                --msg <- waitUntil 1000000 $ findElem ( ById "dumpOK" )
+                --
+
                 waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
 
             --fmap and $  forM [1..40] (\iter -> do
