@@ -28,7 +28,7 @@ freeport((err, port) => {
       width: 400,
       height: 1000,
       title: "Doneshooting FF",
-      //webPreferences: { nodeIntegration: true }
+      webPreferences: { nodeIntegration: true }
     });
 
     console.log(`Loading URL: ${url}`);
