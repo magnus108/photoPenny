@@ -15,6 +15,7 @@ module Model.E
     , _setDump
     , _dump
     , _stateFile
+    , _dumpFile
     , _shakeConfig
     , _root
     ) where
@@ -78,6 +79,9 @@ _configs = dir1 . extract . unApp
 
 _stateFile :: App Model -> FilePath -- deleteme
 _stateFile  = _stateConfig . _shakeConfig
+
+_dumpFile :: App Model -> FilePath -- deleteme
+_dumpFile  = _dumpConfig . _shakeConfig
 
 _states:: App Model -> Maybe States -- deleteme
 _states = states . extract . unApp

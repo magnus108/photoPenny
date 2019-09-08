@@ -53,6 +53,15 @@ setupStateListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getStates)
 
 
+setupDumpListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupDumpListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    dumpConfig <- withMVar app (\app' -> return (_dumpFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getStates)
+
+
 
 
 getStates :: Chan Msg.Message -> UI ()
@@ -65,7 +74,9 @@ setStates msgChan states = liftIO $ writeChan msgChan (Msg.setStates states)
 setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
 setup manager msgChan app w = do
     msgs <- liftIO $ Chan.dupChan msgChan
+    -- do i really watch all files in setup?
     _ <- liftIO $ setupStateListener manager msgs app
+    _ <- liftIO $ setupDumpListener manager msgs app
 
     _ <- getStates msgs 
 
