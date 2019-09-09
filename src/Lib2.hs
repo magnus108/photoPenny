@@ -59,7 +59,7 @@ setupDumpListener manager msgChan app = do -- THIS BAD
     dumpConfig <- withMVar app (\app' -> return (_dumpFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getStates)
+        (\e -> takeFileName (eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getDump)
 
 
 
@@ -86,25 +86,6 @@ setup manager msgChan app w = do
     on UI.disconnect w $ const $ liftIO $ stopManager manager
 
 
---mountCmd :: Chan Msg.Message -> S.States -> IO ()
--- Thesemessage does not use liftIO
---S.Dump -> writeChan msgChan
--- maybe i dont have to write
-mountCmd :: Chan Msg.Message -> App Model ->  IO (App Model)
-mountCmd msgs app = do
-    case _states app of
-        Nothing -> return app
-        Just (S.States states) ->  
-            case focus states of
-                S.Dump -> do
-                    let shakeConfig = _shakeConfig app
-                    dump <- getDump shakeConfig
-                    let app' = _setDump app dump
-                    return app'
-                    
-                _ -> return app
-
-
 receive :: Window -> Chan Msg.Message -> MVar (App Model) -> IO ()
 receive w msgs app = do
     messages <- getChanContents msgs
@@ -117,26 +98,46 @@ receive w msgs app = do
                 let stateFile = _stateFile app'
                 states <- interpret $ S.getStates $ fp $ unFP root =>> combine stateFile
                 let app'' = _setStates app' (Just states)
-
-                app''' <- mountCmd msgs app''
-
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
-                    redoLayout body msgs app'''
+                    redoLayout body msgs app''
 
-                putMVar app app'''
+                putMVar app app''
 
             Msg.SetStates states -> do
                 app' <- takeMVar app 
                 let root = _root app'
                 let stateFile = _stateFile app'
-                interpret $ S.setStates (fp (unFP root =>> combine stateFile)) states
+                _ <- interpret $ S.setStates (fp (unFP root =>> combine stateFile)) states
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app''
+
+            Msg.SetDump dump -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setDump shakeConfig dump 
                 let app'' = _setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
                 putMVar app app'
+
+            Msg.GetDump -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                dump <- getDump shakeConfig
+                let app'' = _setDump app' dump
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+
+                putMVar app app''
+
     
             Msg.Block x -> do -- i can maybe do something good with this.
                 putMVar x () 
@@ -177,23 +178,22 @@ redoLayout body msgs app = void $ do
 viewState :: Chan Msg.Message -> App Model -> (ListZipper S.State) -> UI Element
 viewState msgs app states = do
     case (focus states) of 
-            S.Dump -> dumpSection msgs app
+            S.Dump -> dumpSection msgs (_dump app)
             _ -> do
                 string "bob"
 
 
-dumpSection :: Chan Msg.Message -> App Model -> UI Element
-dumpSection msgs app = do
-    let dump = _dump app
-    --(_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
-    --        liftIO $ withMVar config' $ (\conf -> setDump conf $ Dump folder)
+dumpSection :: Chan Msg.Message -> Dump -> UI Element
+dumpSection msgs dump = do
+    (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
+        liftIO $ writeChan msgs $ Msg.setDump  $ Dump folder
 
 
     case dump of
         NoDump -> 
             mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" ]
-            --                , mkColumn ["is-12"] [ element picker ]
+                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" # set (attr "id") "dumpMissing" ]
+                            , mkColumn ["is-12"] [ element picker ]
                             ]
                       ] 
 
@@ -203,8 +203,8 @@ dumpSection msgs app = do
 
             mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
-                            --, mkColumn ["is-12"] [ element picker ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                            , mkColumn ["is-12"] [ element picker ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "dumpPath" ]
                             --, mkColumn ["is-12"] [ element forwardView ]
                             ]
                       ] 

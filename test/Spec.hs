@@ -16,10 +16,10 @@ import System.Directory
 import Test.WebDriver.Common.Keys (enter)
 
 
-import Message (block)
+import Message (block, setDump)
 import State
 
-import PhotoShake.ShakeConfig
+import PhotoShake.ShakeConfig hiding (setDump)
 import PhotoShake.Photographee
 import PhotoShake.Built
 
@@ -38,7 +38,7 @@ import Utils.ListZipper
 import Utils.FP
 import State 
 
-import PhotoShake.Dump
+import qualified PhotoShake.Dump as D
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -50,12 +50,40 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing NoDump "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.NoDump "test/config" (fp $ start "") config)
     messages <- Chan.newChan
 
-    race_ (L.main 9000 messages app )--"" "test/config.cfg" "test/config" "test/config/state.json")
+    race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
-            -- copy in pictures
+            openPage "http://localhost:9000"
+            empty <- liftBase newEmptyMVar
+
+            --fuckthis
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+            waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
+            --fuckthis
+
+            forM_ [1..60] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setDump $ D.Dump "/home/magnus/Downloads/Magnus Renamed/what"
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "dumpPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Downloads/Magnus Renamed/what")
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setDump $ D.NoDump 
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "dumpMissing" )
+
+    {-
+    race_ (L.main 9000 messages app )
+        (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
             empty <- liftBase newEmptyMVar
@@ -63,16 +91,15 @@ main = do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
-                --
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
-                
-                -- msg <- findElem ( ById "dumpOK" ) i should be able to do this
-                --msg <- waitUntil 1000000 $ findElem ( ById "dumpOK" )
-                --
 
                 waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
+    -}
+
+
+
 
             --fmap and $  forM [1..40] (\iter -> do
                     --_ <- liftBase $ putMVar app' app''

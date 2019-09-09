@@ -4,6 +4,7 @@ module Message
     , getStates
     , setStates
     , getDump
+    , setDump
     ) where
 
 
@@ -11,12 +12,16 @@ import State (States)
 
 import Control.Concurrent.MVar
 
+import PhotoShake.Dump
+
 data Message 
     = Block (MVar ())
+
     | GetStates
     | SetStates States
 
     | GetDump
+    | SetDump Dump
 
 
 block :: MVar () -> Message
@@ -31,3 +36,7 @@ setStates = SetStates
 
 getDump :: Message
 getDump = GetDump
+
+
+setDump :: Dump -> Message
+setDump = SetDump
