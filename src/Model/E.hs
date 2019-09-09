@@ -27,7 +27,7 @@ import Utils.Comonad
 import State
 
 import Utils.FP
-import PhotoShake.Dump 
+import qualified PhotoShake.Dump as D
 import PhotoShake.ShakeConfig 
 
 data E = Production | Test
@@ -46,7 +46,7 @@ newtype App a = App { unApp :: Env E a }
 data Model = Model 
     { states :: Maybe States 
 
-    , dump :: Dump
+    , dump :: D.Dump
 
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
@@ -92,10 +92,10 @@ _setStates x (Just s) = App $ (unApp x) =>> (\x -> (extract x) { states = Just s
 _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing } )
 
 
-_setDump :: App Model -> Dump -> App Model -- deleteme
+_setDump :: App Model -> D.Dump -> App Model -- deleteme
 _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )
 
-_dump :: App Model -> Dump -- deleteme
+_dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
 
 

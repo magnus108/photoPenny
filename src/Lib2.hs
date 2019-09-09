@@ -78,7 +78,8 @@ setup manager msgChan app w = do
     _ <- liftIO $ setupStateListener manager msgs app
     _ <- liftIO $ setupDumpListener manager msgs app
 
-    _ <- getStates msgs 
+    _ <- liftIO $ writeChan msgs Msg.getStates 
+    _ <- liftIO $ writeChan msgs Msg.getDump 
 
     receiver <- liftIO $ forkIO $ receive w msgs app
 
@@ -184,30 +185,30 @@ viewState msgs app states = do
 
 
 dumpSection :: Chan Msg.Message -> Dump -> UI Element
-dumpSection msgs dump = do
+dumpSection msgs x = do
     (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
-        liftIO $ writeChan msgs $ Msg.setDump  $ Dump folder
+        liftIO $ writeChan msgs $ Msg.setDump  $ yesDump folder
 
 
-    case dump of
-        NoDump -> 
-            mkSection [ mkColumns ["is-multiline"]
+    with <- mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" # set (attr "id") "dumpMissing" ]
                             , mkColumn ["is-12"] [ element picker ]
                             ]
                       ] 
+    
 
-        Dump y -> do
             ---(buttonForward, forwardView) <- mkButton "nextDump" "Ok"
             --on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
-            mkSection [ mkColumns ["is-multiline"]
+    let without = (\z -> mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
                             , mkColumn ["is-12"] [ element picker ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "dumpPath" ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text z # set (attr "id") "dumpPath" ]
                             --, mkColumn ["is-12"] [ element forwardView ]
                             ]
-                      ] 
+                      ])
+
+    dump (element with) without x
 
 
 

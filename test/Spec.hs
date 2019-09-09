@@ -50,9 +50,10 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.NoDump "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump "test/config" (fp $ start "") config)
     messages <- Chan.newChan
 
+    {-
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
@@ -67,7 +68,7 @@ main = do
             forM_ [1..60] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ setDump $ D.Dump "/home/magnus/Downloads/Magnus Renamed/what"
+                liftBase $ writeChan messages $ setDump $ D.yesDump "/home/magnus/Downloads/Magnus Renamed/what"
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
@@ -75,13 +76,15 @@ main = do
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ setDump $ D.NoDump 
+                liftBase $ writeChan messages $ setDump $ D.noDump 
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "dumpMissing" )
+                )
+        )
+    -}
 
-    {-
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
@@ -90,13 +93,15 @@ main = do
             forM_ [1..600] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
-                waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
+                waitUntil 100000000 $ findElem ( ById "tabDump" ) >>= click
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
 
-                waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
-    -}
+                waitUntil 100000000 $ findElem ( ById "tabPhotographer" ) >>= click
+                )
+            return True
+        )
 
 
 
@@ -166,9 +171,6 @@ main = do
                 --liftBase $ removeDirectoryRecursive "/home/magnus/Documents/projects/photoPenny/test/dagsdato/"
 
 
-                return True
-                )
-        )
         {-
             _ <- liftBase $ setDump config $ NoDump -- reset or i will get stales
             _ <- liftBase $ setDagsdato config $ NoDagsdato -- reset or i will get stales

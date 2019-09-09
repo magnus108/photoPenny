@@ -38,7 +38,7 @@ import Utils.Comonad
 
 
 mainSection2 :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI (Element, Element)
-mainSection2 _ _ config config' w = do
+mainSection2 root _ config config' w = do
 
     built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
 
@@ -86,7 +86,8 @@ mainSection2 _ _ config config' w = do
 
 
     -- antal billeder
-    dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles conf) :: UI (Either ShakeError [(FilePath, FilePath)])
+    dumpies <- liftIO $ withMVar config' $ (\conf -> getDump conf)
+    dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles dumpies) :: UI (Either ShakeError [(FilePath, FilePath)])
     let dumps' = case dumps of 
             Left e -> show e 
             Right x -> show $ length $ fmap fst x

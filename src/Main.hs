@@ -366,7 +366,8 @@ mainSection _ _ config config' w = do
             ) $ sortBy (\x y -> compare (_name x) (_name y)) kidsInGrade 
 
     -- antal billeder
-    dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles conf) :: UI (Either ShakeError [(FilePath, FilePath)])
+    dumpies <- liftIO $ withMVar config' $ (\conf -> getDump conf)
+    dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles dumpies) :: UI (Either ShakeError [(FilePath, FilePath)])
     let dumps' = case dumps of 
             Left e -> show e 
             Right x -> show $ length $ fmap fst x
@@ -443,8 +444,7 @@ setNumber config' input' tea s = do
 
 resetIt :: MVar ShakeConfig -> IO ()
 resetIt config = 
-        (withMVar config $ (\conf -> setDump conf NoDump))
-        >> (withMVar config $ (\conf -> setDagsdato conf NoDagsdato))
+        (withMVar config $ (\conf -> setDagsdato conf NoDagsdato))
         >> (withMVar config $ (\conf -> setPhotographers conf NoPhotographers))
         >> (withMVar config $ (\conf -> setLocation conf NoLocation))
         >> (withMVar config $ (\conf -> setSession conf NoSessions))

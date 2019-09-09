@@ -150,18 +150,17 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 redoLayout2 :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar States -> MVar ShakeConfig -> EventChannel -> MVar () -> UI ()
 redoLayout2 w root stateFile config tid1 tid2 states'' config'' dumpChan layoutLock = void $ do 
     ehh <- liftIO $ forkIO $ do
-                    dump <- liftIO $ withMVar config'' $ (\conf -> getDump conf)
+                    dumpi <- liftIO $ withMVar config'' $ (\conf -> getDump conf)
                     withManager $ \mgr -> do
-                            case dump of
-                                    D.Dump x -> do
+                            D.dump (return ()) --error "lol" -- return $ main c msgChan conf stateFile state 
+                                    (\x -> do
                                             watchDirChan
                                                     mgr
                                                     x --this is less wrong than earlier
                                                     (const True)
                                                     dumpChan
                                             forever $ threadDelay 1000000
-                                    D.NoDump -> do
-                                            return () --error "lol" -- return $ main c msgChan conf stateFile state 
+                                    )  dumpi
                         --- ok
     forkId <- liftIO $ forkIO $ recevier2 w root config stateFile dumpChan tid1 tid2 states'' config'' layoutLock
 
