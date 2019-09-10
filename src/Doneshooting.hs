@@ -25,19 +25,16 @@ doneshootingOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig 
 doneshootingOverview stateFile states config config' = do
     x <- liftIO $ withMVar config' $ (\conf -> getDoneshooting conf)
     
-    case x of
-        NoDoneshooting -> do
-            mkSection [ mkColumns ["is-multiline"]
+    doneshooting (mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
                             ]
-                      ] 
-
-        Doneshooting y -> do
-            mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
-                            ]
-                      ] 
+                      ] ) (\y -> do
+                            mkSection [ mkColumns ["is-multiline"]
+                                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
+                                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                                            ]
+                                      ] 
+                      ) x
 
 
 doneshootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
@@ -45,25 +42,21 @@ doneshootingSection root stateFile states'' states config config' = do
     x <- liftIO $ withMVar config' $ (\conf -> getDoneshooting conf)
 
     (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
-            liftIO $ withMVar config' $ (\conf -> setDoneshooting conf $ Doneshooting folder)
+            liftIO $ withMVar config' $ (\conf -> setDoneshooting conf $ yesDoneshooting folder)
 
-    case x of
-        NoDoneshooting -> do
-            mkSection [ mkColumns ["is-multiline"]
+    doneshooting (mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
                             , mkColumn ["is-12"] [ element view ]
                             ]
-                      ] 
+                      ] ) (\ y -> do
+                        (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+                        on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
-        Doneshooting y -> do
-
-            (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
-
-            mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
-                            , mkColumn ["is-12"] [ element view ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
-                            , mkColumn ["is-12"] [ element forwardView ]
-                            ]
-                      ] 
+                        mkSection [ mkColumns ["is-multiline"]
+                                        [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
+                                        , mkColumn ["is-12"] [ element view ]
+                                        , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                                        , mkColumn ["is-12"] [ element forwardView ]
+                                        ]
+                                  ] 
+                  ) x

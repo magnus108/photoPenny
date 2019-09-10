@@ -449,7 +449,6 @@ resetIt config =
         >> (withMVar config $ (\conf -> setLocation conf NoLocation))
         >> (withMVar config $ (\conf -> setSession conf NoSessions))
         >> (withMVar config $ (\conf -> setShooting conf NoShootings))
-        >> (withMVar config $ (\conf -> setDoneshooting conf NoDoneshooting))
         >> (withMVar config $ (\conf -> setBuilt' conf NoBuilt))
         >> (withMVar config $ (\conf -> setGrades conf NoGrades))
         >> (withMVar config $ (\conf -> setGradeSelection conf NoSelection))
