@@ -10,7 +10,7 @@ import Control.Concurrent.MVar
 import Control.Concurrent.STM.TVar
 import Control.Monad.STM
 
-import State
+import PhotoShake.State
 import Elements
 
 import Utils.Debounce

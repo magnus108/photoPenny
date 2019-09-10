@@ -15,7 +15,7 @@ import Graphics.UI.Threepenny.Core
 import Utils.ListZipper
 import Utils.Actions
 import Utils.FP
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 import PhotoShake.ShakeConfig
 

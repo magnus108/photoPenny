@@ -8,7 +8,7 @@ module Message
     ) where
 
 
-import State (States)
+import PhotoShake.State (States)
 
 import Control.Concurrent.MVar
 

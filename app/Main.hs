@@ -13,7 +13,7 @@ import Utils.Env
 import Control.Concurrent
 import Utils.ListZipper
 import Utils.FP
-import State 
+import PhotoShake.State 
 
 import qualified Control.Concurrent.Chan as Chan
 

@@ -29,7 +29,7 @@ import Utils.FP
 
 import PhotoShake.ShakeConfig
 
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 sessionOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
 sessionOverview stateFile states config config' = do

@@ -26,7 +26,7 @@ import Utils.Actions
 
 import PhotoShake.ShakeConfig
 
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 shootingOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
 shootingOverview stateFile states config config' = do

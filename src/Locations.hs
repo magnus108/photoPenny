@@ -28,7 +28,7 @@ import Utils.Comonad
 import Utils.ListZipper
 import Utils.FP
 import Utils.Actions (interpret)
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 locationsOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
 locationsOverview stateFile states config config' = do

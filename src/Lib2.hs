@@ -5,7 +5,7 @@ module Lib2
 
 import Control.Concurrent.MVar
 
-import qualified State as S
+import qualified PhotoShake.State as S
 import Utils.ListZipper
 import Utils.FP
 import Utils.Comonad
@@ -179,6 +179,7 @@ redoLayout body msgs app = void $ do
 viewState :: Chan Msg.Message -> App Model -> (ListZipper S.State) -> UI Element
 viewState msgs app states = do
     case (focus states) of 
+            S.Dump -> dumpSection msgs (_dump app)
             S.Dump -> dumpSection msgs (_dump app)
             _ -> do
                 string "bob"

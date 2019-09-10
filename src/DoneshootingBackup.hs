@@ -16,7 +16,7 @@ import PhotoShake.ShakeConfig
 
 import Utils.ListZipper
 import Utils.FP
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 import Utils.Actions
 

@@ -24,7 +24,7 @@ import Utils.Env
 import Utils.Comonad
 
 
-import State
+import PhotoShake.State
 
 import Utils.FP
 import qualified PhotoShake.Dump as D

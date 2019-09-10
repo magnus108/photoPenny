@@ -24,7 +24,7 @@ import Utils.Comonad
 import PhotoShake.ShakeConfig
 import PhotoShake.Built
 
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 import Control.Monad
 

@@ -25,7 +25,7 @@ import Shooting
 
 import PhotoShake.ShakeConfig
 
-import State (State, States(..), setStates)
+import PhotoShake.State (State, States(..), setStates)
 
 import Control.Concurrent.MVar
 
