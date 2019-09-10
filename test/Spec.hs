@@ -53,7 +53,6 @@ main = do
     app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump "test/config" (fp $ start "") config)
     messages <- Chan.newChan
 
-    {-
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
@@ -83,7 +82,6 @@ main = do
                 waitUntil 10000000 $ findElem ( ById "dumpMissing" )
                 )
         )
-    -}
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      

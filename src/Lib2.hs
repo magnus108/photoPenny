@@ -115,7 +115,7 @@ receive w msgs app = do
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
-                putMVar app app''
+                putMVar app app'
 
             Msg.SetDump dump -> do
                 app' <- takeMVar app 
