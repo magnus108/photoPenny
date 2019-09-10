@@ -5,6 +5,8 @@ module Message
     , setStates
     , getDump
     , setDump
+    , getDoneshooting
+    , setDoneshooting
     ) where
 
 
@@ -13,6 +15,7 @@ import PhotoShake.State (States)
 import Control.Concurrent.MVar
 
 import PhotoShake.Dump
+import PhotoShake.Doneshooting
 
 data Message 
     = Block (MVar ())
@@ -22,6 +25,9 @@ data Message
 
     | GetDump
     | SetDump Dump
+
+    | GetDoneshooting
+    | SetDoneshooting Doneshooting
 
 
 block :: MVar () -> Message
@@ -37,6 +43,12 @@ setStates = SetStates
 getDump :: Message
 getDump = GetDump
 
-
 setDump :: Dump -> Message
 setDump = SetDump
+
+
+getDoneshooting :: Message
+getDoneshooting = GetDoneshooting
+
+setDoneshooting :: Doneshooting -> Message
+setDoneshooting = SetDoneshooting

@@ -16,10 +16,10 @@ import System.Directory
 import Test.WebDriver.Common.Keys (enter)
 
 
-import Message (block, setDump)
-import State
+import Message (block, setDump, setDoneshooting)
+import PhotoShake.State
 
-import PhotoShake.ShakeConfig hiding (setDump)
+import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting)
 import PhotoShake.Photographee
 import PhotoShake.Built
 
@@ -36,9 +36,9 @@ import Control.Concurrent
 
 import Utils.ListZipper
 import Utils.FP
-import State 
 
 import qualified PhotoShake.Dump as D
+import qualified PhotoShake.Doneshooting as DO
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -50,8 +50,38 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DO.noDoneshooting "test/config" (fp $ start "") config)
     messages <- Chan.newChan
+
+    race_ (L.main 9000 messages app )
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+            empty <- liftBase newEmptyMVar
+
+            --fuckthis
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+            waitUntil 10000000 $ findElem ( ById "tabDoneshooting" ) >>= click
+            --fuckthis
+
+            forM_ [1..60] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setDoneshooting $ DO.yesDoneshooting "/home/magnus/Downloads/Magnus Renamed/what"
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "doneshootingPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Downloads/Magnus Renamed/what")
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setDoneshooting $ DO.noDoneshooting
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "doneshootingMissing" )
+                )
+        )
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
@@ -82,6 +112,7 @@ main = do
                 waitUntil 10000000 $ findElem ( ById "dumpMissing" )
                 )
         )
+
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      

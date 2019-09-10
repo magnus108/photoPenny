@@ -13,9 +13,12 @@ module Model.E
     , _states
     , _setStates
     , _setDump
+    , _setDoneshooting
     , _dump
+    , _doneshooting
     , _stateFile
     , _dumpFile
+    , _doneshootingFile
     , _shakeConfig
     , _root
     ) where
@@ -28,6 +31,8 @@ import PhotoShake.State
 
 import Utils.FP
 import qualified PhotoShake.Dump as D
+import qualified PhotoShake.Doneshooting as DO
+
 import PhotoShake.ShakeConfig 
 
 data E = Production | Test
@@ -47,6 +52,7 @@ data Model = Model
     { states :: Maybe States 
 
     , dump :: D.Dump
+    , doneshooting :: DO.Doneshooting
 
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
@@ -83,6 +89,9 @@ _stateFile  = _stateConfig . _shakeConfig
 _dumpFile :: App Model -> FilePath -- deleteme
 _dumpFile  = _dumpConfig . _shakeConfig
 
+_doneshootingFile :: App Model -> FilePath -- deleteme
+_doneshootingFile = _doneshootingConfig . _shakeConfig
+
 _states:: App Model -> Maybe States -- deleteme
 _states = states . extract . unApp
 
@@ -95,8 +104,14 @@ _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing
 _setDump :: App Model -> D.Dump -> App Model -- deleteme
 _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )
 
+_setDoneshooting :: App Model -> DO.Doneshooting -> App Model -- deleteme
+_setDoneshooting x y = App $ (unApp x) =>> (\x -> (extract x) { doneshooting = y } )
+
 _dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
+
+_doneshooting :: App Model -> DO.Doneshooting -- deleteme
+_doneshooting = doneshooting . extract . unApp
 
 
 _shakeConfig :: App Model -> ShakeConfig -- deleteme

@@ -34,6 +34,7 @@ import Data.Function ((&))
 import Control.Exception
 import PhotoShake.ShakeConfig
 import PhotoShake.Dump
+import PhotoShake.Doneshooting
 
 
 main :: Int -> Chan Msg.Message -> MVar (App Model) -> IO ()
@@ -61,7 +62,13 @@ setupDumpListener manager msgChan app = do -- THIS BAD
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getDump)
 
-
+setupDoneshootingListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupDoneshootingListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    doneshootingConfig <- withMVar app (\app' -> return (_doneshootingFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName doneshootingConfig) (\_ -> writeChan msgChan Msg.getDoneshooting)
 
 
 getStates :: Chan Msg.Message -> UI ()
@@ -77,9 +84,11 @@ setup manager msgChan app w = do
     -- do i really watch all files in setup?
     _ <- liftIO $ setupStateListener manager msgs app
     _ <- liftIO $ setupDumpListener manager msgs app
+    _ <- liftIO $ setupDoneshootingListener manager msgs app
 
     _ <- liftIO $ writeChan msgs Msg.getStates 
     _ <- liftIO $ writeChan msgs Msg.getDump 
+    _ <- liftIO $ writeChan msgs Msg.getDoneshooting
 
     receiver <- liftIO $ forkIO $ receive w msgs app
 
@@ -139,6 +148,27 @@ receive w msgs app = do
 
                 putMVar app app''
 
+            Msg.SetDoneshooting doneshooting -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setDoneshooting shakeConfig doneshooting
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetDoneshooting -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                doneshooting <- getDoneshooting shakeConfig
+                let app'' = _setDoneshooting app' doneshooting
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+
+                putMVar app app''
     
             Msg.Block x -> do -- i can maybe do something good with this.
                 putMVar x () 
@@ -180,7 +210,7 @@ viewState :: Chan Msg.Message -> App Model -> (ListZipper S.State) -> UI Element
 viewState msgs app states = do
     case (focus states) of 
             S.Dump -> dumpSection msgs (_dump app)
-            S.Dump -> dumpSection msgs (_dump app)
+            S.Doneshooting -> doneshootingSection msgs (_doneshooting app)
             _ -> do
                 string "bob"
 
@@ -215,6 +245,24 @@ dumpSection msgs x = do
 
 
 
+doneshootingSection :: Chan Msg.Message -> Doneshooting -> UI Element
+doneshootingSection msgs x = do
+    (_, picker) <- mkFolderPicker "doneshootingPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
+        liftIO $ writeChan msgs $ Msg.setDoneshooting $ yesDoneshooting folder
+
+    doneshooting (mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe ikke valgt" # set (attr "id") "doneshootingMissing" ]
+                            , mkColumn ["is-12"] [ element picker ]
+                            ]
+                      ] ) (\ y -> do
+
+                        mkSection [ mkColumns ["is-multiline"]
+                                        [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
+                                        , mkColumn ["is-12"] [ element picker ]
+                                        , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "doneshootingPath" ]
+                                        ]
+                                  ] 
+                  ) x
 
 
 
