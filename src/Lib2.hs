@@ -30,6 +30,7 @@ import System.FilePath hiding (combine)
 
 import Data.Function ((&))
 
+import Dump
 
 import Control.Exception
 import PhotoShake.ShakeConfig
@@ -213,33 +214,6 @@ viewState msgs app states = do
             S.Doneshooting -> doneshootingSection msgs (_doneshooting app)
             _ -> do
                 string "bob"
-
-
-dumpSection :: Chan Msg.Message -> Dump -> UI Element
-dumpSection msgs x = do
-    (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
-        liftIO $ writeChan msgs $ Msg.setDump  $ yesDump folder
-
-
-    with <- mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" # set (attr "id") "dumpMissing" ]
-                            , mkColumn ["is-12"] [ element picker ]
-                            ]
-                      ] 
-    
-
-            ---(buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            --on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
-
-    let without = (\z -> mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
-                            , mkColumn ["is-12"] [ element picker ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text z # set (attr "id") "dumpPath" ]
-                            --, mkColumn ["is-12"] [ element forwardView ]
-                            ]
-                      ])
-
-    dump (element with) without x
 
 
 

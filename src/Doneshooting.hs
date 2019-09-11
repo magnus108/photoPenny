@@ -1,62 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Doneshooting
-    ( doneshootingSection 
-    , doneshootingOverview
+    ( doneshootingSection
     ) where
 
-import Elements
-import PhotoShake.Doneshooting
-
-import Control.Concurrent.MVar
+import Control.Monad 
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import PhotoShake.ShakeConfig
+import Elements
 
-import Utils.ListZipper
-import Utils.FP
-import PhotoShake.State (State, States(..), setStates)
+import qualified Message as Msg
+import Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.Chan as Chan 
 
-import Utils.Actions
+import PhotoShake.Doneshooting
 
-
-doneshootingOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
-doneshootingOverview stateFile states config config' = do
-    x <- liftIO $ withMVar config' $ (\conf -> getDoneshooting conf)
-    
-    doneshooting (mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
-                            ]
-                      ] ) (\y -> do
-                            mkSection [ mkColumns ["is-multiline"]
-                                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
-                                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
-                                            ]
-                                      ] 
-                      ) x
-
-
-doneshootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
-doneshootingSection root stateFile states'' states config config' = do
-    x <- liftIO $ withMVar config' $ (\conf -> getDoneshooting conf)
-
-    (_, view) <- mkFolderPicker "doneshotingPicker" "Vælg config folder" $ \folder -> do
-            liftIO $ withMVar config' $ (\conf -> setDoneshooting conf $ yesDoneshooting folder)
+doneshootingSection :: Chan Msg.Message -> Doneshooting -> UI Element
+doneshootingSection msgs x = do
+    (_, picker) <- mkFolderPicker "doneshootingPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
+        liftIO $ Chan.writeChan msgs $ Msg.setDoneshooting $ yesDoneshooting folder
 
     doneshooting (mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
-                            , mkColumn ["is-12"] [ element view ]
+                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe ikke valgt" # set (attr "id") "doneshootingMissing" ]
+                            , mkColumn ["is-12"] [ element picker ]
                             ]
                       ] ) (\ y -> do
-                        (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                        on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
                         mkSection [ mkColumns ["is-multiline"]
-                                        [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" ]
-                                        , mkColumn ["is-12"] [ element view ]
-                                        , mkColumn ["is-12"] [ UI.p # set UI.text y ]
-                                        , mkColumn ["is-12"] [ element forwardView ]
+                                        [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
+                                        , mkColumn ["is-12"] [ element picker ]
+                                        , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "doneshootingPath" ]
                                         ]
                                   ] 
                   ) x

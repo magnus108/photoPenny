@@ -1,64 +1,46 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Dump
     ( dumpSection 
-    , dumpOverview
     ) where
 
-
-import Elements
-
-import PhotoShake.ShakeConfig
-import PhotoShake.Dump
+import Control.Monad 
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import Utils.ListZipper
-import Utils.FP
-import PhotoShake.State (State, States(..), setStates)
-
-import Control.Concurrent.MVar
-
-import Utils.Actions
-
-dumpOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
-dumpOverview stateFile states config config' = do
-    x <- liftIO $ withMVar config' $ (\conf -> getDump conf)
-
-    dump (mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" ]
-                            ]
-                      ] ) (\y -> do
-                            mkSection 
-                                [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
-                                    , mkColumn ["is-12"] [ UI.p # set UI.text y ]
-                                    ]
-                                ] 
-                            ) x
+import Elements
 
 
-dumpSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
-dumpSection root stateFile states'' states config config' = do
-    x <- liftIO $ withMVar config' $ (\conf -> getDump conf)
+import qualified Message as Msg
+import Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.Chan as Chan 
 
-    (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder ->
-            liftIO $ withMVar config' $ (\conf -> setDump conf $ yesDump folder)
+import PhotoShake.Dump
 
 
-    dump (mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" ]
+dumpSection :: Chan Msg.Message -> Dump -> UI Element
+dumpSection msgs x = do
+    (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
+        liftIO $ Chan.writeChan msgs $ Msg.setDump  $ yesDump folder
+
+
+    with <- mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe ikke valgt" # set (attr "id") "dumpMissing" ]
                             , mkColumn ["is-12"] [ element picker ]
                             ]
-                      ]) (\ y -> do
-                            (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
+                      ] 
+    
 
-                            mkSection [ mkColumns ["is-multiline"]
-                                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
-                                            , mkColumn ["is-12"] [ element picker ]
-                                            , mkColumn ["is-12"] [ UI.p # set UI.text y ]
-                                            , mkColumn ["is-12"] [ element forwardView ]
-                                            ]
-                                      ] 
-                        ) x
+            ---(buttonForward, forwardView) <- mkButton "nextDump" "Ok"
+            --on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
+
+    let without = (\z -> mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dump mappe" # set (attr "id") "dumpOK" ]
+                            , mkColumn ["is-12"] [ element picker ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text z # set (attr "id") "dumpPath" ]
+                            --, mkColumn ["is-12"] [ element forwardView ]
+                            ]
+                      ])
+
+    dump (element with) without x
+
