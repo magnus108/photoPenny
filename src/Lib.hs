@@ -101,13 +101,7 @@ viewState :: FilePath -> FilePath -> ShakeConfig -> Window -> Chan String -> Cha
 viewState root stateFile config w chan chanPhotographer chanSession states'' config'' states = do
     tmp <- UI.div
     case (focus states) of 
-            Dagsdato -> do
-                c <- dagsdatoSection root stateFile states'' states config  config''
-                return (c,tmp)
 
-            DagsdatoBackup -> do
-                c <- dagsdatoBackupSection root stateFile states'' states config  config''
-                return (c,tmp)
 
             Photographer -> do 
                 c <- photographerSection root stateFile states'' states config config'' chanPhotographer
@@ -311,8 +305,6 @@ main app config msgChan conf stateFile (States states) root w = do
 starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States -> MVar ShakeConfig -> MVar ThreadId -> MVar ThreadId -> MVar () -> UI ()
 starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = void $ do
 
-    dagsdato <- dagsdatoOverview root stateFile config config'
-    dagsdatoBackup <- dagsdatoBackupOverview root stateFile config config'
     
     photographer <- photographerOverview root stateFile config config'
     doneshootingBackup <- doneshootingBackupOverview root stateFile config config'
@@ -327,9 +319,8 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
 
     view' <- mkSection [ element forwardView]
 
-    view <- mkSection [ element dagsdato
-                      , element dagsdatoBackup
-                      , element doneshootingBackup
+    view <- mkSection [ 
+                       element doneshootingBackup
                       , element session
                       , element photographer
                       , element shooting

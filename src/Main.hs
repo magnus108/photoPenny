@@ -421,12 +421,6 @@ mainSection _ _ config config' w = do
 
 
 
-mkReset :: MVar ShakeConfig -> UI (Element, Element)
-mkReset config = do
-    (button, view) <- mkButton "reset" "Reset konfiguration"
-    on UI.click button $ \_ -> liftIO $ resetIt config
-    return (button, view)
-
 
 setNumber :: MVar ShakeConfig -> Element -> String -> String -> UI Element
 setNumber config' input' tea s = do
@@ -439,19 +433,6 @@ setNumber config' input' tea s = do
                 )
     return view
 
-
-
-
-resetIt :: MVar ShakeConfig -> IO ()
-resetIt config = 
-        (withMVar config $ (\conf -> setDagsdato conf NoDagsdato))
-        >> (withMVar config $ (\conf -> setPhotographers conf NoPhotographers))
-        >> (withMVar config $ (\conf -> setLocation conf NoLocation))
-        >> (withMVar config $ (\conf -> setSession conf NoSessions))
-        >> (withMVar config $ (\conf -> setShooting conf NoShootings))
-        >> (withMVar config $ (\conf -> setBuilt' conf NoBuilt))
-        >> (withMVar config $ (\conf -> setGrades conf NoGrades))
-        >> (withMVar config $ (\conf -> setGradeSelection conf NoSelection))
 
 mkBuild :: MVar ShakeConfig -> UI (Element, Element)
 mkBuild config = do

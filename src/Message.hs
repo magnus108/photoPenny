@@ -7,6 +7,8 @@ module Message
     , setDump
     , getDoneshooting
     , setDoneshooting
+    , getDagsdato
+    , setDagsdato
     ) where
 
 
@@ -16,6 +18,7 @@ import Control.Concurrent.MVar
 
 import PhotoShake.Dump
 import PhotoShake.Doneshooting
+import PhotoShake.Dagsdato
 
 data Message 
     = Block (MVar ())
@@ -28,6 +31,9 @@ data Message
 
     | GetDoneshooting
     | SetDoneshooting Doneshooting
+
+    | GetDagsdato
+    | SetDagsdato Dagsdato
 
 
 block :: MVar () -> Message
@@ -52,3 +58,10 @@ getDoneshooting = GetDoneshooting
 
 setDoneshooting :: Doneshooting -> Message
 setDoneshooting = SetDoneshooting
+
+
+getDagsdato :: Message
+getDagsdato = GetDagsdato
+
+setDagsdato :: Dagsdato -> Message
+setDagsdato = SetDagsdato

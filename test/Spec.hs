@@ -16,10 +16,10 @@ import System.Directory
 import Test.WebDriver.Common.Keys (enter)
 
 
-import Message (block, setDump, setDoneshooting)
+import Message (block, setDump, setDoneshooting, setDagsdato)
 import PhotoShake.State
 
-import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting)
+import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato)
 import PhotoShake.Photographee
 import PhotoShake.Built
 
@@ -39,6 +39,7 @@ import Utils.FP
 
 import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
+import qualified PhotoShake.Dagsdato as DA
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -50,8 +51,43 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DO.noDoneshooting "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting "test/config" (fp $ start "") config)
     messages <- Chan.newChan
+
+    race_ (L.main 9000 messages app )
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+            empty <- liftBase newEmptyMVar
+
+            --fuckthis
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+            waitUntil 10000000 $ findElem ( ById "tabDagsdato" ) >>= click
+            --fuckthis
+
+            forM_ [1..10] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setDagsdato $ DA.yesDagsdato "/home/magnus/Downloads"
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "dagsdatoPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Downloads")
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setDagsdato $ DA.noDagsdato
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "dagsdatoMissing" )
+
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
+
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
@@ -64,7 +100,7 @@ main = do
             waitUntil 10000000 $ findElem ( ById "tabDoneshooting" ) >>= click
             --fuckthis
 
-            forM_ [1..60] (\x -> do
+            forM_ [1..10] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 liftBase $ writeChan messages $ setDoneshooting $ DO.yesDoneshooting "/home/magnus/Downloads/Magnus Renamed/what"
@@ -80,6 +116,10 @@ main = do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "doneshootingMissing" )
+                
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
                 )
         )
 
@@ -94,7 +134,7 @@ main = do
             waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
             --fuckthis
 
-            forM_ [1..60] (\x -> do
+            forM_ [1..10] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 liftBase $ writeChan messages $ setDump $ D.yesDump "/home/magnus/Downloads/Magnus Renamed/what"
@@ -110,16 +150,19 @@ main = do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "dumpMissing" )
+                
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
                 )
         )
-
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
             empty <- liftBase newEmptyMVar
-            forM_ [1..600] (\x -> do
+            forM_ [1..100] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 100000000 $ findElem ( ById "tabDump" ) >>= click
@@ -128,6 +171,10 @@ main = do
                 liftBase $ takeMVar empty
 
                 waitUntil 100000000 $ findElem ( ById "tabPhotographer" ) >>= click
+                
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
                 )
             return True
         )

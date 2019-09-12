@@ -31,11 +31,13 @@ import System.FilePath hiding (combine)
 import Data.Function ((&))
 
 import Dump
+import Doneshooting
 
 import Control.Exception
 import PhotoShake.ShakeConfig
 import PhotoShake.Dump
 import PhotoShake.Doneshooting
+import PhotoShake.Dagsdato
 
 
 main :: Int -> Chan Msg.Message -> MVar (App Model) -> IO ()
@@ -72,6 +74,15 @@ setupDoneshootingListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (eventPath e) == takeFileName doneshootingConfig) (\_ -> writeChan msgChan Msg.getDoneshooting)
 
 
+setupDagsdatoListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupDagsdatoListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    dagsdatoConfig <- withMVar app (\app' -> return (_dagsdatoFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName dagsdatoConfig) (\_ -> writeChan msgChan Msg.getDagsdato)
+
+
 getStates :: Chan Msg.Message -> UI ()
 getStates msgChan = liftIO $ writeChan msgChan Msg.getStates
 
@@ -86,10 +97,12 @@ setup manager msgChan app w = do
     _ <- liftIO $ setupStateListener manager msgs app
     _ <- liftIO $ setupDumpListener manager msgs app
     _ <- liftIO $ setupDoneshootingListener manager msgs app
+    _ <- liftIO $ setupDagsdatoListener manager msgs app
 
     _ <- liftIO $ writeChan msgs Msg.getStates 
     _ <- liftIO $ writeChan msgs Msg.getDump 
     _ <- liftIO $ writeChan msgs Msg.getDoneshooting
+    _ <- liftIO $ writeChan msgs Msg.getDagsdato
 
     receiver <- liftIO $ forkIO $ receive w msgs app
 
@@ -170,6 +183,30 @@ receive w msgs app = do
                     redoLayout body msgs app''
 
                 putMVar app app''
+
+
+
+            Msg.SetDagsdato dagsdato -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setDagsdato shakeConfig dagsdato
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetDagsdato -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                dagsdato <- getDagsdato shakeConfig
+                let app'' = _setDagsdato app' dagsdato
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+
+                putMVar app app''
     
             Msg.Block x -> do -- i can maybe do something good with this.
                 putMVar x () 
@@ -212,35 +249,55 @@ viewState msgs app states = do
     case (focus states) of 
             S.Dump -> dumpSection msgs (_dump app)
             S.Doneshooting -> doneshootingSection msgs (_doneshooting app)
+            S.Dagsdato-> dagsdatoSection msgs (_dagsdato app)
             _ -> do
                 string "bob"
 
 
-
-
-
-doneshootingSection :: Chan Msg.Message -> Doneshooting -> UI Element
-doneshootingSection msgs x = do
+dagsdatoSection :: Chan Msg.Message -> Dagsdato -> UI Element
+dagsdatoSection msgs x = do
     (_, picker) <- mkFolderPicker "doneshootingPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
-        liftIO $ writeChan msgs $ Msg.setDoneshooting $ yesDoneshooting folder
+        liftIO $ Chan.writeChan msgs $ Msg.setDagsdato $ yesDagsdato folder
 
-    doneshooting (mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe ikke valgt" # set (attr "id") "doneshootingMissing" ]
+    dagsdato ( mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe ikke valgt" # set (attr "id") "dagsdatoMissing" ]
                             , mkColumn ["is-12"] [ element picker ]
                             ]
-                      ] ) (\ y -> do
+                      ] )
+                (\y -> do
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" # set (attr "id") "dagsdatoOK" ]
+                                    , mkColumn ["is-12"] [ element picker ]
+                                    , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "dagsdatoPath" ]
+                                    ]
+                              ] 
+                ) x
 
-                        mkSection [ mkColumns ["is-multiline"]
-                                        [ mkColumn ["is-12"] [ mkLabel "Doneshooting mappe" # set (attr "id") "doneshootingOK" ]
-                                        , mkColumn ["is-12"] [ element picker ]
-                                        , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "doneshootingPath" ]
-                                        ]
-                                  ] 
-                  ) x
+{-
+dagsdatoBackupSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
+dagsdatoBackupSection  root stateFile states'' states config config' = do
+    x <- liftIO $ withMVar config' $ (\conf -> getDagsdatoBackup conf)
 
+    (_, view) <- mkFolderPicker "dagsDatoPicker" "Vælg config folder" $ \folder ->
+        liftIO $ withMVar config' $ (\conf -> setDagsdatoBackup conf $ Dagsdato folder)
 
+    dagsdato (mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato Backup mappe ikke valgt" ]
+                            , mkColumn ["is-12"] [ element view ]
+                            ]
+                      ])
+                (\y -> do
+                    (buttonForward, forwardView) <- mkButton "next" "Ok"
+                    on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
 
-
+                    mkSection [ mkColumns ["is-multiline"]
+                                    [ mkColumn ["is-12"] [ mkLabel "Dagsdato backup mappe" # set (attr "id") "dagsdatoBackupOK" ]
+                                    , mkColumn ["is-12"] [ element view ]
+                                    , mkColumn ["is-12"] [ UI.p # set UI.text y ]
+                                    , mkColumn ["is-12"] [ element forwardView ]
+                                    ]
+                              ] ) x
+                              -}
 
 
 
