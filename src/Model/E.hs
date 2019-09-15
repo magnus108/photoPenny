@@ -18,8 +18,14 @@ module Model.E
     , _setPhotographers
     , _dump
     , _doneshooting
+    , _shootings
+    , _sessions
     , _dagsdato
     , _photographers
+    , _setShootings
+    , _setSessions
+    , _shootingFile
+    , _sessionFile
     , _stateFile
     , _dumpFile
     , _photographerFile
@@ -40,6 +46,8 @@ import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
 import qualified PhotoShake.Dagsdato as DA
 import qualified PhotoShake.Photographer as Photographer
+import qualified PhotoShake.Session as Session
+import qualified PhotoShake.Shooting as Shooting
 
 import PhotoShake.ShakeConfig 
 
@@ -65,6 +73,8 @@ data Model = Model
 
     , doneshooting :: DO.Doneshooting
     , photographers :: Photographer.Photographers
+    , shootings :: Shooting.Shootings
+    , sessions :: Session.Sessions
 
 
     , dir1 :: FilePath -- deleteme
@@ -112,6 +122,12 @@ _photographerFile = _photographerConfig . _shakeConfig
 _dagsdatoFile :: App Model -> FilePath -- deleteme
 _dagsdatoFile = _dagsdatoConfig . _shakeConfig
 
+_sessionFile :: App Model -> FilePath -- deleteme
+_sessionFile = _sessionConfig . _shakeConfig
+
+_shootingFile :: App Model -> FilePath -- deleteme
+_shootingFile = _shootingsConfig . _shakeConfig
+
 _states:: App Model -> Maybe States -- deleteme
 _states = states . extract . unApp
 
@@ -133,6 +149,12 @@ _setDagsdato x y = App $ (unApp x) =>> (\x -> (extract x) { dagsdato = y } )
 _setPhotographers :: App Model -> Photographer.Photographers -> App Model -- deleteme
 _setPhotographers x y = App $ (unApp x) =>> (\x -> (extract x) { photographers = y } )
 
+_setSessions :: App Model -> Session.Sessions -> App Model -- deleteme
+_setSessions x y = App $ (unApp x) =>> (\x -> (extract x) { sessions = y } )
+
+_setShootings :: App Model -> Shooting.Shootings -> App Model -- deleteme
+_setShootings x y = App $ (unApp x) =>> (\x -> (extract x) { shootings = y } )
+
 _dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
 
@@ -141,6 +163,14 @@ _doneshooting = doneshooting . extract . unApp
 
 _dagsdato :: App Model -> DA.Dagsdato -- deleteme
 _dagsdato = dagsdato . extract . unApp
+
+
+_sessions :: App Model -> Session.Sessions -- deleteme
+_sessions = sessions . extract . unApp
+
+_shootings :: App Model -> Shooting.Shootings -- deleteme
+_shootings = shootings . extract . unApp
+
 
 _photographers :: App Model -> Photographer.Photographers -- deleteme
 _photographers = photographers . extract . unApp

@@ -14,7 +14,7 @@ import PhotoShake
 import PhotoShake.ShakeConfig
 import PhotoShake.Doneshooting
 import PhotoShake.Shooting
-import PhotoShake.Session
+import PhotoShake.Session hiding (getSessions)
 import PhotoShake.Location
 import PhotoShake.Photographer
 import PhotoShake.Dump
@@ -139,7 +139,7 @@ mainSection _ _ config config' w = do
           --          ]
     
 
-    sessions <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
+    sessions_ <- liftIO $ withMVar config' $ (\conf -> getSessions conf)
 
 
     nameIden <- liftIO $ readIORef idenName
@@ -276,16 +276,14 @@ mainSection _ _ config config' w = do
 
                     input' <- UI.button # set UI.type_ "button" # set UI.name "sessions"
                         
-                    let label = case item of
-                                    Group -> "Gruppe"
-                                    Single -> "Enkelt"
+                    let label = type_ "Enkelt" "Gruppe" item
                     
                     button <- UI.button #. "button" #+ [string label] 
 
                     button' <- if (not isBuilding) then return button else (element button) # set (attr "disabled") ""
                     
                     on UI.click button' $ \_ -> do
-                        _ <- liftIO $ withMVar config' $ (\conf -> setSession conf $ Sessions zipper )-- det her må man ik?
+                        _ <- liftIO $ withMVar config' $ (\conf -> setSession conf $ yesSessions zipper )-- det her må man ik?
                         idd <- liftIO $ readIORef identKinder
                         clas <- liftIO $ readIORef identKinderClass
 
@@ -306,19 +304,19 @@ mainSection _ _ config config' w = do
             ) 
 
     -- badness 3000
-    let s = case sessions of
-            NoSessions -> UI.div #+ [ string "Session ikke angivet" ]
-            Sessions y ->
-                UI.div #. "buttons has-addons" #+ (fmap snd $ filter (\xxx -> case (fst xxx) of 
-                                                        Kindergarten _ -> case focus y of
-                                                                Kindergarten _ -> True
-                                                                School -> False
-                                                        School -> School == focus y
+    let s = sessions (UI.div #+ [ string "Session ikke angivet" ]) (\y -> 
+                UI.div #. "buttons has-addons" #+ (fmap snd $ filter (\xxx ->
+                                                        session (\_ -> session 
+                                                                    (\_ -> True)
+                                                                    (False)
+                                                                    (focus y)
+                                                                )
+                                                        (school == focus y)
+                                                        (fst xxx)
                                                     ) $ toList $ y =>> (\zipper ->
-                            case (focus zipper) of
-                                Kindergarten t -> (Kindergarten t, wats zipper t)
-                                School -> (School, element viewSchool)
-                            ) )
+                            session (\t -> (kindergarten t, wats zipper t))
+                                (school, element viewSchool)
+                            (focus zipper) ))) sessions_
 
     buttonAlt <- UI.button #. "button" #+ [string "Opret og flyt"] 
 
@@ -380,11 +378,16 @@ mainSection _ _ config config' w = do
                         ]
                     ]
 
-    let ss = case sessions of 
-            NoSessions -> UI.div 
-            Sessions y ->
-                    case (focus y) of
-                            School -> mkColumns ["is-multiline"] 
+    let ss = sessions (UI.div) (\y ->
+                session (\ t -> mkColumns ["is-multiline"] 
+                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
+                                            , mkColumn ["is-3"] [element inputViewKinder]
+                                            , mkColumn ["is-3"] [element inputViewKinderName]
+                                            , mkColumn ["is-12"] [s] 
+                                            , element dumpSize
+                                            , element msg
+                                            , element builtMsg
+                                            ]) (mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-12"] [s] 
                                             , element msg
                                             , element builtMsg
@@ -396,17 +399,7 @@ mainSection _ _ config config' w = do
                                             , mkColumn ["is-12"] [UI.br]-- ffs
                                             , mkColumn ["is-9"] [element inputViewKinderClasssCopy]-- ffs
                                             , element kidsInGradeView
-                                            ]
-                            Kindergarten t -> mkColumns ["is-multiline"] 
-                                            [ mkColumn ["is-3"] [element inputViewKinderClass]
-                                            , mkColumn ["is-3"] [element inputViewKinder]
-                                            , mkColumn ["is-3"] [element inputViewKinderName]
-                                            , mkColumn ["is-12"] [s] 
-                                            , element dumpSize
-                                            , element msg
-                                            , element builtMsg
-                                            ]
-
+                                            ]) (focus y) ) sessions_
 
 
     inputView2 <- mkSection $ 

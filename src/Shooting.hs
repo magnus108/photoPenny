@@ -1,84 +1,46 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Shooting
     ( mkRadioGroup
-    , shootingSection
-    , shootingOverview
-    -- ups
     , RadioGroup(..)
+    , shootingSection
     ) where
 
-import Control.Concurrent.MVar
 
-import qualified Control.Concurrent.Chan as Chan
-import Control.Exception
-
-import PhotoShake.Shooting
+import Control.Monad 
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import Elements
 
+import qualified Message as Msg
+import Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.Chan as Chan 
+
+import PhotoShake.Shooting
+
 import Utils.FP
-import Utils.ListZipper 
-import Utils.Comonad
 import Utils.Actions
-
-import PhotoShake.ShakeConfig
-
-import PhotoShake.State (State, States(..), setStates)
-
-shootingOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
-shootingOverview stateFile states config config' = do
-        x <- liftIO $ withMVar config' $ (\conf -> getShootings conf)
-
-        case x of
-            NoShootings-> do
-
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Shooting ikke valgt" ]
-                                    ]
-                              ] 
-
-            Shootings y -> do
-                    let toString = (\xx -> case xx of
-                                Normal -> "Normal"
-                                ReShoot -> "Genskydning"
-                            ) (focus y)
-
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]
-                                    , mkColumn ["is-12"] [ UI.p # set UI.text toString ]
-                                    ]
-                              ] 
+import Utils.ListZipper
+import Utils.Comonad
 
 
-shootingSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> Chan.Chan String -> UI Element
-shootingSection root stateFile states'' states config config'  importText = do
-        x <- liftIO $ withMVar config' $ (\conf -> getShootings conf)
 
-        (_, importer) <- mkFilePicker "shootingPicker" "Vælg import fil" $ \file -> do
-            res <- liftIO $ try $ withMVar config' $ (\conf -> importShootings conf file) :: IO (Either SomeException ())
+shootingSection :: Chan Msg.Message -> Shootings -> UI Element
+shootingSection msgs x = do
+    (_, picker) <- mkFilePicker "shootingPicker" "Vælg import fil" $ \file -> when (file /= "") $ do
+        shootings <- liftIO $ interpret $ getShootings $ fp $ start $ file
+        liftIO $ Chan.writeChan msgs $ Msg.setShootings shootings
 
-            liftIO $ case res of
-                        Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
-
-                        Right x -> return ()
-
-        case x of
-                NoShootings -> do
-
-                        mkSection [ mkColumns ["is-multiline"]
-                                        [ mkColumn ["is-12"] [ mkLabel "Shooting ikke valgt" ]
-                                        , mkColumn ["is-12"] [ element importer ]
+    shootings (mkSection [ mkColumns ["is-multiline"]
+                                        [ mkColumn ["is-12"] [ mkLabel "Shooting ikke valgt" # set (attr "id") "shootingMissing" ]
+                                        , mkColumn ["is-12"] [ element picker ]
                                         ]
-                                  ] 
-
-                Shootings y -> do
-
+                                  ] )
+                (\y -> do
                         let group = RadioGroup 
-                                { action = \xx _ -> do
-                                        liftIO $ withMVar config' $ (\conf -> setShooting conf $ Shootings xx)
+                                { action = \xxx _ -> do
+                                        liftIO $ Chan.writeChan msgs $ Msg.setShootings $ yesShootings xxx
                                 , view' = \xx -> UI.string (show (focus xx))
                                 , title' = "shootings"
                                 , items = y
@@ -86,17 +48,12 @@ shootingSection root stateFile states'' states config config'  importText = do
 
                         select <- mkRadioGroup group
 
-                        (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-                        on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ -> interpret $ setStates (mkFP root stateFile) (States (forward states)))
-
                         mkSection [ mkColumns ["is-multiline"]
                                         [ mkColumn ["is-12"] [ mkLabel "Shooting type" # set (attr "id") "shootingOK" ]
                                         , mkColumn ["is-12"] [ element select]
-                                        , mkColumn ["is-12"] [ element importer ]
-                                        , mkColumn ["is-12"] [ element forwardView ]
+                                        , mkColumn ["is-12"] [ element picker ]
                                         ]
-                                  ] 
-
+                                  ] ) x
 
 
 

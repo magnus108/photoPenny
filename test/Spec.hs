@@ -42,6 +42,8 @@ import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
 import qualified PhotoShake.Dagsdato as DA
 import qualified PhotoShake.Photographer as Photographer
+import qualified PhotoShake.Session as Session
+import qualified PhotoShake.Shooting as Shooting
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -53,8 +55,81 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions "test/config" (fp $ start "") config)
     messages <- Chan.newChan
+
+    race_ (L.main 9000 messages app )
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+            empty <- liftBase newEmptyMVar
+
+            --fuckthis
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+            waitUntil 10000000 $ findElem ( ById "tabShooting" ) >>= click
+            --fuckthis
+
+            forM_ [1..10] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                shootings <- liftBase $ A.interpret $ Shooting.getShootings $ fp $ start $ "/home/magnus/Documents/projects/photoPenny/imports/shooting.json" -- cant run on all system and this should not read a file
+                liftBase $ writeChan messages $ Message.setShootings $ shootings
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "shootingOK" ) 
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ Message.setShootings $ Shooting.noShootings
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "shootingMissing" )
+
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
+
+    race_ (L.main 9000 messages app )
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+            empty <- liftBase newEmptyMVar
+
+            --fuckthis
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+            waitUntil 10000000 $ findElem ( ById "tabSession" ) >>= click
+            --fuckthis
+
+            forM_ [1..10] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                sessions <- liftBase $ A.interpret $ Session.getSessions $ fp $ start $ "/home/magnus/Documents/projects/photoPenny/imports/session.json" -- cant run on all system and this should not read a file
+                liftBase $ writeChan messages $ Message.setSessions $ sessions
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "sessionOK" ) 
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ Message.setSessions $ Session.noSessions
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "sessionMissing" )
+
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
+
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      

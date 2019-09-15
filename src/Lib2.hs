@@ -32,6 +32,8 @@ import Data.Function ((&))
 
 import Dump
 import Doneshooting
+import Shooting
+import Session
 import Photographer
 
 import Control.Exception
@@ -93,6 +95,21 @@ setupPhotographerListener manager msgChan app = do -- THIS BAD
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName photographerConfig) (\_ -> writeChan msgChan Msg.getPhotographers)
 
+setupShootingListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupShootingListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    shootingConfig <- withMVar app (\app' -> return (_shootingFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName shootingConfig) (\_ -> writeChan msgChan Msg.getShootings)
+
+setupSessionListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupSessionListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    sessionConfig <- withMVar app (\app' -> return (_sessionFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName sessionConfig) (\_ -> writeChan msgChan Msg.getSessions)
 
 getStates :: Chan Msg.Message -> UI ()
 getStates msgChan = liftIO $ writeChan msgChan Msg.getStates
@@ -110,12 +127,16 @@ setup manager msgChan app w = do
     _ <- liftIO $ setupDoneshootingListener manager msgs app
     _ <- liftIO $ setupDagsdatoListener manager msgs app
     _ <- liftIO $ setupPhotographerListener manager msgs app
+    _ <- liftIO $ setupShootingListener manager msgs app
+    _ <- liftIO $ setupSessionListener manager msgs app
 
     _ <- liftIO $ writeChan msgs Msg.getStates 
     _ <- liftIO $ writeChan msgs Msg.getDump 
     _ <- liftIO $ writeChan msgs Msg.getDoneshooting
     _ <- liftIO $ writeChan msgs Msg.getDagsdato
     _ <- liftIO $ writeChan msgs Msg.getPhotographers
+    _ <- liftIO $ writeChan msgs Msg.getShootings
+    _ <- liftIO $ writeChan msgs Msg.getSessions
 
     receiver <- liftIO $ forkIO $ receive w msgs app
 
@@ -240,6 +261,51 @@ receive w msgs app = do
                     redoLayout body msgs app''
 
                 putMVar app app''
+
+
+
+            Msg.SetSessions sessions -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setSession shakeConfig sessions -- should be called setShootings
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetSessions -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                sessions <- getSessions shakeConfig
+                let app'' = _setSessions app' sessions
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app''
+
+            Msg.SetShootings shootings -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setShooting shakeConfig shootings -- should be called setShootings
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetShootings -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                shootings <- getShootings shakeConfig
+                let app'' = _setShootings app' shootings
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app''
+    
     
             Msg.Block x -> do -- i can maybe do something good with this.
                 putMVar x () 
@@ -284,6 +350,8 @@ viewState msgs app states = do
             S.Doneshooting -> doneshootingSection msgs (_doneshooting app)
             S.Dagsdato -> dagsdatoSection msgs (_dagsdato app)
             S.Photographer -> photographerSection msgs (_photographers app)
+            S.Session -> sessionSection msgs (_sessions app)
+            S.Shooting -> shootingSection msgs (_shootings app)
             _ -> do
                 string "bob"
 
