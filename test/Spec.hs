@@ -19,7 +19,7 @@ import Test.WebDriver.Common.Keys (enter)
 import Message (block, setDump, setDoneshooting, setDagsdato)
 import PhotoShake.State
 
-import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato)
+import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato, getPhotographers, setPhotographers)
 import PhotoShake.Photographee
 import PhotoShake.Built
 
@@ -29,6 +29,7 @@ import Control.Monad
 import Utils.ListZipper
 import qualified Utils.Actions as A
 import qualified Model.E as A
+import qualified Message as Message
 import Utils.Env
 
 
@@ -40,6 +41,7 @@ import Utils.FP
 import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
 import qualified PhotoShake.Dagsdato as DA
+import qualified PhotoShake.Photographer as Photographer
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -51,8 +53,44 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers "test/config" (fp $ start "") config)
     messages <- Chan.newChan
+
+    race_ (L.main 9000 messages app )
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+            empty <- liftBase newEmptyMVar
+
+            --fuckthis
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+            waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
+            --fuckthis
+
+            forM_ [1..10] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                photographers <- liftBase $ A.interpret $ Photographer.getPhotographers $ fp $ start $ "/home/magnus/Documents/projects/photoPenny/imports/photographers.json" -- cant run on all system and this should not read a file
+                liftBase $ writeChan messages $ Message.setPhotographers $ photographers 
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "photographerOK" ) 
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ Message.setPhotographers $ Photographer.noPhotographers
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "photographersMissing" )
+
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
 
     race_ (L.main 9000 messages app )
         (runSessionThenClose $ do                      

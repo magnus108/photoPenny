@@ -102,11 +102,6 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
     tmp <- UI.div
     case (focus states) of 
 
-
-            Photographer -> do 
-                c <- photographerSection root stateFile states'' states config config'' chanPhotographer
-                return (c,tmp)
-
             DoneshootingBackup -> do
                 c <- doneshootingBackupSection root stateFile states'' states config config''
                 return (c,tmp)
@@ -306,7 +301,6 @@ starterScreen :: Window -> FilePath -> FilePath -> ShakeConfig -> MVar States ->
 starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = void $ do
 
     
-    photographer <- photographerOverview root stateFile config config'
     doneshootingBackup <- doneshootingBackupOverview root stateFile config config'
 
     session <- sessionOverview root stateFile config config' 
@@ -322,7 +316,6 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
     view <- mkSection [ 
                        element doneshootingBackup
                       , element session
-                      , element photographer
                       , element shooting
                       , element location
                       , element view'

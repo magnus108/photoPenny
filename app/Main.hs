@@ -22,6 +22,7 @@ import PhotoShake.ShakeConfig
 import PhotoShake.Dump 
 import PhotoShake.Doneshooting
 import PhotoShake.Dagsdato
+import PhotoShake.Photographer
 
 main :: IO ()
 main = do
@@ -31,7 +32,7 @@ main = do
     config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
 
     app <- newMVar $ A.app $ env A.production 
-        (A.model Nothing noDump noDagsdato noDoneshooting "config" (fp $ start root) config)
+        (A.model Nothing noDump noDagsdato noDoneshooting noPhotographers "config" (fp $ start root) config)
 
     messages <- Chan.newChan
     L.main (read port) messages app

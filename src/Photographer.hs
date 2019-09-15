@@ -1,91 +1,55 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Photographer
     ( photographerSection
-    , photographerOverview
     ) where
 
-import qualified Control.Concurrent.Chan as Chan
-import Control.Exception
-
-import Prelude hiding (writeFile)
-
-import PhotoShake.Photographer
+import Control.Monad 
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import Elements
 
-import Utils.FP 
-import Utils.ListZipper 
-import Utils.Actions 
+import qualified Message as Msg
+import Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.Chan as Chan 
 
-{- ups -}
-import Shooting
+import PhotoShake.Photographer
 
-import PhotoShake.ShakeConfig
+import Utils.FP
+import Utils.Actions
+import Utils.ListZipper
 
-import PhotoShake.State (State, States(..), setStates)
 
-import Control.Concurrent.MVar
 
-photographerOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
-photographerOverview stateFile states config config' = do
-        x <- liftIO $ withMVar config' $ (\conf -> getPhotographers conf)
+import Shooting -- deleteme
 
-        case x of
-            NoPhotographers -> do
+photographerSection :: Chan Msg.Message -> Photographers -> UI Element
+photographerSection msgs x = do
 
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" ]
-                                    ]
-                              ] 
+    (_, picker) <- mkFilePicker "photographerPicker" "Vælg import fil" $ \file -> when (file /= "") $ do
+        photographers <- liftIO $ interpret $ getPhotographers $ fp $ start $ file
+        liftIO $ Chan.writeChan msgs $ Msg.setPhotographers photographers
 
-            Photographers y -> do
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]
-                                    , mkColumn ["is-12"] [ UI.string (name (focus y))]
-                                    ]
-                              ] 
+    photographers ( mkSection [ mkColumns ["is-multiline"]
+                                [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" # set (attr "id") "photographersMissing" ]
+                                , mkColumn ["is-12"] [ element picker ]
+                                ]
+                          ]) (\y -> do
+                            let group = RadioGroup 
+                                    { action = \xxx _ -> do
+                                            liftIO $ Chan.writeChan msgs $ Msg.setPhotographers $ yesPhotographers xxx
+                                    , view' = \xxx -> UI.string (_name (focus xxx))
+                                    , title' = "photographers"
+                                    , items = y 
+                                    }
 
-photographerSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> Chan.Chan String -> UI Element
-photographerSection root stateFile states'' states config config' importText = do
-        x <- liftIO $ withMVar config' $ (\conf -> getPhotographers conf)
+                            select <- mkRadioGroup group
 
-        (_, importer) <- mkFilePicker "photographerPicker" "Vælg import fil" $ \file -> do
-                res <- liftIO $ try $ withMVar config' $ (\conf -> importPhotographers conf file) :: IO (Either SomeException ())
-                liftIO $ case res of
-                            Left _ ->  Chan.writeChan importText "Kunne ikke importere denne fil"
-
-                            Right x -> return ()
-
-        case x of
-            NoPhotographers -> do
-
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" ]
-                                    , mkColumn ["is-12"] [ element importer ]
-                                    ]
-                              ] 
-
-            Photographers y -> do
-                    let group = RadioGroup 
-                            { action = \xx _ -> do
-                                    liftIO $ withMVar config' $ (\conf -> setPhotographers conf $ Photographers xx)
-                            , view' = \xx -> UI.string (name (focus xx))
-                            , title' = "photographers"
-                            , items = y 
-                            }
-
-                    select <- mkRadioGroup group
-
-                    (buttonForward, forwardView) <- mkButton "next" "Ok"
-                    on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
-
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]
-                                    , mkColumn ["is-12"] [ element select ]
-                                    , mkColumn ["is-12"] [ element importer ]
-                                    , mkColumn ["is-12"] [ element forwardView ]
-                                    ]
-                              ] 
+                            mkSection [ mkColumns ["is-multiline"]
+                                            [ mkColumn ["is-12"] [ mkLabel "Fotograf" # set (attr "id") "photographerOK" ]
+                                            , mkColumn ["is-12"] [ element select ]
+                                            , mkColumn ["is-12"] [ element picker ]
+                                            ]
+                                      ] 
+                        ) x

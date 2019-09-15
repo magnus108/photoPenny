@@ -32,12 +32,14 @@ import Data.Function ((&))
 
 import Dump
 import Doneshooting
+import Photographer
 
 import Control.Exception
-import PhotoShake.ShakeConfig
+import PhotoShake.ShakeConfig 
 import PhotoShake.Dump
-import PhotoShake.Doneshooting
+import PhotoShake.Doneshooting hiding (setDoneshooting, getDoneshooting) --this correcto
 import PhotoShake.Dagsdato
+import PhotoShake.Photographer hiding (setPhotographers, getPhotographers)
 
 
 main :: Int -> Chan Msg.Message -> MVar (App Model) -> IO ()
@@ -83,6 +85,15 @@ setupDagsdatoListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (eventPath e) == takeFileName dagsdatoConfig) (\_ -> writeChan msgChan Msg.getDagsdato)
 
 
+setupPhotographerListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupPhotographerListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    photographerConfig <- withMVar app (\app' -> return (_photographerFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName photographerConfig) (\_ -> writeChan msgChan Msg.getPhotographers)
+
+
 getStates :: Chan Msg.Message -> UI ()
 getStates msgChan = liftIO $ writeChan msgChan Msg.getStates
 
@@ -98,11 +109,13 @@ setup manager msgChan app w = do
     _ <- liftIO $ setupDumpListener manager msgs app
     _ <- liftIO $ setupDoneshootingListener manager msgs app
     _ <- liftIO $ setupDagsdatoListener manager msgs app
+    _ <- liftIO $ setupPhotographerListener manager msgs app
 
     _ <- liftIO $ writeChan msgs Msg.getStates 
     _ <- liftIO $ writeChan msgs Msg.getDump 
     _ <- liftIO $ writeChan msgs Msg.getDoneshooting
     _ <- liftIO $ writeChan msgs Msg.getDagsdato
+    _ <- liftIO $ writeChan msgs Msg.getPhotographers
 
     receiver <- liftIO $ forkIO $ receive w msgs app
 
@@ -184,8 +197,6 @@ receive w msgs app = do
 
                 putMVar app app''
 
-
-
             Msg.SetDagsdato dagsdato -> do
                 app' <- takeMVar app 
                 let shakeConfig = _shakeConfig app'
@@ -201,6 +212,28 @@ receive w msgs app = do
                 let shakeConfig = _shakeConfig app'
                 dagsdato <- getDagsdato shakeConfig
                 let app'' = _setDagsdato app' dagsdato
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+
+                putMVar app app''
+
+            Msg.SetPhotographers photographers -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setPhotographers shakeConfig photographers
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetPhotographers -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                photographers <- getPhotographers shakeConfig
+                let app'' = _setPhotographers app' photographers
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -249,7 +282,8 @@ viewState msgs app states = do
     case (focus states) of 
             S.Dump -> dumpSection msgs (_dump app)
             S.Doneshooting -> doneshootingSection msgs (_doneshooting app)
-            S.Dagsdato-> dagsdatoSection msgs (_dagsdato app)
+            S.Dagsdato -> dagsdatoSection msgs (_dagsdato app)
+            S.Photographer -> photographerSection msgs (_photographers app)
             _ -> do
                 string "bob"
 
@@ -272,6 +306,7 @@ dagsdatoSection msgs x = do
                                     ]
                               ] 
                 ) x
+
 
 {-
 dagsdatoBackupSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element

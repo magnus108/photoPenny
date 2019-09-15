@@ -15,11 +15,14 @@ module Model.E
     , _setDump
     , _setDoneshooting
     , _setDagsdato
+    , _setPhotographers
     , _dump
     , _doneshooting
     , _dagsdato
+    , _photographers
     , _stateFile
     , _dumpFile
+    , _photographerFile
     , _doneshootingFile
     , _dagsdatoFile
     , _shakeConfig
@@ -36,6 +39,7 @@ import Utils.FP
 import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
 import qualified PhotoShake.Dagsdato as DA
+import qualified PhotoShake.Photographer as Photographer
 
 import PhotoShake.ShakeConfig 
 
@@ -60,6 +64,8 @@ data Model = Model
     , dagsdato :: DA.Dagsdato
 
     , doneshooting :: DO.Doneshooting
+    , photographers :: Photographer.Photographers
+
 
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
@@ -99,6 +105,10 @@ _dumpFile  = _dumpConfig . _shakeConfig
 _doneshootingFile :: App Model -> FilePath -- deleteme
 _doneshootingFile = _doneshootingConfig . _shakeConfig
 
+
+_photographerFile :: App Model -> FilePath -- deleteme
+_photographerFile = _photographerConfig . _shakeConfig
+
 _dagsdatoFile :: App Model -> FilePath -- deleteme
 _dagsdatoFile = _dagsdatoConfig . _shakeConfig
 
@@ -120,6 +130,9 @@ _setDoneshooting x y = App $ (unApp x) =>> (\x -> (extract x) { doneshooting = y
 _setDagsdato :: App Model -> DA.Dagsdato -> App Model -- deleteme
 _setDagsdato x y = App $ (unApp x) =>> (\x -> (extract x) { dagsdato = y } )
 
+_setPhotographers :: App Model -> Photographer.Photographers -> App Model -- deleteme
+_setPhotographers x y = App $ (unApp x) =>> (\x -> (extract x) { photographers = y } )
+
 _dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
 
@@ -128,6 +141,9 @@ _doneshooting = doneshooting . extract . unApp
 
 _dagsdato :: App Model -> DA.Dagsdato -- deleteme
 _dagsdato = dagsdato . extract . unApp
+
+_photographers :: App Model -> Photographer.Photographers -- deleteme
+_photographers = photographers . extract . unApp
 
 
 _shakeConfig :: App Model -> ShakeConfig -- deleteme
