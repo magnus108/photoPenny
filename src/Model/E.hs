@@ -11,7 +11,9 @@ module Model.E
 
     , _configs 
     , _states
+    , _location
     , _setStates
+    , _setLocation
     , _setDump
     , _setDoneshooting
     , _setDagsdato
@@ -24,6 +26,7 @@ module Model.E
     , _photographers
     , _setShootings
     , _setSessions
+    , _locationFile
     , _shootingFile
     , _sessionFile
     , _stateFile
@@ -48,6 +51,7 @@ import qualified PhotoShake.Dagsdato as DA
 import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
+import qualified PhotoShake.Location as Location
 
 import PhotoShake.ShakeConfig 
 
@@ -75,6 +79,8 @@ data Model = Model
     , photographers :: Photographer.Photographers
     , shootings :: Shooting.Shootings
     , sessions :: Session.Sessions
+
+    , location :: Location.Location
 
 
     , dir1 :: FilePath -- deleteme
@@ -128,9 +134,15 @@ _sessionFile = _sessionConfig . _shakeConfig
 _shootingFile :: App Model -> FilePath -- deleteme
 _shootingFile = _shootingsConfig . _shakeConfig
 
+
+_locationFile :: App Model -> FilePath -- deleteme
+_locationFile = _locationConfig . _shakeConfig
+
 _states:: App Model -> Maybe States -- deleteme
 _states = states . extract . unApp
 
+_location :: App Model -> Location.Location -- deleteme
+_location = location . extract . unApp
 
 _setStates :: App Model -> Maybe States -> App Model -- deleteme
 _setStates x (Just s) = App $ (unApp x) =>> (\x -> (extract x) { states = Just s } )
@@ -139,6 +151,9 @@ _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing
 
 _setDump :: App Model -> D.Dump -> App Model -- deleteme
 _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )
+
+_setLocation :: App Model -> Location.Location -> App Model -- deleteme
+_setLocation x y = App $ (unApp x) =>> (\x -> (extract x) { location = y } )
 
 _setDoneshooting :: App Model -> DO.Doneshooting -> App Model -- deleteme
 _setDoneshooting x y = App $ (unApp x) =>> (\x -> (extract x) { doneshooting = y } )

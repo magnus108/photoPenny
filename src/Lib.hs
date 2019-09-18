@@ -107,10 +107,6 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
                 return (c,tmp)
 
 
-            Location -> do
-                c <- locationsSection root stateFile states'' states config config'' 
-                return (c,tmp)
-
             Main -> mainSection root stateFile config config'' w
 
             Main2 -> mainSection2 root stateFile config config'' w
@@ -296,7 +292,6 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
     
     doneshootingBackup <- doneshootingBackupOverview root stateFile config config'
 
-    location <- locationsOverview root stateFile config config'
 
     (buttonForward, forwardView) <- mkButton "next" "Ok"
     on UI.click buttonForward $ \_ -> liftIO $ do
@@ -306,7 +301,6 @@ starterScreen w root stateFile config states' config' tid1 tid2 layoutLock = voi
 
     view <- mkSection [ 
                        element doneshootingBackup
-                      , element location
                       , element view'
                       ]
 

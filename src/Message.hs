@@ -15,6 +15,8 @@ module Message
     , setShootings
     , getSessions
     , setSessions
+    , getLocation
+    , setLocation
     ) where
 
 
@@ -28,6 +30,7 @@ import qualified PhotoShake.Dagsdato as Dagsdato
 import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Session as Session
+import qualified PhotoShake.Location as Location
 
 data Message 
     = Block (MVar ())
@@ -52,6 +55,10 @@ data Message
 
     | GetShootings
     | SetShootings Shooting.Shootings
+
+    | GetLocation
+    | SetLocation Location.Location
+
 
 block :: MVar () -> Message
 block = Block
@@ -103,3 +110,10 @@ getShootings = GetShootings
 
 setShootings :: Shooting.Shootings -> Message
 setShootings = SetShootings
+
+
+getLocation :: Message
+getLocation = GetLocation
+
+setLocation :: Location.Location -> Message
+setLocation = SetLocation

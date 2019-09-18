@@ -15,7 +15,7 @@ import PhotoShake.ShakeConfig
 import PhotoShake.Doneshooting
 import PhotoShake.Shooting
 import PhotoShake.Session hiding (getSessions)
-import PhotoShake.Location
+import qualified PhotoShake.Location as Location
 import PhotoShake.Photographer
 import PhotoShake.Dump
 import qualified PhotoShake.Photographee as Photographee
@@ -70,18 +70,16 @@ mainSection _ _ config config' w = do
     idenName <- liftIO $ do
         locationFile <- try $ withMVar config' $ (\conf -> do
                 getLocationFile conf 
-                ) :: IO (Either ShakeError Location)
+                ) :: IO (Either ShakeError Location.Location)
         case locationFile of 
             Left e -> newIORef ""
             Right loc -> do
-                case loc of
-                    NoLocation -> newIORef ""
-                    Location xxx -> do
+                Location.location (newIORef "") (\xxx -> do
                             liftIO $ withMVar config' $ (\conf -> do
                                     what <- Photographee.findPhotographee3 xxx val
                                     case what of
                                         Nothing -> newIORef ""
-                                        Just iddd ->  newIORef (Photographee._name iddd))
+                                        Just iddd ->  newIORef (Photographee._name iddd))) loc
 
     on UI.keyup input $ \keycode -> when (keycode /= 13) $ do
         val <- get value input
@@ -89,13 +87,11 @@ mainSection _ _ config config' w = do
                 setIdSelection conf (Photographee.Idd val))
         locationFile <- liftIO $ try $ withMVar config' $ (\conf -> do
                 getLocationFile conf 
-                ) :: UI (Either ShakeError Location)
+                ) :: UI (Either ShakeError Location.Location)
         case locationFile of 
             Left e -> return ()
             Right loc -> do
-                case loc of
-                    NoLocation -> return () --return (Left LocationConfigFileMissing)
-                    Location xxx -> do
+                Location.location (return ()) (\ xxx -> do
                             wuba <-liftIO $ withMVar config' $ (\conf -> do
                                     Photographee.findPhotographee3 xxx val)
                             case wuba of
@@ -112,7 +108,7 @@ mainSection _ _ config config' w = do
                                     liftIO $ withMVar config' $ (\conf -> setDagsdato conf hack)
 
                                     liftIO $ modifyIORef idenName (\x -> (Photographee._name iddd))
-                                    return ()
+                                    return ()) loc
         
 
 
@@ -291,10 +287,9 @@ mainSection _ _ config config' w = do
                         _ <- liftIO $ withMVar config' $ (\conf -> do
                                 locationFile <- getLocationFile conf
                                 -- kinda bad here could cause errorr
-                                case locationFile of 
-                                    NoLocation -> return (Left LocationConfigFileMissing)
-                                    Location xxx -> do
-                                        liftIO $ try $ Photographee.insertPhotographee xxx idd clas name --- SUCHBAD
+                                Location.location (return (Left LocationConfigFileMissing))
+                                    (\xxx -> liftIO $ try $ Photographee.insertPhotographee xxx idd clas name)
+                                        locationFile 
 
                                 )
                         liftIO $ modifyIORef identKinder (\x -> "SYS_" ++ x)
@@ -331,31 +326,28 @@ mainSection _ _ config config' w = do
             True -> do
                     _ <- liftIO $ withMVar config' $ (\conf -> do
                                     locationFile <- getLocationFile conf
-                                    case locationFile of 
-                                        NoLocation -> return (Left LocationConfigFileMissing)
-                                        Location xxx -> do
-                                            liftIO $ try $ Photographee.insertPhotographee xxx idd clas name
+                                    Location.location (return (Left LocationConfigFileMissing))
+                                        (\ xxx -> liftIO $ try $ Photographee.insertPhotographee xxx idd clas name)
+                                        locationFile 
                             )
                     liftIO $ modifyIORef identKinder (\x -> "SYS_" ++ x)
                     liftIO $ funci2 config' identKinder
             False -> return ()
     
 
-    locationFile <- liftIO $ try $ withMVar config' $ (\conf -> getLocationFile conf) :: UI (Either ShakeError Location)
+    locationFile <- liftIO $ try $ withMVar config' $ (\conf -> getLocationFile conf) :: UI (Either ShakeError Location.Location)
             -- kinda bad here could cause errorr
 
     kidsInGrade <- case locationFile of 
         Left e -> return []
         Right loc ->
-            case loc of 
-                NoLocation -> return [] 
-                Location xxx -> do
+                Location.location (return [] ) (\xxx -> do
                     liftIO $ withMVar config' $ (\conf -> do
                         val <- liftIO $ try $ getGradeSelection conf :: IO (Either ShakeError Photographee.GradeSelection)
                         case val of
                             Left e -> return []
                             Right vv ->
-                                liftIO $ Photographee.parsePhotographees xxx vv)
+                                liftIO $ Photographee.parsePhotographees xxx vv)) loc
 
 
     kidsInGradeView <- mkColumn ["is-12"] $ fmap 
@@ -447,10 +439,9 @@ funci config (Photographee.Idd idd2) = do
     locationFile <- getLocationFile config
     -- kinda bad here
     -- kinda bad here could cause errorr
-    find <- case locationFile of 
-        NoLocation -> return (Left LocationConfigFileMissing)
-        Location xxx -> do
-            try $ Photographee.findPhotographee xxx idd2 :: IO (Either ShakeError Photographee.Photographee)
+    find <- Location.location (return (Left LocationConfigFileMissing))
+            (\xxx -> try $ Photographee.findPhotographee xxx idd2 :: IO (Either ShakeError Photographee.Photographee))
+                locationFile
 
     case find of
             Left errMsg -> do
@@ -459,18 +450,15 @@ funci config (Photographee.Idd idd2) = do
             Right photographee -> do
                     time <- getCurrentTime
                     -- wtf????
-                    case locationFile of 
-                        NoLocation -> do 
-                            setBuilt' config (NoFind (show LocationConfigFileMissing))
-                    
-                        Location xxx -> do
+                    Location.location (setBuilt' config (NoFind (show LocationConfigFileMissing)))
+                        (\xxx -> do
                             build <- try $ myShake config photographee (takeBaseName xxx) time True :: IO (Either ShakeError ())
                             case build of
                                     Left errMsg -> do
                                         setBuilt' config (NoFind (show errMsg))
                                     Right _ -> do
                                         setBuilt' config (Built  photographee "Færdig")
-                                        return () 
+                                        return () ) locationFile 
 
 
 
@@ -481,10 +469,10 @@ funci2 config idd = do
     locationFile <- withMVar config $ (\conf -> getLocationFile conf)
     -- kinda bad here
     -- kinda bad here could cause errorr
-    find <- case locationFile of 
-        NoLocation -> return (Left LocationConfigFileMissing)
-        Location xxx -> do
-            try $ Photographee.findPhotographee2 xxx idd2 :: IO (Either ShakeError Photographee.Photographee)
+    find <- 
+        Location.location (return (Left LocationConfigFileMissing)) (\xxx -> do
+            try $ Photographee.findPhotographee2 xxx idd2 :: IO (Either ShakeError Photographee.Photographee))
+            locationFile 
 
     case find of
             Left errMsg -> do
@@ -493,15 +481,12 @@ funci2 config idd = do
             Right photographee -> do
                     time <- getCurrentTime
                     -- wtf????
-                    case locationFile of 
-                        NoLocation -> do 
-                            withMVar config $ (\conf -> setBuilt' conf (NoFind (show LocationConfigFileMissing)))
-                    
-                        Location xxx -> do
+                    Location.location (withMVar config $ (\conf -> setBuilt' conf (NoFind (show LocationConfigFileMissing))))
+                        (\xxx -> do
                             build <- try $ withMVar config (\conf -> myShake conf photographee (takeBaseName xxx) time True) :: IO (Either ShakeError ())
                             case build of
                                     Left errMsg -> do
                                         withMVar config (\conf -> setBuilt' conf (NoFind (show errMsg))  )
                                     Right _ -> do
                                         withMVar config (\conf -> setBuilt' conf (Built  photographee "Færdig"))
-                                        return () 
+                                        return () ) locationFile

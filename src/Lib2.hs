@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Lib2
     ( main
+    , initialMessage
+    , subscriptions
     ) where
 
 import Control.Concurrent.MVar
@@ -32,9 +34,11 @@ import Data.Function ((&))
 
 import Dump
 import Doneshooting
+import Dagsdato
 import Shooting
 import Session
 import Photographer
+import Locations -- wrong name
 
 import Control.Exception
 import PhotoShake.ShakeConfig 
@@ -44,9 +48,8 @@ import PhotoShake.Dagsdato
 import PhotoShake.Photographer hiding (setPhotographers, getPhotographers)
 
 
-main :: Int -> Chan Msg.Message -> MVar (App Model) -> IO ()
-main port messages app = do 
-    manager <- startManager
+main :: Int -> WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO ()
+main port manager messages app = do 
     startGUI defaultConfig { jsPort = Just port
                            , jsWindowReloadOnDisconnect = False
                            } $ setup manager messages app
@@ -111,6 +114,16 @@ setupSessionListener manager msgChan app = do -- THIS BAD
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName sessionConfig) (\_ -> writeChan msgChan Msg.getSessions)
 
+
+setupLocationListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupLocationListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    locationConfig <- withMVar app (\app' -> return (_locationFile app'))
+    watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (eventPath e) == takeFileName locationConfig) (\_ -> writeChan msgChan Msg.getLocation)
+
+
 getStates :: Chan Msg.Message -> UI ()
 getStates msgChan = liftIO $ writeChan msgChan Msg.getStates
 
@@ -118,25 +131,32 @@ setStates :: Chan Msg.Message -> S.States -> UI ()
 setStates msgChan states = liftIO $ writeChan msgChan (Msg.setStates states) 
 
 
-setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
-setup manager msgChan app w = do
-    msgs <- liftIO $ Chan.dupChan msgChan
-    -- do i really watch all files in setup?
-    _ <- liftIO $ setupStateListener manager msgs app
-    _ <- liftIO $ setupDumpListener manager msgs app
-    _ <- liftIO $ setupDoneshootingListener manager msgs app
-    _ <- liftIO $ setupDagsdatoListener manager msgs app
-    _ <- liftIO $ setupPhotographerListener manager msgs app
-    _ <- liftIO $ setupShootingListener manager msgs app
-    _ <- liftIO $ setupSessionListener manager msgs app
+initialMessage :: Chan Msg.Message -> IO ()
+initialMessage msgs = do
+    _ <- writeChan msgs Msg.getStates 
+    _ <- writeChan msgs Msg.getDump 
+    _ <- writeChan msgs Msg.getDoneshooting
+    _ <- writeChan msgs Msg.getDagsdato
+    _ <- writeChan msgs Msg.getPhotographers
+    _ <- writeChan msgs Msg.getShootings
+    _ <- writeChan msgs Msg.getSessions
+    _ <- writeChan msgs Msg.getLocation
+    return ()
 
-    _ <- liftIO $ writeChan msgs Msg.getStates 
-    _ <- liftIO $ writeChan msgs Msg.getDump 
-    _ <- liftIO $ writeChan msgs Msg.getDoneshooting
-    _ <- liftIO $ writeChan msgs Msg.getDagsdato
-    _ <- liftIO $ writeChan msgs Msg.getPhotographers
-    _ <- liftIO $ writeChan msgs Msg.getShootings
-    _ <- liftIO $ writeChan msgs Msg.getSessions
+subscriptions :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO ()
+subscriptions manager msgs app = do
+    _ <- setupStateListener manager msgs app
+    _ <- setupDumpListener manager msgs app
+    _ <- setupDoneshootingListener manager msgs app
+    _ <- setupDagsdatoListener manager msgs app
+    _ <- setupPhotographerListener manager msgs app
+    _ <- setupShootingListener manager msgs app
+    _ <- setupSessionListener manager msgs app
+    _ <- setupLocationListener manager msgs app
+    return ()
+
+setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
+setup manager msgs app w = do
 
     receiver <- liftIO $ forkIO $ receive w msgs app
 
@@ -305,6 +325,27 @@ receive w msgs app = do
                     body <- getBody w
                     redoLayout body msgs app''
                 putMVar app app''
+
+            Msg.SetLocation location -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setLocation shakeConfig location -- should be called setShootings
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetLocation -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                location <- getLocationFile shakeConfig --wrong naming
+                let app'' = _setLocation app' location
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app''
     
     
             Msg.Block x -> do -- i can maybe do something good with this.
@@ -352,28 +393,10 @@ viewState msgs app states = do
             S.Photographer -> photographerSection msgs (_photographers app)
             S.Session -> sessionSection msgs (_sessions app)
             S.Shooting -> shootingSection msgs (_shootings app)
+            S.Location -> locationSection msgs (_location app)
             _ -> do
                 string "bob"
 
-
-dagsdatoSection :: Chan Msg.Message -> Dagsdato -> UI Element
-dagsdatoSection msgs x = do
-    (_, picker) <- mkFolderPicker "doneshootingPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
-        liftIO $ Chan.writeChan msgs $ Msg.setDagsdato $ yesDagsdato folder
-
-    dagsdato ( mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe ikke valgt" # set (attr "id") "dagsdatoMissing" ]
-                            , mkColumn ["is-12"] [ element picker ]
-                            ]
-                      ] )
-                (\y -> do
-                    mkSection [ mkColumns ["is-multiline"]
-                                    [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe" # set (attr "id") "dagsdatoOK" ]
-                                    , mkColumn ["is-12"] [ element picker ]
-                                    , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "dagsdatoPath" ]
-                                    ]
-                              ] 
-                ) x
 
 
 {-

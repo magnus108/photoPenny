@@ -12,14 +12,15 @@ import qualified Lib2 as L
 
 import System.Directory
 
+import System.FSNotify hiding (defaultConfig)
 
 import Test.WebDriver.Common.Keys (enter)
 
 
-import Message (block, setDump, setDoneshooting, setDagsdato)
+import Message (block, setDump, setDoneshooting, setDagsdato, setLocation)
 import PhotoShake.State
 
-import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato, getPhotographers, setPhotographers)
+import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato, getPhotographers, setPhotographers, setLocation)
 import PhotoShake.Photographee
 import PhotoShake.Built
 
@@ -44,6 +45,7 @@ import qualified PhotoShake.Dagsdato as DA
 import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
+import qualified PhotoShake.Location as Location
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -55,19 +57,65 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
     messages <- Chan.newChan
-
-    race_ (L.main 9000 messages app )
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+        
+    race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
-            empty <- liftBase newEmptyMVar
 
-            --fuckthis
+            empty <- liftBase newEmptyMVar
             liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
-            waitUntil 10000000 $ findElem ( ById "tabShooting" ) >>= click
+
             --fuckthis
+            waitUntil 10000000 $ findElem ( ById "tabLocation" ) >>= click
+            --fuckthis
+
+            forM_ [1..10] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setLocation $ Location.yesLocation "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv"
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "locationPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv")
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ setLocation $ Location.noLocation
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "locationMissing" )
+                
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
+
+
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+    
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+
+            empty <- liftBase newEmptyMVar
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+
+            waitUntil 10000000 $ findElem ( ById "tabShooting" ) >>= click
 
             forM_ [1..10] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -94,14 +142,24 @@ main = do
                 )
         )
 
-    race_ (L.main 9000 messages app )
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
-            empty <- liftBase newEmptyMVar
 
-            --fuckthis
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+            empty <- liftBase newEmptyMVar
             liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
+
+
+            --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabSession" ) >>= click
             --fuckthis
 
@@ -131,14 +189,23 @@ main = do
         )
 
 
-    race_ (L.main 9000 messages app )
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
-            empty <- liftBase newEmptyMVar
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
 
-            --fuckthis
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+            empty <- liftBase newEmptyMVar
             liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
+
+
+            --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
             --fuckthis
 
@@ -167,14 +234,21 @@ main = do
                 )
         )
 
-    race_ (L.main 9000 messages app )
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+
+    race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
-            empty <- liftBase newEmptyMVar
 
-            --fuckthis
+            empty <- liftBase newEmptyMVar
             liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
+
+            --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabDagsdato" ) >>= click
             --fuckthis
 
@@ -202,14 +276,21 @@ main = do
         )
 
 
-    race_ (L.main 9000 messages app )
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+
+    race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
-            empty <- liftBase newEmptyMVar
 
-            --fuckthis
+            empty <- liftBase newEmptyMVar
             liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
+
+            --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabDoneshooting" ) >>= click
             --fuckthis
 
@@ -236,14 +317,22 @@ main = do
                 )
         )
 
-    race_ (L.main 9000 messages app )
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+    
+    race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
-            empty <- liftBase newEmptyMVar
 
-            --fuckthis
+            empty <- liftBase newEmptyMVar
             liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
+
+
+            --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
             --fuckthis
 
@@ -270,11 +359,21 @@ main = do
                 )
         )
 
-    race_ (L.main 9000 messages app )
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+
+    race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
             empty <- liftBase newEmptyMVar
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+
+
             forM_ [1..100] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty

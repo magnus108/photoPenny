@@ -1,102 +1,58 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Locations
-    ( locationsSection 
-    , locationsOverview
+    ( locationSection 
     ) where
 
-import Control.Monad
-import Control.Concurrent.MVar
+import qualified Graphics.UI.Threepenny as UI
+import Graphics.UI.Threepenny.Core
 
-import Data.List
+import Control.Concurrent.Chan (Chan)
+import qualified Control.Concurrent.Chan as Chan
+import qualified Message as Msg
 
-import Control.Exception
+import Control.Monad 
+
 import Elements
-import PhotoShake.Built
-import Prelude hiding (readFile, writeFile)
-import Data.ByteString.Lazy (writeFile)
-import Data.IORef
 
-import Data.Csv
+import qualified PhotoShake.Location as Location
+
+
+import Utils.ListZipper
 
 import PhotoShake.Photographee
-import PhotoShake.ShakeConfig
-import PhotoShake.Location
-import qualified Graphics.UI.Threepenny as UI
-import Graphics.UI.Threepenny.Core hiding (empty)
+import PhotoShake.Built
 
-import Utils.Comonad
-import Utils.ListZipper
-import Utils.FP
-import Utils.Actions (interpret)
-import PhotoShake.State (State, States(..), setStates)
 
-locationsOverview :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> UI Element
-locationsOverview stateFile states config config' = do
-    x <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
+locationSection :: Chan Msg.Message -> Location.Location -> UI Element
+locationSection msgs x = do
+
+    (_, picker) <- mkFilePicker "locationsPicker" "Vælg eksisterende CSV fil" $ \file -> do
+        liftIO $ Chan.writeChan msgs $ Msg.setLocation $ Location.yesLocation file
+
+    (_, picker2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> do -- wauw
+        liftIO $ Chan.writeChan msgs $ Msg.setLocation $ Location.yesLocation file
     
-    case x of
-        NoLocation -> 
-            mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations fil" ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text "Ikke valgt" ]
+    pickers <- mkColumn ["is-12"] [ UI.div #. "field is-grouped" #+ [element picker, element picker2]]
+
+    Location.location ( mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations fil ikke valgt" # set (attr "id") "locationMissing" ]
+                            , element pickers
                             ]
-                      ] 
-
-        Location y -> do
-            mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" # set (attr "id") "locationOK" ]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text y]
-                            ]
-                      ] 
-
-
-locationsSection :: FilePath -> FilePath -> MVar States -> ListZipper State -> ShakeConfig -> MVar ShakeConfig -> UI Element
-locationsSection root stateFile states'' states config config' = do
-    x <- liftIO $ withMVar config' $ (\conf -> getLocationFile conf)
-
-    (_, view) <- mkFilePicker "locationsPicker" "Vælg eksisterende CSV fil" $ \file -> do
-        liftIO $ withMVar config' $ (\conf -> setLocation conf $ Location file)
-
-    (_, view2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> do
-        let empty = mempty :: [Photographee]
-        _ <- liftIO $ writeFile file (encode empty)
-        liftIO $ withMVar config' $ (\conf -> setLocation conf $ Location file)
-
-    case x of
-        NoLocation -> 
-            mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations fil ikke valgt" ]
-                            , mkColumn ["is-12"] [ UI.div #. "field is-grouped" #+ [element view, element view2]]
-                            ]
-                      ] 
-
-        Location y -> do
-            --dumt
-            built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
-            let isBuilding = case built of
-                                NoBuilt -> False
-                                NoFind s -> False
-                                Building _ _ -> True
-                                Built _ _ -> False
-            (buttonForward, forwardView) <- mkButton "nextDump" "Ok"
-            on UI.click buttonForward $ \_ -> liftIO $ withMVar states'' $ (\_ ->  interpret $ setStates (mkFP root stateFile) (States (forward states)))
-            
+                      ] ) 
+        (\ y -> do
             (buttonOpen, openView) <- mkButton "open" "Åben csv"
             on UI.click buttonOpen $ \_ -> do 
                     runFunction $ ffi $ "require('electron').shell.openItem(" ++ (show y) ++ ")"
 
-            --DUMT
-            grade <- liftIO $ newIORef ""
-            gradeInput <- UI.input #. "input" # set UI.type_ "text" 
-            gradeInput' <- if (not isBuilding) then return gradeInput else (element gradeInput) # set (attr "disabled") ""
+            mkSection [ mkColumns ["is-multiline"]
+                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" # set (attr "id") "locationOK" ]
+                            , mkColumn ["is-12"] [ element pickers ]
+                            , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "locationPath" ]
+                            ]
+                      ] 
 
-            gradesr <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
 
-            identKinderClass <- case gradesr of 
-                        NoGrades -> liftIO $ newIORef "Ingen valg"
-                        Grades (ListZipper _ x _) ->
-                                liftIO $ newIORef x
-
+            {-
             insertedMsg <- case gradesr of 
                     NoGrades -> do
                         UI.div #. "field" #+
@@ -136,9 +92,11 @@ locationsSection root stateFile states'' states config config' = do
                                         liftIO $  writeIORef identKinderClass val
 
                             return inputViewKinderClass'
+                            -}
             
             --- SUPER BADNESS
 
+        {-
             (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj"
             (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
 
@@ -177,16 +135,7 @@ locationsSection root stateFile states'' states config config' = do
             
             on UI.click gradeDelete $ \_ -> do 
                     liftIO $ withMVar config' $ (\conf -> setGrades conf NoGrades)
+            -}
 
 
-            mkSection [ mkColumns ["is-multiline"]
-                            [ mkColumn ["is-12"] [ mkLabel "Lokations mappe" # set (attr "id") "locationOK" ]
-                            , mkColumn ["is-12"] [ UI.div #. "field is-grouped" #+ [element view, element view2]]
-                            , mkColumn ["is-12"] [ UI.p # set UI.text y]
-                            , mkColumn ["is-12"] [ element openView ]
-                            , mkColumn ["is-4"] [ element inputViewGrade ]
-                            , mkColumn ["is-12"] [ element forwardView ]
-                            ]
-                      ] 
-
-
+            ) x

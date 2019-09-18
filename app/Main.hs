@@ -16,6 +16,7 @@ import Utils.FP
 import PhotoShake.State 
 
 import qualified Control.Concurrent.Chan as Chan
+import System.FSNotify hiding (defaultConfig)
 
 
 import PhotoShake.ShakeConfig 
@@ -25,6 +26,7 @@ import PhotoShake.Dagsdato
 import PhotoShake.Photographer
 import PhotoShake.Shooting
 import PhotoShake.Session
+import PhotoShake.Location
 
 main :: IO ()
 main = do
@@ -34,7 +36,12 @@ main = do
     config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
 
     app <- newMVar $ A.app $ env A.production 
-        (A.model Nothing noDump noDagsdato noDoneshooting noPhotographers noShootings noSessions "config" (fp $ start root) config)
+        (A.model Nothing noDump noDagsdato noDoneshooting noPhotographers noShootings noSessions noLocation "config" (fp $ start root) config)
 
     messages <- Chan.newChan
-    L.main (read port) messages app
+    manager <- startManager
+
+    _ <- L.initialMessage messages
+    _ <- L.subscriptions manager messages app
+
+    L.main (read port) manager messages app 
