@@ -13,6 +13,7 @@ import Data.List
 import PhotoShake
 import PhotoShake.ShakeConfig
 import PhotoShake.Doneshooting
+import qualified PhotoShake.Grade as Grade
 import PhotoShake.Shooting
 import PhotoShake.Session hiding (getSessions)
 import qualified PhotoShake.Location as Location
@@ -169,103 +170,97 @@ mainSection _ _ config config' w = do
     --BAD can throw error
     grades <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
 
-    identKinderClass <- case grades of 
-                Photographee.NoGrades -> liftIO $ newIORef "Ingen valg"
-                Photographee.Grades (ListZipper _ x _) ->
-                        liftIO $ newIORef x
+    identKinderClass <- Grade.grades (liftIO $ newIORef "Ingen valg") (\(ListZipper _ x _ ) -> liftIO $ newIORef x) grades
 
 
     --badness 3thousand
-    inputViewKinderClass <- case grades of 
-            Photographee.NoGrades -> do
-                UI.div #. "field" #+
+    inputViewKinderClass <- 
+        Grade.grades (UI.div #. "field" #+
                         [ UI.label #. "label has-text-dark" # set UI.text "Ingen stuer/klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                 [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                 ]
-                        ]
-            Photographee.Grades zipper -> do
-                    let toto = (zipper =>> 
-                                    (\z -> do
-                                        opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
-                                        opt' <- if (z == zipper) then
-                                                set (UI.attr "selected") "" (element opt)
-                                            else
-                                                return opt
-                                        return (focus z, opt')
-                                    )
-                            )
+                        ])( \zipper -> do
+                                let toto = (zipper =>> 
+                                                (\z -> do
+                                                    opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
+                                                    opt' <- if (z == zipper) then
+                                                            set (UI.attr "selected") "" (element opt)
+                                                        else
+                                                            return opt
+                                                    return (focus z, opt')
+                                                )
+                                        )
 
-                    jada <- sequence toto
+                                jada <- sequence toto
 
-                    let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
+                                let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
 
-                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
-                    inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
-                    inputViewKinderClass' <- UI.div #. "field" #+
-                        [ UI.label #. "label has-text-dark" # set UI.text "Stue/Klasser"
-                        , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
-                        ]
+                                inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
+                                inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
+                                inputViewKinderClass' <- UI.div #. "field" #+
+                                    [ UI.label #. "label has-text-dark" # set UI.text "Stue/Klasser"
+                                    , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
+                                    ]
 
-                    on UI.selectionChange inputKinderClass' $ \xxxx -> do
-          
-                        case xxxx of
-                            Nothing -> error "this is bad"
-                            Just n -> do
-                                let val = (sort $ toList zipper) !! n
-                                liftIO $  writeIORef identKinderClass val
+                                on UI.selectionChange inputKinderClass' $ \xxxx -> do
+                      
+                                    case xxxx of
+                                        Nothing -> error "this is bad"
+                                        Just n -> do
+                                            let val = (sort $ toList zipper) !! n
+                                            liftIO $  writeIORef identKinderClass val
 
-                    return inputViewKinderClass'
+                                return inputViewKinderClass'
+                            ) grades
 
     --BAD can throw error
     gradeSelection <- liftIO $ withMVar config' $ (\conf -> getGradeSelection conf)
 
-    inputViewKinderClasssCopy <- case grades of 
-            Photographee.NoGrades -> do
-                UI.div #. "field" #+
+    inputViewKinderClasssCopy <- 
+            Grade.grades (UI.div #. "field" #+
                         [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen stuer/klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                 [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                 ]
-                        ]
-            Photographee.Grades zipper -> do
-                    let toto = (zipper =>> 
-                                    (\z -> do
-                                        opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
-                                        opt' <- if (z == zipper) then
-                                                set (UI.attr "selected") "" (element opt)
-                                            else
-                                                return opt
-                                        return (focus z, opt')
-                                    )
-                            )
-
-                    jada <- sequence toto
-
-                    let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
-
-                    inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
-                    inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
-                    inputViewKinderClass' <- UI.div #. "field" #+
-                        [ UI.label #. "label has-text-dark" # set UI.text "Find elev"
-                        , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
-                        ]
-
-                    on UI.selectionChange inputKinderClass' $ \xxxx -> do
-                            case xxxx of
-                                Nothing -> error "this is bad"
-                                Just n -> do
-                                    let val = (sort $ toList zipper) !! n
-                                    if gradeSelection == (Photographee.GradeSelection val) then
-                                            return ()
-                                    else
-                                        liftIO $ withMVar config' $ (\conf -> do
-                                                liftIO $ setGradeSelection conf (Photographee.GradeSelection val)
-                                                liftIO $ setGrades conf (Photographee.Grades $ ListZipper [] val (sort $ toList zipper))
+                        ]) (\zipper -> do
+                                let toto = (zipper =>> 
+                                                (\z -> do
+                                                    opt <- UI.option # set (attr "value") (focus z) # set text (focus z)
+                                                    opt' <- if (z == zipper) then
+                                                            set (UI.attr "selected") "" (element opt)
+                                                        else
+                                                            return opt
+                                                    return (focus z, opt')
+                                                )
                                         )
-        
 
-                    return inputViewKinderClass'
+                                jada <- sequence toto
+
+                                let toto' = fmap (\(a,b) -> return b) (sortBy (\a b -> compare (fst a) (fst b)) $ toList jada)
+
+                                inputKinderClass <- UI.select # set (attr "style") "width:100%" #+ toto'
+                                inputKinderClass' <- if (not isBuilding) then return inputKinderClass else (element inputKinderClass) # set (attr "disabled") ""
+                                inputViewKinderClass' <- UI.div #. "field" #+
+                                    [ UI.label #. "label has-text-dark" # set UI.text "Find elev"
+                                    , UI.div # set (attr "style") "width:100%" #. "select" #+ [ element inputKinderClass' ] 
+                                    ]
+
+                                on UI.selectionChange inputKinderClass' $ \xxxx -> do
+                                        case xxxx of
+                                            Nothing -> error "this is bad"
+                                            Just n -> do
+                                                let val = (sort $ toList zipper) !! n
+                                                if gradeSelection == (Grade.yesGradeSelection val) then
+                                                        return ()
+                                                else
+                                                    liftIO $ withMVar config' $ (\conf -> do
+                                                            liftIO $ setGradeSelection conf (Grade.yesGradeSelection val)
+                                                            liftIO $ setGrades conf (Grade.yesGrades $ ListZipper [] val (sort $ toList zipper))
+                                                    )
+                    
+
+                                return inputViewKinderClass') grades
                     
 
     let wats = (\zipper item -> do

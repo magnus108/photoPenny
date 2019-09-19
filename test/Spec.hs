@@ -46,6 +46,7 @@ import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location
+import qualified PhotoShake.Grade as Grade
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -57,7 +58,7 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades  "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -99,7 +100,7 @@ main = do
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -143,7 +144,7 @@ main = do
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -189,7 +190,7 @@ main = do
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation  Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -234,7 +235,7 @@ main = do
                 )
         )
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -276,7 +277,7 @@ main = do
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -317,7 +318,7 @@ main = do
                 )
         )
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
@@ -359,7 +360,7 @@ main = do
                 )
         )
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages

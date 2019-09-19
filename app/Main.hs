@@ -27,6 +27,8 @@ import PhotoShake.Photographer
 import PhotoShake.Shooting
 import PhotoShake.Session
 import PhotoShake.Location
+import PhotoShake.Location
+import PhotoShake.Grade
 
 main :: IO ()
 main = do
@@ -36,7 +38,7 @@ main = do
     config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
 
     app <- newMVar $ A.app $ env A.production 
-        (A.model Nothing noDump noDagsdato noDoneshooting noPhotographers noShootings noSessions noLocation "config" (fp $ start root) config)
+        (A.model Nothing noDump noDagsdato noDoneshooting noPhotographers noShootings noSessions noLocation noGrades "config" (fp $ start root) config)
 
     messages <- Chan.newChan
     manager <- startManager

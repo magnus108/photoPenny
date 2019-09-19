@@ -18,18 +18,23 @@ module Model.E
     , _setDoneshooting
     , _setDagsdato
     , _setPhotographers
+    , _setGrades
     , _dump
     , _doneshooting
     , _shootings
     , _sessions
     , _dagsdato
     , _photographers
+    , _grades
     , _setShootings
     , _setSessions
     , _locationFile
     , _shootingFile
     , _sessionFile
     , _stateFile
+
+    , _gradesFile
+
     , _dumpFile
     , _photographerFile
     , _doneshootingFile
@@ -52,6 +57,7 @@ import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location
+import qualified PhotoShake.Grade as Grade
 
 import PhotoShake.ShakeConfig 
 
@@ -81,6 +87,8 @@ data Model = Model
     , sessions :: Session.Sessions
 
     , location :: Location.Location
+
+    , grades :: Grade.Grades
 
 
     , dir1 :: FilePath -- deleteme
@@ -114,6 +122,10 @@ _configs = dir1 . extract . unApp
 
 _stateFile :: App Model -> FilePath -- deleteme
 _stateFile  = _stateConfig . _shakeConfig
+
+
+_gradesFile :: App Model -> FilePath -- deleteme
+_gradesFile  = _gradeConfig . _shakeConfig
 
 _dumpFile :: App Model -> FilePath -- deleteme
 _dumpFile  = _dumpConfig . _shakeConfig
@@ -170,6 +182,11 @@ _setSessions x y = App $ (unApp x) =>> (\x -> (extract x) { sessions = y } )
 _setShootings :: App Model -> Shooting.Shootings -> App Model -- deleteme
 _setShootings x y = App $ (unApp x) =>> (\x -> (extract x) { shootings = y } )
 
+
+_setGrades :: App Model -> Grade.Grades -> App Model -- deleteme
+_setGrades x y = App $ (unApp x) =>> (\x -> (extract x) { grades = y } )
+
+
 _dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
 
@@ -189,6 +206,9 @@ _shootings = shootings . extract . unApp
 
 _photographers :: App Model -> Photographer.Photographers -- deleteme
 _photographers = photographers . extract . unApp
+
+_grades :: App Model -> Grade.Grades -- deleteme
+_grades  = grades . extract . unApp
 
 
 _shakeConfig :: App Model -> ShakeConfig -- deleteme

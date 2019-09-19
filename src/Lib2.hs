@@ -55,6 +55,13 @@ main port manager messages app = do
                            } $ setup manager messages app
 
 
+setupGradesListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupGradesListener manager msgChan app = do -- THIS BAD
+    fpConfig <- withMVar app (\app' -> return (_configs app'))
+    stateConfig <- withMVar app (\app' -> return (_gradesFile app'))
+    watchDir manager fpConfig 
+        (\e -> takeFileName (eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getGrades)
+
 
 setupStateListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
 setupStateListener manager msgChan app = do -- THIS BAD
@@ -141,6 +148,7 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getShootings
     _ <- writeChan msgs Msg.getSessions
     _ <- writeChan msgs Msg.getLocation
+    _ <- writeChan msgs Msg.getGrades
     return ()
 
 subscriptions :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO ()
@@ -153,6 +161,7 @@ subscriptions manager msgs app = do
     _ <- setupShootingListener manager msgs app
     _ <- setupSessionListener manager msgs app
     _ <- setupLocationListener manager msgs app
+    _ <- setupGradesListener manager msgs app
     return ()
 
 setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
@@ -283,7 +292,6 @@ receive w msgs app = do
                 putMVar app app''
 
 
-
             Msg.SetSessions sessions -> do
                 app' <- takeMVar app 
                 let shakeConfig = _shakeConfig app'
@@ -345,8 +353,28 @@ receive w msgs app = do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
                     redoLayout body msgs app''
-                putMVar app app''
-    
+                putMVar app app'' 
+
+            Msg.SetGrades grades -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                _ <- setGrades shakeConfig grades -- should be called setShootings
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetGrades -> do
+                app' <- takeMVar app 
+                let shakeConfig = _shakeConfig app'
+                grades <- getGrades shakeConfig
+                let app'' = _setGrades app' grades
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'' 
     
             Msg.Block x -> do -- i can maybe do something good with this.
                 putMVar x () 
@@ -393,7 +421,7 @@ viewState msgs app states = do
             S.Photographer -> photographerSection msgs (_photographers app)
             S.Session -> sessionSection msgs (_sessions app)
             S.Shooting -> shootingSection msgs (_shootings app)
-            S.Location -> locationSection msgs (_location app)
+            S.Location -> locationSection msgs (_location app) (_grades app)
             _ -> do
                 string "bob"
 

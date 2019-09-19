@@ -17,6 +17,8 @@ module Message
     , setSessions
     , getLocation
     , setLocation
+    , getGrades
+    , setGrades
     ) where
 
 
@@ -31,6 +33,7 @@ import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Location as Location
+import qualified PhotoShake.Grade as Grade
 
 data Message 
     = Block (MVar ())
@@ -58,6 +61,9 @@ data Message
 
     | GetLocation
     | SetLocation Location.Location
+
+    | GetGrades
+    | SetGrades Grade.Grades
 
 
 block :: MVar () -> Message
@@ -117,3 +123,9 @@ getLocation = GetLocation
 
 setLocation :: Location.Location -> Message
 setLocation = SetLocation
+
+getGrades :: Message
+getGrades = GetGrades
+
+setGrades :: Grade.Grades -> Message
+setGrades = SetGrades
