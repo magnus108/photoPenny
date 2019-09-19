@@ -63,20 +63,20 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
         
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
-
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
             --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabLocation" ) >>= click
             --fuckthis
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 liftBase $ writeChan messages $ setLocation $ Location.yesLocation "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv"
@@ -105,20 +105,19 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
-    
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
+
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
 
             openPage "http://localhost:9000"
 
-
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
             waitUntil 10000000 $ findElem ( ById "tabShooting" ) >>= click
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
 
@@ -149,14 +148,14 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
 
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
 
             openPage "http://localhost:9000"
 
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
 
@@ -164,7 +163,7 @@ main = do
             waitUntil 10000000 $ findElem ( ById "tabSession" ) >>= click
             --fuckthis
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
 
@@ -195,14 +194,14 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
 
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
 
             openPage "http://localhost:9000"
 
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
 
@@ -210,7 +209,7 @@ main = do
             waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
             --fuckthis
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
 
@@ -240,20 +239,21 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
+
 
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
             --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabDagsdato" ) >>= click
             --fuckthis
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 liftBase $ writeChan messages $ setDagsdato $ DA.yesDagsdato "/home/magnus/Downloads"
@@ -282,20 +282,20 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
 
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
             --fuckthis
             waitUntil 10000000 $ findElem ( ById "tabDoneshooting" ) >>= click
             --fuckthis
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 liftBase $ writeChan messages $ setDoneshooting $ DO.yesDoneshooting "/home/magnus/Downloads/Magnus Renamed/what"
@@ -323,13 +323,13 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
     
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
 
@@ -337,7 +337,7 @@ main = do
             waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
             --fuckthis
 
-            forM_ [1..10] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 liftBase $ writeChan messages $ setDump $ D.yesDump "/home/magnus/Downloads/Magnus Renamed/what"
@@ -365,17 +365,17 @@ main = do
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
 
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
-            empty <- liftBase newEmptyMVar
-            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
 
-            forM_ [1..100] (\x -> do
+            forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 100000000 $ findElem ( ById "tabDump" ) >>= click

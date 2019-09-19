@@ -376,7 +376,15 @@ receive w msgs app = do
                     redoLayout body msgs app''
                 putMVar app app'' 
     
+            -- not sure about this..
             Msg.Block x -> do -- i can maybe do something good with this.
+                app' <- takeMVar app 
+                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                writeChan msgs Msg.getStates --
+                putMVar app app'
                 putMVar x () 
 
 
