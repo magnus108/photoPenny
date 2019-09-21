@@ -63,7 +63,10 @@ locationSection msgs x grades = do
                         (\(Zipper.ListZipper ls y rs) -> do
                                     -- i dont need this if i just make sure the
                                     -- list is sorted on the type level
-                                    let zipper = Zipper.ListZipper (reverse (sort ls)) y (sort rs)
+                                    --let zipper = Zipper.ListZipper (reverse (sort ls)) y (sort rs)
+
+                                    let zipper = Zipper.sorted (ls ++ rs) (Zipper.ListZipper [] y [])
+
                                     input <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter"
                                     
                                     --hack create extendI
@@ -95,7 +98,7 @@ locationSection msgs x grades = do
                                     on UI.click gradeInsert $ \_ -> do 
                                             liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ Zipper.insert zipper mempty 
 
-                                    (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet klasser"
+                                    (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet alle klasser"
 
                                     on UI.click gradeDelete $ \_ -> do 
                                             liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.noGrades 
@@ -115,6 +118,11 @@ locationSection msgs x grades = do
 
                                     (gradeChange, gradeChangeView) <- mkButton "save" "Gem"
 
+                                    (gradeDeleteSingle, gradeDeleteSingleView) <- mkButton "delete" "Delete"
+
+                                    on UI.click gradeDeleteSingle $ \_ -> do 
+                                            liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.delete (Grade.yesGrades zipper)
+
                                     on UI.keydown inputView2 $ \keycode -> when (keycode == 13) $ do
                                         UI.setFocus gradeChange
                                         runFunction $ ffi "$('#save').trigger('click')"
@@ -130,7 +138,7 @@ locationSection msgs x grades = do
                                         [ UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
                                         , UI.div #. "control" #+ [ UI.div #. "buttons has-addons" #+ [element gradeInsert, element gradeDelete] , element inputView]
                                         , UI.br --bads
-                                        , UI.div #. "control" #+ [ element inputView2, element gradeChangeView ]
+                                        , UI.div #. "control" #+ [ element inputView2, UI.div #. "buttons has-addons" #+ [element gradeChange, element gradeDeleteSingle]]
                                         ]
 
 
@@ -144,47 +152,4 @@ locationSection msgs x grades = do
                             , mkColumn ["is-4"] [ element gradesView ]
                             ]
                       ] 
-
-            --- SUPER BADNESS
-
-        {-
-
-            inputViewGrade <- UI.div #. "field" #+
-                [ UI.label #. "label has-text-dark" # set UI.text "Stue/Klasser"
-                , UI.div #. "control" #+ [ element gradeInput' ] 
-                , UI.br --bads
-                , UI.div #. "buttons has-addons" #+ [element gradeInsert, element gradeDelete]
-                , UI.br --bads
-                , UI.div #+ [ element insertedMsg]
-                ]
-
-            on UI.keyup inputViewGrade $ \_ -> liftIO . writeIORef grade =<< get value gradeInput'
-
-
-            on UI.keydown inputViewGrade  $ \keycode -> when (keycode == 13) $ do
-                    grade' <- liftIO $ readIORef grade
-                    grades <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
-                    case grades of
-                        NoGrades ->
-                                  liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper [] grade' [])
-                        Grades (ListZipper ls x rs) ->
-                                  liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper ls grade' (x:rs))
-
-            on UI.click gradeInsert $ \_ -> do 
-                    grade' <- liftIO $ readIORef grade
-                    grades <- liftIO $ withMVar config' $ (\conf -> getGrades conf)
-                    case grades of
-                        NoGrades ->
-                                 liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper [] grade' [])
-                        Grades (ListZipper ls x rs) ->
-                                 --dette er en insert
-                                 liftIO $ withMVar config' $ (\conf -> setGrades conf $ Grades $ ListZipper ls grade' (x:rs))
-                                
-
-            
-            on UI.click gradeDelete $ \_ -> do 
-                    liftIO $ withMVar config' $ (\conf -> setGrades conf NoGrades)
-            -}
-
-
             ) x

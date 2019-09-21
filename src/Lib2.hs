@@ -39,6 +39,7 @@ import Shooting
 import Session
 import Photographer
 import Locations -- wrong name
+import Control
 
 import Control.Exception
 import PhotoShake.ShakeConfig 
@@ -430,6 +431,7 @@ viewState msgs app states = do
             S.Session -> sessionSection msgs (_sessions app)
             S.Shooting -> shootingSection msgs (_shootings app)
             S.Location -> locationSection msgs (_location app) (_grades app)
+            S.Control -> controlSection msgs (_grades app)
             _ -> do
                 string "bob"
 

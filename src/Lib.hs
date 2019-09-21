@@ -111,9 +111,6 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
 
             Main2 -> mainSection2 root stateFile config config'' w
 
-            Control -> do
-                c <- controlSection root states'' config'' 
-                return (c,tmp)
 
 
 
