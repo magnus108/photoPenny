@@ -14,7 +14,7 @@ import Utils.Comonad
 import Utils.Actions
 
 
-import Model.E
+import qualified Model.E as E
 import qualified Message as Msg
 
 import Elements
@@ -49,84 +49,88 @@ import PhotoShake.Dagsdato
 import PhotoShake.Photographer hiding (setPhotographers, getPhotographers)
 
 
-main :: Int -> WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO ()
+main :: Int -> WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO ()
 main port manager messages app = do 
+    setupSubscriptions <- withMVar app (return . E._subscriptions)
+    cancel <- setupSubscriptions manager messages app 
+    _ <- modifyMVar_ app $ \a -> return (E._setCancel a cancel)
+    
     startGUI defaultConfig { jsPort = Just port
                            , jsWindowReloadOnDisconnect = False
                            } $ setup manager messages app
 
 
-setupGradesListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupGradesListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupGradesListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    stateConfig <- withMVar app (\app' -> return (_gradesFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    stateConfig <- withMVar app (\app' -> return (E._gradesFile app'))
     watchDir manager fpConfig 
         (\e -> takeFileName (eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getGrades)
 
 
-setupStateListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupStateListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupStateListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    stateConfig <- withMVar app (\app' -> return (_stateFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    stateConfig <- withMVar app (\app' -> return (E._stateFile app'))
     watchDir manager fpConfig 
         (\e -> takeFileName (eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getStates)
 
 
-setupDumpListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupDumpListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupDumpListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    dumpConfig <- withMVar app (\app' -> return (_dumpFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    dumpConfig <- withMVar app (\app' -> return (E._dumpFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getDump)
 
-setupDoneshootingListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupDoneshootingListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupDoneshootingListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    doneshootingConfig <- withMVar app (\app' -> return (_doneshootingFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    doneshootingConfig <- withMVar app (\app' -> return (E._doneshootingFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName doneshootingConfig) (\_ -> writeChan msgChan Msg.getDoneshooting)
 
 
-setupDagsdatoListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupDagsdatoListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupDagsdatoListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    dagsdatoConfig <- withMVar app (\app' -> return (_dagsdatoFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    dagsdatoConfig <- withMVar app (\app' -> return (E._dagsdatoFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName dagsdatoConfig) (\_ -> writeChan msgChan Msg.getDagsdato)
 
 
-setupPhotographerListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupPhotographerListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupPhotographerListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    photographerConfig <- withMVar app (\app' -> return (_photographerFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    photographerConfig <- withMVar app (\app' -> return (E._photographerFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName photographerConfig) (\_ -> writeChan msgChan Msg.getPhotographers)
 
-setupShootingListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupShootingListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupShootingListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    shootingConfig <- withMVar app (\app' -> return (_shootingFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    shootingConfig <- withMVar app (\app' -> return (E._shootingFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName shootingConfig) (\_ -> writeChan msgChan Msg.getShootings)
 
-setupSessionListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupSessionListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupSessionListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    sessionConfig <- withMVar app (\app' -> return (_sessionFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    sessionConfig <- withMVar app (\app' -> return (E._sessionFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName sessionConfig) (\_ -> writeChan msgChan Msg.getSessions)
 
 
-setupLocationListener :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening --- ??? STOP
+setupLocationListener :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening --- ??? STOP
 setupLocationListener manager msgChan app = do -- THIS BAD
-    fpConfig <- withMVar app (\app' -> return (_configs app'))
-    locationConfig <- withMVar app (\app' -> return (_locationFile app'))
+    fpConfig <- withMVar app (\app' -> return (E._configs app'))
+    locationConfig <- withMVar app (\app' -> return (E._locationFile app'))
     watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (eventPath e) == takeFileName locationConfig) (\_ -> writeChan msgChan Msg.getLocation)
@@ -152,40 +156,62 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getGrades
     return ()
 
-subscriptions :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO ()
+subscriptions :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO StopListening
 subscriptions manager msgs app = do
-    _ <- setupStateListener manager msgs app
-    _ <- setupDumpListener manager msgs app
-    _ <- setupDoneshootingListener manager msgs app
-    _ <- setupDagsdatoListener manager msgs app
-    _ <- setupPhotographerListener manager msgs app
-    _ <- setupShootingListener manager msgs app
-    _ <- setupSessionListener manager msgs app
-    _ <- setupLocationListener manager msgs app
-    _ <- setupGradesListener manager msgs app
-    return ()
+    state <- setupStateListener manager msgs app
+    dump <- setupDumpListener manager msgs app
+    doneshooting <- setupDoneshootingListener manager msgs app
+    dagsdato <- setupDagsdatoListener manager msgs app
+    photographer <- setupPhotographerListener manager msgs app
+    shooting <- setupShootingListener manager msgs app
+    session <- setupSessionListener manager msgs app
+    location <- setupLocationListener manager msgs app
+    grade <- setupGradesListener manager msgs app
+    return $ msum 
+        [ state
+        , dump
+        , doneshooting
+        , dagsdato
+        , photographer
+        , shooting
+        , session
+        , location
+        , grade
+        ]
 
-setup :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> Window -> UI ()
+setup :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> UI ()
 setup manager msgs app w = do
 
-    receiver <- liftIO $ forkIO $ receive w msgs app
+    receiver <- liftIO $ forkIO $ receive manager msgs app w
 
     on UI.disconnect w $ const $ liftIO $ killThread receiver
     on UI.disconnect w $ const $ liftIO $ stopManager manager
 
 
-receive :: Window -> Chan Msg.Message -> MVar (App Model) -> IO ()
-receive w msgs app = do
+receive :: WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> IO ()
+receive manager msgs app w = do
     messages <- getChanContents msgs
     
     forM_ messages $ \ msg -> do 
+        
+        -- cancel subscriptsions 
+        -- setup new ones
+        app' <- takeMVar app 
+        _ <- E._cancel app'
+        let setupSubscriptions = E._subscriptions app'
+        _ <- putMVar app app' 
+        cancel <- setupSubscriptions manager msgs app
+        app' <- takeMVar app 
+        let app'' = E._setCancel app' cancel
+        _ <- putMVar app app''
+
         case msg of
             Msg.GetStates -> do                
                 app' <- takeMVar app 
-                let root = _root app'
-                let stateFile = _stateFile app'
+                let root = E._root app'
+                let stateFile = E._stateFile app'
                 states <- interpret $ S.getStates $ fp $ unFP root =>> combine stateFile
-                let app'' = _setStates app' (Just states)
+                let app'' = E._setStates app' (Just states)
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -195,10 +221,10 @@ receive w msgs app = do
 
             Msg.SetStates states -> do
                 app' <- takeMVar app 
-                let root = _root app'
-                let stateFile = _stateFile app'
+                let root = E._root app'
+                let stateFile = E._stateFile app'
                 _ <- interpret $ S.setStates (fp (unFP root =>> combine stateFile)) states
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -206,9 +232,9 @@ receive w msgs app = do
 
             Msg.SetDump dump -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setDump shakeConfig dump 
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -216,9 +242,9 @@ receive w msgs app = do
 
             Msg.GetDump -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 dump <- getDump shakeConfig
-                let app'' = _setDump app' dump
+                let app'' = E._setDump app' dump
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -228,9 +254,9 @@ receive w msgs app = do
 
             Msg.SetDoneshooting doneshooting -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setDoneshooting shakeConfig doneshooting
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -238,9 +264,9 @@ receive w msgs app = do
 
             Msg.GetDoneshooting -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 doneshooting <- getDoneshooting shakeConfig
-                let app'' = _setDoneshooting app' doneshooting
+                let app'' = E._setDoneshooting app' doneshooting
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -250,9 +276,9 @@ receive w msgs app = do
 
             Msg.SetDagsdato dagsdato -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setDagsdato shakeConfig dagsdato
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -260,9 +286,9 @@ receive w msgs app = do
 
             Msg.GetDagsdato -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 dagsdato <- getDagsdato shakeConfig
-                let app'' = _setDagsdato app' dagsdato
+                let app'' = E._setDagsdato app' dagsdato
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -272,9 +298,9 @@ receive w msgs app = do
 
             Msg.SetPhotographers photographers -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setPhotographers shakeConfig photographers
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -282,9 +308,9 @@ receive w msgs app = do
 
             Msg.GetPhotographers -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 photographers <- getPhotographers shakeConfig
-                let app'' = _setPhotographers app' photographers
+                let app'' = E._setPhotographers app' photographers
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -295,9 +321,9 @@ receive w msgs app = do
 
             Msg.SetSessions sessions -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setSession shakeConfig sessions -- should be called setShootings
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -305,9 +331,9 @@ receive w msgs app = do
 
             Msg.GetSessions -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 sessions <- getSessions shakeConfig
-                let app'' = _setSessions app' sessions
+                let app'' = E._setSessions app' sessions
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -316,9 +342,9 @@ receive w msgs app = do
 
             Msg.SetShootings shootings -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setShooting shakeConfig shootings -- should be called setShootings
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -326,9 +352,9 @@ receive w msgs app = do
 
             Msg.GetShootings -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 shootings <- getShootings shakeConfig
-                let app'' = _setShootings app' shootings
+                let app'' = E._setShootings app' shootings
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -337,9 +363,9 @@ receive w msgs app = do
 
             Msg.SetLocation location -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setLocation shakeConfig location -- should be called setShootings
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -347,9 +373,9 @@ receive w msgs app = do
 
             Msg.GetLocation -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 location <- getLocationFile shakeConfig --wrong naming
-                let app'' = _setLocation app' location
+                let app'' = E._setLocation app' location
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -358,9 +384,9 @@ receive w msgs app = do
 
             Msg.SetGrades grades -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 _ <- setGrades shakeConfig grades -- should be called setShootings
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -368,9 +394,9 @@ receive w msgs app = do
 
             Msg.GetGrades -> do
                 app' <- takeMVar app 
-                let shakeConfig = _shakeConfig app'
+                let shakeConfig = E._shakeConfig app'
                 grades <- getGrades shakeConfig
-                let app'' = _setGrades app' grades
+                let app'' = E._setGrades app' grades
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -380,19 +406,21 @@ receive w msgs app = do
             -- not sure about this..
             Msg.Block x -> do -- i can maybe do something good with this.
                 app' <- takeMVar app 
-                let app'' = _setStates app' Nothing -- i dont think i have to do this
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
-                writeChan msgs Msg.getStates --
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app'
                 putMVar app app'
                 putMVar x () 
 
 
-redoLayout :: Element -> Chan Msg.Message -> App Model -> UI ()
+redoLayout :: Element -> Chan Msg.Message -> E.App E.Model -> UI ()
 redoLayout body msgs app = void $ do
     
-    let states = _states app
+    let states = E._states app
 
     case states of
         Just (S.States states) -> do
@@ -421,17 +449,17 @@ redoLayout body msgs app = void $ do
 
 
 --viewState :: Element -> Chan Msg.Message -> App Model > UI (Element, Element)
-viewState :: Chan Msg.Message -> App Model -> (ListZipper S.State) -> UI Element
+viewState :: Chan Msg.Message -> E.App E.Model -> (ListZipper S.State) -> UI Element
 viewState msgs app states = do
     case (focus states) of 
-            S.Dump -> dumpSection msgs (_dump app)
-            S.Doneshooting -> doneshootingSection msgs (_doneshooting app)
-            S.Dagsdato -> dagsdatoSection msgs (_dagsdato app)
-            S.Photographer -> photographerSection msgs (_photographers app)
-            S.Session -> sessionSection msgs (_sessions app)
-            S.Shooting -> shootingSection msgs (_shootings app)
-            S.Location -> locationSection msgs (_location app) (_grades app)
-            S.Control -> controlSection msgs (_grades app)
+            S.Dump -> dumpSection msgs (E._dump app)
+            S.Doneshooting -> doneshootingSection msgs (E._doneshooting app)
+            S.Dagsdato -> dagsdatoSection msgs (E._dagsdato app)
+            S.Photographer -> photographerSection msgs (E._photographers app)
+            S.Session -> sessionSection msgs (E._sessions app)
+            S.Shooting -> shootingSection msgs (E._shootings app)
+            S.Location -> locationSection msgs (E._location app) (E._grades app)
+            S.Control -> controlSection msgs (E._grades app)
             _ -> do
                 string "bob"
 

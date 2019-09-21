@@ -58,32 +58,55 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
     -- dangerous difference between these params
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades  "test/config" (fp $ start "") config)
+
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
 
+
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Location []
+    --fuckthis
+    
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
         
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
+            liftBase $ putStrLn "Lol"
             openPage "http://localhost:9000"
             liftBase $ takeMVar empty
+            liftBase $ putStrLn "Lol2"
 
-            --fuckthis
-            waitUntil 10000000 $ findElem ( ById "tabLocation" ) >>= click
-            --fuckthis
-
-            forM_ [1..2] (\x -> do
+            forM_ [1..5] (\x -> do
+                liftBase $ putStrLn "Lol3"
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
+                liftBase $ putStrLn "Lol4"
                 liftBase $ writeChan messages $ setLocation $ Location.yesLocation "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv"
-
+                liftBase $ putStrLn "Lol5"
+ 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "locationPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv")
+                liftBase $ putStrLn "Lol6"
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
@@ -93,18 +116,38 @@ main = do
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "locationMissing" )
                 
+                liftBase $ putStrLn "Lol7"
                 --finisher
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
+                liftBase $ putStrLn "Lol8"
                 )
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
+
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Shooting []
+
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
 
@@ -114,8 +157,9 @@ main = do
             openPage "http://localhost:9000"
 
             liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
 
-            waitUntil 10000000 $ findElem ( ById "tabShooting" ) >>= click
 
             forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -143,11 +187,31 @@ main = do
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
+    
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Session []
+    --fuckthis
+    
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
 
@@ -157,11 +221,10 @@ main = do
             openPage "http://localhost:9000"
 
             liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
 
 
-            --fuckthis
-            waitUntil 10000000 $ findElem ( ById "tabSession" ) >>= click
-            --fuckthis
 
             forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -189,11 +252,31 @@ main = do
         )
 
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation  Grade.noGrades "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
+            
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Photographer []
+    --fuckthis
+            
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
 
@@ -203,11 +286,10 @@ main = do
             openPage "http://localhost:9000"
 
             liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
 
 
-            --fuckthis
-            waitUntil 10000000 $ findElem ( ById "tabPhotographer" ) >>= click
-            --fuckthis
 
             forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -234,11 +316,31 @@ main = do
                 )
         )
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
+    
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dagsdato []
+    --fuckthis
+    
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
 
@@ -248,10 +350,9 @@ main = do
             openPage "http://localhost:9000"
 
             liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
 
-            --fuckthis
-            waitUntil 10000000 $ findElem ( ById "tabDagsdato" ) >>= click
-            --fuckthis
 
             forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -276,12 +377,32 @@ main = do
                 )
         )
 
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
+            
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Doneshooting []
+    --fuckthis
+            
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
 
@@ -290,10 +411,9 @@ main = do
             openPage "http://localhost:9000"
 
             liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
 
-            --fuckthis
-            waitUntil 10000000 $ findElem ( ById "tabDoneshooting" ) >>= click
-            --fuckthis
 
             forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -318,11 +438,29 @@ main = do
                 )
         )
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dump []
+    --fuckthis
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
     
@@ -331,11 +469,9 @@ main = do
             openPage "http://localhost:9000"
 
             liftBase $ takeMVar empty
-
-
-            --fuckthis
-            waitUntil 10000000 $ findElem ( ById "tabDump" ) >>= click
-            --fuckthis
+            
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
 
             forM_ [1..2] (\x -> do
                 liftBase $ writeChan messages (block empty)
@@ -360,11 +496,30 @@ main = do
                 )
         )
 
-    app <- newMVar $ A.app $ env A.production (A.model Nothing D.noDump DA.noDagsdato DO.noDoneshooting Photographer.noPhotographers Shooting.noShootings Session.noSessions Location.noLocation Grade.noGrades "test/config" (fp $ start "") config)
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
+
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
     _ <- L.subscriptions manager messages app
+
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [Dump] Photographer []
+
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
 
@@ -372,6 +527,8 @@ main = do
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
+            liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
             liftBase $ takeMVar empty
 
 

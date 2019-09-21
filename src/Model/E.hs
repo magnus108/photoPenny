@@ -6,15 +6,18 @@ module Model.E
     , unApp
     , App
     , app
-    , Model
+    , Model (..)
     , model
 
+    , _subscriptions
     , _configs 
     , _states
+    , _cancel
     , _location
     , _setStates
     , _setLocation
     , _setDump
+    , _setCancel
     , _setDoneshooting
     , _setDagsdato
     , _setPhotographers
@@ -61,6 +64,13 @@ import qualified PhotoShake.Grade as Grade
 
 import PhotoShake.ShakeConfig 
 
+
+import Control.Concurrent
+import qualified Control.Concurrent.Chan as Chan
+import System.FSNotify hiding (defaultConfig)
+import qualified Message as Msg
+
+
 data E = Production | Test
 
 production :: E
@@ -95,6 +105,8 @@ data Model = Model
     , root :: FP -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
+    , subscriptions :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening -- ??? 
+    , cancel :: StopListening
     }
 
 
@@ -112,10 +124,13 @@ model = Model
 
 
 
-
-
 _root :: App Model -> FP -- deleteme
 _root = root . extract . unApp
+
+
+_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening) -- ???
+_subscriptions = subscriptions . extract . unApp
+
 
 _configs :: App Model -> FilePath -- deleteme
 _configs = dir1 . extract . unApp
@@ -156,10 +171,15 @@ _states = states . extract . unApp
 _location :: App Model -> Location.Location -- deleteme
 _location = location . extract . unApp
 
+_cancel :: App Model -> StopListening -- deleteme
+_cancel = cancel . extract . unApp
+
 _setStates :: App Model -> Maybe States -> App Model -- deleteme
 _setStates x (Just s) = App $ (unApp x) =>> (\x -> (extract x) { states = Just s } )
 _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing } )
 
+_setCancel :: App Model -> StopListening -> App Model -- deleteme
+_setCancel x y = App $ (unApp x) =>> (\x -> (extract x) { cancel = y } )
 
 _setDump :: App Model -> D.Dump -> App Model -- deleteme
 _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )

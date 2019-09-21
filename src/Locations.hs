@@ -45,7 +45,7 @@ locationSection msgs x grades = do
 
     Location.location ( mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Lokations fil ikke valgt" # set (attr "id") "locationMissing" ]
-                            , element pickers
+                            , mkColumn ["is-12"] [ element pickers ]
                             ]
                       ] ) 
         (\ y -> do

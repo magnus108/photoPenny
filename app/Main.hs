@@ -37,13 +37,27 @@ main = do
     
     config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
 
-    app <- newMVar $ A.app $ env A.production 
-        (A.model Nothing noDump noDagsdato noDoneshooting noPhotographers noShootings noSessions noLocation noGrades "config" (fp $ start root) config)
+    
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = noDump
+        , A.dagsdato = noDagsdato
+        , A.doneshooting = noDoneshooting
+        , A.photographers = noPhotographers 
+        , A.shootings = noShootings 
+        , A.sessions = noSessions 
+        , A.location = noLocation 
+        , A.grades = noGrades
+        , A.dir1 = "config" -- deleteme
+        , A.root = fp (start root)  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.cancel = return ()
+        }
 
     messages <- Chan.newChan
     manager <- startManager
 
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
 
     L.main (read port) manager messages app 
