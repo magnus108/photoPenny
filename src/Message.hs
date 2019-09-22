@@ -66,6 +66,7 @@ data Message
     | SetGrades Grade.Grades
 
 
+
 block :: MVar () -> Message
 block = Block
 

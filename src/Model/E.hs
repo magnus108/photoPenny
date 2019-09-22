@@ -15,6 +15,7 @@ module Model.E
     , _cancel
     , _location
     , _setStates
+    , _setControl
     , _setLocation
     , _setDump
     , _setCancel
@@ -23,6 +24,7 @@ module Model.E
     , _setPhotographers
     , _setGrades
     , _dump
+    , _control
     , _doneshooting
     , _shootings
     , _sessions
@@ -61,6 +63,7 @@ import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
+import qualified PhotoShake.Control as Control
 
 import PhotoShake.ShakeConfig 
 
@@ -103,9 +106,10 @@ data Model = Model
 
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
+    , control :: Control.Result -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
-    , subscriptions :: WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening -- ??? 
+    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO StopListening -- ??? 
     , cancel :: StopListening
     }
 
@@ -128,7 +132,7 @@ _root :: App Model -> FP -- deleteme
 _root = root . extract . unApp
 
 
-_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> MVar (App Model) -> IO StopListening) -- ???
+_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO StopListening) -- ???
 _subscriptions = subscriptions . extract . unApp
 
 
@@ -181,6 +185,10 @@ _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing
 _setCancel :: App Model -> StopListening -> App Model -- deleteme
 _setCancel x y = App $ (unApp x) =>> (\x -> (extract x) { cancel = y } )
 
+
+_setControl :: App Model -> Control.Result -> App Model -- deleteme
+_setControl x y = App $ (unApp x) =>> (\x -> (extract x) { control = y } )
+
 _setDump :: App Model -> D.Dump -> App Model -- deleteme
 _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )
 
@@ -209,6 +217,9 @@ _setGrades x y = App $ (unApp x) =>> (\x -> (extract x) { grades = y } )
 
 _dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
+
+_control :: App Model -> Control.Result -- deleteme
+_control = control . extract . unApp
 
 _doneshooting :: App Model -> DO.Doneshooting -- deleteme
 _doneshooting = doneshooting . extract . unApp

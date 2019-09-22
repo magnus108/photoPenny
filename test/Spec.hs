@@ -47,6 +47,7 @@ import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
+import qualified PhotoShake.Control as Control
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -73,6 +74,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -95,7 +97,7 @@ main = do
             liftBase $ takeMVar empty
             liftBase $ putStrLn "Lol2"
 
-            forM_ [1..5] (\x -> do
+            forM_ [1..100] (\x -> do
                 liftBase $ putStrLn "Lol3"
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
@@ -139,6 +141,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -201,6 +204,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -266,6 +270,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -330,6 +335,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -391,6 +397,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -452,6 +459,7 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
@@ -510,13 +518,13 @@ main = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
         , A.cancel = return ()
         }
 
     messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
-    _ <- L.subscriptions manager messages app
 
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [Dump] Photographer []
 

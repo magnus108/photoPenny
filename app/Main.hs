@@ -16,7 +16,7 @@ import Utils.FP
 import PhotoShake.State 
 
 import qualified Control.Concurrent.Chan as Chan
-import System.FSNotify hiding (defaultConfig)
+import System.FSNotify 
 
 
 import PhotoShake.ShakeConfig 
@@ -29,6 +29,7 @@ import PhotoShake.Session
 import PhotoShake.Location
 import PhotoShake.Location
 import PhotoShake.Grade
+import qualified PhotoShake.Control as Control
 
 main :: IO ()
 main = do
@@ -53,10 +54,11 @@ main = do
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
         , A.cancel = return ()
+        , A.control = Control.Empty
         }
 
     messages <- Chan.newChan
-    manager <- startManager
+    manager <- startManagerConf (defaultConfig { confDebounce = Debounce 0.1 } )
 
     _ <- L.initialMessage messages
 

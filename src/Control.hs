@@ -24,6 +24,7 @@ import Utils.Comonad
 
 import PhotoShake.ShakeConfig
 import PhotoShake.Built
+import qualified PhotoShake.Control as Control
 import qualified PhotoShake.Grade as Grade
 
 import PhotoShake.State (State, States(..), setStates)
@@ -32,8 +33,8 @@ import Control.Monad
 
 --controlSection :: FilePath -> MVar States -> MVar ShakeConfig ->  UI Element
 --controlSection root states'' config'  = do
-controlSection :: Chan.Chan Msg.Message -> Grade.Grades -> UI Element
-controlSection msgs grades = do
+controlSection :: Chan.Chan Msg.Message -> Grade.Grades -> Control.Result -> UI Element -- måske lidt dumt med result hvis ikke der er grades
+controlSection msgs grades result = do
     view <- Grade.grades ( UI.div #. "field" #+
                         [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen Stuer/Klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
@@ -77,41 +78,37 @@ controlSection msgs grades = do
                                     -- sæt lytter på nuværende klasse.. dog i
                                     -- det lange vil man måske ænske valgt for
                                     -- alle klasser?
-                                    
-                                   -- _ <- writeChan msgs Msg.getDump 
-                                   -- _ <- setupDumpListener manager msgs app
 
-                                   -- x <- liftIO $ withMVar config' $ (\conf -> controlXMP conf y)
-{-
-                                    case x of 
+                                    -- lytter kan virke således at den altid er
+                                    -- tilsluttet men kun aktiv hvis state er
+                                    -- korret og der er en grade.
+
+                                    control <- case result of 
                                         NoErrors ->
-                                            mkSection [ mkColumns ["is-multiline"]
-                                                    [ mkColumn ["is-12"] [ mkLabel "Control" ]
-                                                    , mkColumn ["is-12"] [ string "xmp tjek er ok"]
+                                            UI.div #+ [ mkLabel "Control"
+                                                      , string "xmp tjek er ok"
+                                                      ]
+                                        Empty -> UI.div #+ 
+                                                    [ mkLabel "Control"
+                                                    , string "Ingen xmp"
                                                     ]
-                                                ]
-                                        Empty ->
-                                            mkSection [ mkColumns ["is-multiline"]
-                                                    [ mkColumn ["is-12"] [ mkLabel "Control" ]
-                                                    , mkColumn ["is-12"] [ string "Ingen xmp"]
-                                                    ]
-                                                ]
                                         Errors xs -> do
-                                            contets <- mapM (\(sys, antal, five, one) -> 
-                                                 mkSection [ mkColumns ["is-multiline"]
-                                                        [ mkColumn ["is-12"] [ mkLabel sys ]
-                                                        , mkColumn ["is-12"] [ if antal then UI.p #. "has-text-success" #+ [string "antal xmp ok"] else UI.p #. "has-text-danger" #+ [string "antal xmp ikke ok"]]
-                                                        , mkColumn ["is-12"] [ if five then UI.p #. "has-text-success" #+ [string "antal 5 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 5 stjerner ikke ok"]]
-                                                        , mkColumn ["is-12"] [ if one then UI.p #. "has-text-success" #+ [string "antal 1 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 1 stjerner ikke ok"]]
+                                            UI.div #+ (map (\(sys, antal, five, one) ->
+                                                    UI.div #+ 
+                                                        [ mkLabel sys 
+                                                        , if antal then UI.p #. "has-text-success" #+ [string "antal xmp ok"] else UI.p #. "has-text-danger" #+ [string "antal xmp ikke ok"]
+                                                        , if five then UI.p #. "has-text-success" #+ [string "antal 5 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 5 stjerner ikke ok"]
+                                                        , if one then UI.p #. "has-text-success" #+ [string "antal 1 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 1 stjerner ikke ok"]
                                                         ]
-                                                    ]
-                                                ) xs
+                                                    ) xs)
 
-                                             UI.div #+ (fmap element contets)) grades
--}
+
+
                                     UI.div #. "field" #+
                                         [ UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
                                         , UI.div #. "control" #+ [ element inputView ]
+                                        , UI.br
+                                        , element control
                                         ]
                         ) grades
 
