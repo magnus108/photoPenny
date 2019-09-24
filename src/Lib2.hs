@@ -6,6 +6,7 @@ module Lib2
     ) where
 
 import Debug.Trace
+import Data.Time.Clock
 
 import Utils.Debounce
 
@@ -41,6 +42,7 @@ import Data.Function ((&))
 import Dump
 import Doneshooting
 import Dagsdato
+import DagsdatoBackup
 import Shooting
 import Session
 import Photographer
@@ -49,6 +51,7 @@ import Control
 import Main
 
 import Control.Exception
+import PhotoShake
 import PhotoShake.ShakeConfig 
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Dump as Dump
@@ -65,8 +68,10 @@ import qualified PhotoShake.Control as Control
 main :: Int -> Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO ()
 main port manager messages app = do 
     setupSubscriptions <- withMVar app (return . E._subscriptions)
-    cancel <- withMVar app (setupSubscriptions manager messages)
+    (cancel, dumpFiles, control) <- withMVar app (setupSubscriptions manager messages)
     _ <- modifyMVar_ app $ \a -> return (E._setCancel a cancel)
+    _ <- modifyMVar_ app $ \a -> return (E._setCancelDumpFiles a dumpFiles)
+    _ <- modifyMVar_ app $ \a -> return (E._setCancelControl a control)
     
     startGUI defaultConfig { jsPort = Just port
                            , jsWindowReloadOnDisconnect = False
@@ -116,6 +121,15 @@ setupDagsdatoListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (Notify.eventPath e) == takeFileName dagsdatoConfig) (\_ -> writeChan msgChan Msg.getDagsdato)
 
 
+setupDagsdatoBackupListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
+setupDagsdatoBackupListener manager msgChan app = do -- THIS BAD
+    let fpConfig = E._configs app
+    let dagsdatoBackupConfig = E._dagsdatoBackupFile app
+    Notify.watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName dagsdatoBackupConfig) (\_ -> writeChan msgChan Msg.getDagsdatoBackup)
+
+
 setupPhotographerListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
 setupPhotographerListener manager msgChan app = do -- THIS BAD
     let fpConfig = E._configs app
@@ -163,16 +177,23 @@ setupControlListener manager msgChan app = do -- THIS BAD
     let location = E._location app
     let doneshooting = E._doneshooting app
     let grades = E._grades app
+    let cancelControl = return () --E._cancelControl app
 
-    Location.location (return (return ())) 
-        (\l -> Doneshooting.doneshooting (return (return ()))
-            (\d -> Grade.grades (return (return ()))
+    Location.location (return cancelControl) 
+        (\l -> Doneshooting.doneshooting (return cancelControl)
+            (\d -> Grade.grades (return cancelControl)
                 (\g -> do
-                    b <- traceShow (d, (takeBaseName l),(extract g)) (doesDirectoryExist (d </> (takeBaseName l) </> "cr2" </> (extract g)))
+                    action <- mkDebounce defaultDebounceSettings
+                             { debounceAction = writeChan msgChan Msg.getGrades
+                             , debounceFreq = 1000000 -- 5 seconds
+                             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                             }
+                    b <- doesDirectoryExist (d </> (takeBaseName l) </> "cr2" </> (extract g))
                     if b then
-                        Notify.watchDir manager (d </> (takeBaseName l) </> "cr2" </> (extract g)) (\x -> traceShow (eventNotModified x) (eventNotModified x && (not (Notify.eventIsDirectory x)))) (\_ -> writeChan msgChan Msg.getGrades)
+                        Notify.watchDir manager (d </> (takeBaseName l) </> "cr2" </> (extract g)) 
+                            (\x -> (eventNotModified x && (not (Notify.eventIsDirectory x)))) (\_ -> action)
                     else
-                        return (return ())) grades ) doneshooting) location
+                        return (cancelControl)) grades ) doneshooting) location
 
 eventNotModified :: Notify.Event -> Bool
 eventNotModified (Notify.Added    _ _ _) = True
@@ -184,7 +205,8 @@ eventNotModified (Notify.Unknown  _ _ _) = True
 setupDumpFilesListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
 setupDumpFilesListener manager msgChan app = do -- THIS BAD
     let dump = E._dump app
-    Dump.dump (return (return ())) (\d -> do
+    let cancelDumpFiles = return () --E._cancelDumpFiles app
+    Dump.dump (return cancelDumpFiles) (\d -> do
         b <- doesDirectoryExist d
         action <- mkDebounce defaultDebounceSettings
                  { debounceAction = writeChan msgChan Msg.getDumpFiles
@@ -192,9 +214,9 @@ setupDumpFilesListener manager msgChan app = do -- THIS BAD
                  , debounceEdge = trailingEdge -- Trigger on the trailing edge
                  }
         if b then 
-            Notify.watchDir manager d (const True) (\_ -> action)
+            Notify.watchDir manager d (\x -> eventNotModified x) (\_ -> action)
         else
-            return (return ())) dump
+            return cancelDumpFiles) dump
 
 
 initialMessage :: Chan Msg.Message -> IO ()
@@ -203,6 +225,7 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getDump 
     _ <- writeChan msgs Msg.getDoneshooting
     _ <- writeChan msgs Msg.getDagsdato
+    _ <- writeChan msgs Msg.getDagsdatoBackup
     _ <- writeChan msgs Msg.getPhotographers
     _ <- writeChan msgs Msg.getShootings
     _ <- writeChan msgs Msg.getSessions
@@ -212,12 +235,13 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getDumpFiles
     return ()
 
-subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening
+subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (Notify.StopListening, Notify.StopListening, Notify.StopListening)
 subscriptions manager msgs app = do
     state <- setupStateListener manager msgs app
     dump <- setupDumpListener manager msgs app
     doneshooting <- setupDoneshootingListener manager msgs app
     dagsdato <- setupDagsdatoListener manager msgs app
+    dagsdatoBackup <- setupDagsdatoBackupListener manager msgs app
     photographer <- setupPhotographerListener manager msgs app
     shooting <- setupShootingListener manager msgs app
     session <- setupSessionListener manager msgs app
@@ -226,20 +250,22 @@ subscriptions manager msgs app = do
     id <- setupIdListener manager msgs app
     control <- setupControlListener manager msgs app
     dumpFiles <- setupDumpFilesListener manager msgs app
-    return $ msum 
+    return $ (msum 
         [ state
         , dump
         , doneshooting
         , dagsdato
+        , dagsdatoBackup
         , photographer
         , shooting
         , session
         , location
         , grade
         , id
-        , control
-        , dumpFiles
         ]
+        , dumpFiles
+        , control
+        )
 
 setup :: Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> UI ()
 setup manager msgs app w = do
@@ -252,9 +278,11 @@ setup manager msgs app w = do
 subs :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (E.App E.Model)
 subs manager msgs app = do 
     let setupSubscriptions = E._subscriptions app
-    cancel <- setupSubscriptions manager msgs app 
+    (cancel, dumpFiles, control) <- setupSubscriptions manager msgs app 
     let app'' = E._setCancel app cancel
-    return app''
+    let app''' = E._setCancelDumpFiles app'' dumpFiles
+    let app'''' = E._setCancelControl app''' control
+    return app''''
 
 
 receive :: Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> IO ()
@@ -267,9 +295,33 @@ receive manager msgs app w = do
         -- setup new ones
 
         case msg of
+            Msg.Build -> do                
+                app' <- takeMVar app 
+                _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
+
+                --REAL SHITTY all the way
+                let config = E._shakeConfig app'
+                let photographee = E._photographee app'
+                let location = E._location app'
+                time <- liftIO $ getCurrentTime
+
+                build <- Location.location (return ()) 
+                        (\l -> maybe (return ()) (\p ->
+                                myShake config p (takeBaseName l) time True) photographee) location
+
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
             Msg.GetStates -> do                
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let root = E._root app'
                 let stateFile = E._stateFile app'
                 states <- interpret $ S.getStates $ fp $ unFP root =>> combine stateFile
@@ -306,6 +358,8 @@ receive manager msgs app w = do
             Msg.GetDump -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 dump <- getDump shakeConfig
                 let app'' = E._setDump app' dump
@@ -322,6 +376,8 @@ receive manager msgs app w = do
             Msg.GetPhotographee -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let location = E._location app'
                 let id = E._id app'
                 photographee <- Photographee2.findPhotographee location id
@@ -336,14 +392,13 @@ receive manager msgs app w = do
             Msg.GetDumpFiles -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelControl app'
+                _ <- E._cancelDumpFiles app'
+
                 let dump = E._dump app'
                 dumpFiles <- getDumpFiles dump
                 let app'' = E._setDumpFiles app' dumpFiles
-                --Most Fedup ever
-                --Most Fedup ever
-                --Most Fedup ever
-                --Most Fedup ever
-                _ <- E._cancel app'' --EHHH ?
+
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -365,9 +420,37 @@ receive manager msgs app w = do
             Msg.GetDoneshooting -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 doneshooting <- getDoneshooting shakeConfig
                 let app'' = E._setDoneshooting app' doneshooting
+                app''' <- subs manager msgs app''
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app'''
+
+                putMVar app app'''
+
+            Msg.SetDagsdatoBackup dagsdato -> do
+                app' <- takeMVar app 
+                let shakeConfig = E._shakeConfig app'
+                _ <- setDagsdatoBackup shakeConfig dagsdato
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetDagsdatoBackup -> do
+                app' <- takeMVar app 
+                _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
+                let shakeConfig = E._shakeConfig app'
+                dagsdatoBackup <- getDagsdatoBackup shakeConfig
+                let app'' = E._setDagsdatoBackup app' dagsdatoBackup
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -389,6 +472,8 @@ receive manager msgs app w = do
             Msg.GetDagsdato -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 dagsdato <- getDagsdato shakeConfig
                 let app'' = E._setDagsdato app' dagsdato
@@ -413,6 +498,8 @@ receive manager msgs app w = do
             Msg.GetPhotographers -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 photographers <- getPhotographers shakeConfig
                 let app'' = E._setPhotographers app' photographers
@@ -437,6 +524,8 @@ receive manager msgs app w = do
             Msg.GetSessions -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 sessions <- getSessions shakeConfig
                 let app'' = E._setSessions app' sessions
@@ -460,6 +549,8 @@ receive manager msgs app w = do
             Msg.GetShootings -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 shootings <- getShootings shakeConfig
                 let app'' = E._setShootings app' shootings
@@ -483,6 +574,8 @@ receive manager msgs app w = do
             Msg.GetId -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 let location = E._location app'
                 let id = E._id app'
@@ -510,6 +603,8 @@ receive manager msgs app w = do
             Msg.GetLocation -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 let id = E._id app'--wrong--wrong--wrong--wrong--wrong--wrong--wrong
                 location <- getLocationFile shakeConfig --wrong naming
@@ -539,6 +634,8 @@ receive manager msgs app w = do
             Msg.GetGrades -> do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
                 let shakeConfig = E._shakeConfig app'
                 grades <- getGrades shakeConfig
                 location <- getLocationFile shakeConfig --wrong naming
@@ -547,13 +644,6 @@ receive manager msgs app w = do
                 let app'' = E._setGrades app' grades
                 let app''' = E._setControl app'' control
                 let app'''' = E._setPhotographees app''' photographees
-
-                --Most Fedup ever
-                --Most Fedup ever
-                --Most Fedup ever
-                --Most Fedup ever
-                _ <- E._cancel app'''' --EHHH ?
-
                 app''''' <- subs manager msgs app''''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -598,6 +688,7 @@ viewState body msgs app states = do
             S.Dump -> dumpSection body msgs states (E._dump app)
             S.Doneshooting -> doneshootingSection body msgs states (E._doneshooting app)
             S.Dagsdato -> dagsdatoSection body msgs states (E._dagsdato app)
+            S.DagsdatoBackup -> dagsdatoBackupSection body msgs states (E._dagsdatoBackup app)
             S.Photographer -> photographerSection body msgs states (E._photographers app)
             S.Session -> sessionSection body msgs states (E._sessions app)
             S.Shooting -> shootingSection body msgs states (E._shootings app)

@@ -10,6 +10,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async
 import qualified Lib2 as L
 
+import System.FilePath
 import System.Directory
 
 import System.FSNotify hiding (defaultConfig)
@@ -17,10 +18,10 @@ import System.FSNotify hiding (defaultConfig)
 import Test.WebDriver.Common.Keys (enter)
 
 
-import Message (block, setDump, setDoneshooting, setDagsdato, setLocation)
+import Message (block, setDump, setDoneshooting, setDagsdato, setLocation, setDagsdatoBackup)
 import PhotoShake.State
 
-import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato, getPhotographers, setPhotographers, setLocation)
+import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato, getPhotographers, setPhotographers, setLocation, setDagsdatoBackup)
 import PhotoShake.Photographee
 import PhotoShake.Built
 
@@ -63,9 +64,75 @@ main = do
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.dump = D.noDump
+        , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
+        , A.shootings = Shooting.noShootings 
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
+        , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
+        }
+
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+    
+    --fuckthis
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] DagsdatoBackup []
+    --fuckthis
+    
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
+
+
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+
+            forM_ [1..2] (\x -> do
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.yesDagsdato "/home/magnus/Downloads"
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "dagsdatoBackupPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Downloads")
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.noDagsdato
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
+                )
+        )
+
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.id = Id.noId
         , A.sessions = Session.noSessions 
@@ -77,6 +144,146 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
+        }
+
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
+
+    empty <- liftBase newEmptyMVar
+
+    -- WAIT filepooling TIMEOUT..
+    -- WAIT filepooling TIMEOUT..
+    -- WAIT filepooling TIMEOUT..
+
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+            liftBase $ threadDelay 1000001
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+
+
+            forM_ [1..10] (\x -> do
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["A"] "B" ["C"]
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "A" ["B","C"]
+                )
+        )
+
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
+        , A.shootings = Shooting.noShootings 
+        , A.id = Id.noId
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
+        , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
+        }
+
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
+    liftBase $ writeChan messages $ setLocation $ Location.yesLocation "/home/magnus/Downloads/cis.csv"
+    liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "PKB" [] 
+    liftBase $ writeChan messages $ setDoneshooting $ DO.yesDoneshooting "/home/magnus/Documents/projects/photoPenny/test/doneshooting/"
+    empty <- liftBase newEmptyMVar
+
+    -- WAIT filepooling TIMEOUT..
+    -- WAIT filepooling TIMEOUT..
+    -- WAIT filepooling TIMEOUT..
+
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+            liftBase $ threadDelay 1000001
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+
+
+            forM_ [1..10] (\x -> do
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                liftBase $ writeFile "/home/magnus/Documents/projects/photoPenny/test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                waitUntil 10000 $ findElem (ById "SYS_77201")
+                
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                liftBase $ removeFile "/home/magnus/Documents/projects/photoPenny/test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2"
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
+
+
+
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
+        , A.shootings = Shooting.noShootings 
+        , A.id = Id.noId
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
+        , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -84,6 +291,88 @@ main = do
     _ <- L.initialMessage messages
 
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
+    liftBase $ writeChan messages $ setDump $ D.yesDump "/home/magnus/Documents/projects/photoPenny/test/files"
+
+    empty <- liftBase newEmptyMVar
+
+    -- WAIT filepooling TIMEOUT..
+    -- WAIT filepooling TIMEOUT..
+    -- WAIT filepooling TIMEOUT..
+
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+            liftBase $ threadDelay 1000001
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+
+
+            forM_ [1..10] (\x -> do
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                
+                files <- liftBase $ listDirectory "/home/magnus/Documents/projects/photoPenny/test/images"  
+                liftBase $ mapM_ (\ f -> copyFile ("/home/magnus/Documents/projects/photoPenny/test/images" </> f) ("/home/magnus/Documents/projects/photoPenny/test/files" </> f)) files
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+
+                waitUntil 10000 $ (\result -> expect (result == "32")) =<< getText =<< findElem (ById "count")
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                files <- liftBase $ listDirectory "/home/magnus/Documents/projects/photoPenny/test/files"  
+                liftBase $ mapM_ (\f -> removeFile ("/home/magnus/Documents/projects/photoPenny/test/files" </> f)) files
+
+                liftBase $ threadDelay 1000001
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+
+                waitUntil 10000 $ (\result -> expect (result == "0")) =<< getText =<< findElem (ById "count")
+                )
+        )
+
+
+
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
+        , A.shootings = Shooting.noShootings 
+        , A.id = Id.noId
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
+        , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
+        }
+
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
@@ -124,8 +413,11 @@ main = do
         { A.states = Nothing
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -137,6 +429,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -146,6 +440,7 @@ main = do
 
     --fuckthis
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Location []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     --fuckthis
     
     empty <- liftBase newEmptyMVar
@@ -184,8 +479,11 @@ main = do
         { A.states = Nothing
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.id = Id.noId
         , A.sessions = Session.noSessions 
@@ -197,6 +495,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -204,6 +504,7 @@ main = do
     _ <- L.initialMessage messages
 
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Shooting []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
@@ -248,8 +549,11 @@ main = do
         { A.states = Nothing
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.id = Id.noId
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
@@ -261,6 +565,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -269,6 +575,7 @@ main = do
     
     --fuckthis
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Session []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     --fuckthis
     
     empty <- liftBase newEmptyMVar
@@ -316,8 +623,11 @@ main = do
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -328,6 +638,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -336,6 +648,7 @@ main = do
             
     --fuckthis
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Photographer []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     --fuckthis
             
     empty <- liftBase newEmptyMVar
@@ -382,8 +695,11 @@ main = do
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -394,6 +710,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -402,6 +720,7 @@ main = do
     
     --fuckthis
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dagsdato []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     --fuckthis
     
     empty <- liftBase newEmptyMVar
@@ -445,8 +764,11 @@ main = do
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -457,6 +779,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
 
@@ -466,6 +790,7 @@ main = do
             
     --fuckthis
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Doneshooting []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     --fuckthis
             
     empty <- liftBase newEmptyMVar
@@ -508,8 +833,11 @@ main = do
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -520,6 +848,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -527,6 +857,7 @@ main = do
     _ <- L.initialMessage messages
     --fuckthis
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dump []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     --fuckthis
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
@@ -567,9 +898,12 @@ main = do
         { A.states = Nothing
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
+        , A.dagsdatoBackup = DA.noDagsdato
         , A.id = Id.noId
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -580,6 +914,8 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
@@ -587,6 +923,7 @@ main = do
     _ <- L.initialMessage messages
 
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [Dump] Photographer []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages (block empty)
@@ -600,7 +937,7 @@ main = do
             liftBase $ takeMVar empty
 
 
-            forM_ [1..2] (\x -> do
+            forM_ [1..10] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 100000000 $ findElem ( ById "tabDump" ) >>= click

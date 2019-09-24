@@ -16,6 +16,8 @@ module Model.E
     , _photographee
     , _photographees
     , _cancel
+    , _cancelDumpFiles
+    , _cancelControl
     , _location
     , _setId
     , _setPhotographee
@@ -26,8 +28,11 @@ module Model.E
     , _setDump
     , _setDumpFiles
     , _setCancel
+    , _setCancelDumpFiles
+    , _setCancelControl
     , _setDoneshooting
     , _setDagsdato
+    , _setDagsdatoBackup
     , _setPhotographers
     , _setGrades
     , _dump
@@ -36,6 +41,7 @@ module Model.E
     , _shootings
     , _sessions
     , _dagsdato
+    , _dagsdatoBackup
     , _photographers
     , _grades
     , _id
@@ -53,6 +59,7 @@ module Model.E
     , _photographerFile
     , _doneshootingFile
     , _dagsdatoFile
+    , _dagsdatoBackupFile
     , _shakeConfig
     , _root
     ) where
@@ -109,6 +116,7 @@ data Model = Model
     , photographees :: [Photographee.Photographee] --bads
 
     , dagsdato :: DA.Dagsdato
+    , dagsdatoBackup :: DA.Dagsdato
 
     , doneshooting :: DO.Doneshooting
     , photographers :: Photographer.Photographers
@@ -126,8 +134,10 @@ data Model = Model
     , control :: Control.Result -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
-    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO StopListening -- ??? 
+    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening) -- ??? 
     , cancel :: StopListening
+    , cancelDumpFiles :: StopListening
+    , cancelControl :: StopListening
     }
 
 
@@ -149,7 +159,7 @@ _root :: App Model -> FP -- deleteme
 _root = root . extract . unApp
 
 
-_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO StopListening) -- ???
+_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening)) -- ???
 _subscriptions = subscriptions . extract . unApp
 
 
@@ -181,6 +191,9 @@ _photographerFile = _photographerConfig . _shakeConfig
 _dagsdatoFile :: App Model -> FilePath -- deleteme
 _dagsdatoFile = _dagsdatoConfig . _shakeConfig
 
+_dagsdatoBackupFile :: App Model -> FilePath -- deleteme
+_dagsdatoBackupFile = _dagsdatoBackupConfig . _shakeConfig
+
 _sessionFile :: App Model -> FilePath -- deleteme
 _sessionFile = _sessionConfig . _shakeConfig
 
@@ -204,6 +217,13 @@ _location = location . extract . unApp
 _cancel :: App Model -> StopListening -- deleteme
 _cancel = cancel . extract . unApp
 
+_cancelDumpFiles :: App Model -> StopListening -- deleteme
+_cancelDumpFiles = cancelDumpFiles . extract . unApp
+
+_cancelControl :: App Model -> StopListening -- deleteme
+_cancelControl = cancelControl . extract . unApp
+
+
 _setStates :: App Model -> Maybe States -> App Model -- deleteme
 _setStates x (Just s) = App $ (unApp x) =>> (\x -> (extract x) { states = Just s } )
 _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing } )
@@ -211,6 +231,11 @@ _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing
 _setCancel :: App Model -> StopListening -> App Model -- deleteme
 _setCancel x y = App $ (unApp x) =>> (\x -> (extract x) { cancel = y } )
 
+_setCancelDumpFiles :: App Model -> StopListening -> App Model -- deleteme
+_setCancelDumpFiles x y = App $ (unApp x) =>> (\x -> (extract x) { cancelDumpFiles = y } )
+
+_setCancelControl :: App Model -> StopListening -> App Model -- deleteme
+_setCancelControl x y = App $ (unApp x) =>> (\x -> (extract x) { cancelControl = y } )
 
 _setDumpFiles:: App Model -> DumpFiles -> App Model -- deleteme
 _setDumpFiles x y = App $ (unApp x) =>> (\x -> (extract x) { dumpFiles = y } )
@@ -239,6 +264,9 @@ _setPhotographees x y = App $ (unApp x) =>> (\x -> (extract x) { photographees =
 
 _setDagsdato :: App Model -> DA.Dagsdato -> App Model -- deleteme
 _setDagsdato x y = App $ (unApp x) =>> (\x -> (extract x) { dagsdato = y } )
+
+_setDagsdatoBackup :: App Model -> DA.Dagsdato -> App Model -- deleteme
+_setDagsdatoBackup x y = App $ (unApp x) =>> (\x -> (extract x) { dagsdatoBackup = y } )
 
 _setPhotographers :: App Model -> Photographer.Photographers -> App Model -- deleteme
 _setPhotographers x y = App $ (unApp x) =>> (\x -> (extract x) { photographers = y } )
@@ -272,6 +300,8 @@ _photographees = photographees . extract . unApp
 _dagsdato :: App Model -> DA.Dagsdato -- deleteme
 _dagsdato = dagsdato . extract . unApp
 
+_dagsdatoBackup :: App Model -> DA.Dagsdato -- deleteme
+_dagsdatoBackup = dagsdatoBackup . extract . unApp
 
 _sessions :: App Model -> Session.Sessions -- deleteme
 _sessions = sessions . extract . unApp

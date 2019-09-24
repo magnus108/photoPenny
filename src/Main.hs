@@ -9,6 +9,7 @@ import Data.Char
 import Control.Monad
 
 import Utils.Comonad
+import Utils.Debounce
 import qualified Utils.ListZipper as ListZipper
 
 import qualified Control.Concurrent.Chan as Chan
@@ -30,13 +31,12 @@ import Elements
 import Menu
 
 
-mkBuild :: UI (Element, Element)
-mkBuild = do
+mkBuild :: Chan.Chan Msg.Message -> UI (Element, Element)
+mkBuild msgs = do
     (button, view) <- mkButton "mover" "Flyt filer"
     _ <- element button # set (attr "id") "builderButton"
     on UI.click button $ \_ -> do
-        --liftIO $ Chan.writeChan msgs $ Msg.build
-        return ()
+        liftIO $ Chan.writeChan msgs $ Msg.build
     return (button, view)
 
 sessionMissing :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> UI ()
@@ -68,12 +68,17 @@ mainSectionSchool :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper S
 mainSectionSchool body msgs states grades id dumpFiles photographee photographees = do
     input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" 
 
-    (builderButton, buildView) <- mkBuild 
+    (builderButton, buildView) <- mkBuild msgs
 
     on UI.keyup input $ \keycode -> do
         value <- get value input
         when (Id.toString id /= value) $ do
-            liftIO $ Chan.writeChan msgs $ Msg.setId $ Id.fromString value
+            action <- liftIO $ mkDebounce defaultDebounceSettings
+                     { debounceAction = Chan.writeChan msgs $ Msg.setId $ Id.fromString value
+                     , debounceFreq = 1000000 -- 5 seconds
+                     , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                     }
+            liftIO $ action 
 
     on UI.keydown input $ \keycode -> when (keycode == 13) $ do
         UI.setFocus builderButton 
@@ -97,7 +102,7 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
     dumpSize <- mkColumn ["is-12"] 
                     [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-12"] [ element label ]
-                        , mkColumn ["is-12"] [ UI.string (dumpFilesToCount dumpFiles) #. "is-size-1 has-text-danger has-text-weight-bold" ]
+                        , mkColumn ["is-12"] [ UI.string (dumpFilesToCount dumpFiles) #. "is-size-1 has-text-danger has-text-weight-bold" # set (attr "id") "count"]
                         ]
                     ]
 
@@ -185,17 +190,23 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
     view <- maybe 
         ( mkSection 
             [ mkColumns ["is-multiline"]
-                [ mkColumn ["is-4"] [ element inputView ]
-                , mkColumn ["is-12"] [ element buildView ]
-                , element dumpSize
+                [ mkColumn ["is-12"]
+                    [ mkColumns ["is-multiline"] 
+                        [ mkColumn ["is-4"] [ element inputView ]
+                        ]
+                    ]
                 , element grade
                 ]
             ]) (\ x -> 
         mkSection 
             [ mkColumns ["is-multiline"]
-                [ mkColumn ["is-4"] [ element inputView ]
-                , mkColumn ["is-12"] [ element buildView ]
-                , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                [ mkColumn ["is-12"]
+                    [ mkColumns ["is-multiline"] 
+                        [ mkColumn ["is-4"] [ element inputView ]
+                        , mkColumn ["is-12"] [ element buildView ]
+                        , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                        ]
+                    ]
                 , element dumpSize
                 , element grade
                 ]

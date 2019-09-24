@@ -9,6 +9,8 @@ module Message
     , setDoneshooting
     , getDagsdato
     , setDagsdato
+    , getDagsdatoBackup
+    , setDagsdatoBackup
     , getPhotographers
     , setPhotographers
     , getShootings
@@ -23,6 +25,7 @@ module Message
     , setId
     , getDumpFiles
     , getPhotographee
+    , build
     ) where
 
 
@@ -58,6 +61,9 @@ data Message
     | GetDagsdato
     | SetDagsdato Dagsdato.Dagsdato
 
+    | GetDagsdatoBackup
+    | SetDagsdatoBackup Dagsdato.Dagsdato
+
     | GetPhotographers
     | SetPhotographers Photographer.Photographers
 
@@ -75,6 +81,7 @@ data Message
 
     | GetDumpFiles
     | GetPhotographee
+    | Build
 
 
 
@@ -107,6 +114,13 @@ getDagsdato = GetDagsdato
 
 setDagsdato :: Dagsdato.Dagsdato -> Message
 setDagsdato = SetDagsdato
+
+
+getDagsdatoBackup :: Message
+getDagsdatoBackup = GetDagsdatoBackup
+
+setDagsdatoBackup :: Dagsdato.Dagsdato -> Message
+setDagsdatoBackup = SetDagsdatoBackup
 
 
 getPhotographers :: Message
@@ -155,3 +169,6 @@ getDumpFiles = GetDumpFiles
 
 getPhotographee :: Message
 getPhotographee = GetPhotographee
+
+build :: Message
+build = Build

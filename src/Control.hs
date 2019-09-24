@@ -99,7 +99,7 @@ controlSection body msgs states grades result = do
                                         Errors xs -> do
                                             UI.div #+ (map (\(sys, antal, five, one) ->
                                                     UI.div #+ 
-                                                        [ mkLabel sys 
+                                                        [ mkLabel sys # set (attr "id") sys
                                                         , if antal then UI.p #. "has-text-success" #+ [string "antal xmp ok"] else UI.p #. "has-text-danger" #+ [string "antal xmp ikke ok"]
                                                         , if five then UI.p #. "has-text-success" #+ [string "antal 5 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 5 stjerner ikke ok"]
                                                         , if one then UI.p #. "has-text-success" #+ [string "antal 1 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 1 stjerner ikke ok"]

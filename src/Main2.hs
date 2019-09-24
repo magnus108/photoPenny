@@ -200,6 +200,8 @@ mkBuild config = do
 
 funci :: ShakeConfig -> Id.Id -> IO ()
 funci config x = do
+    return ()
+    {-
     Id.id (setBuilt' config (NoFind (show "Elev ikke fundet"))) 
         (\i -> do
         --have to look this up from config
@@ -208,7 +210,8 @@ funci config x = do
         -- kinda bad here could cause errorr
         find <- 
             Location.location (return (Left LocationConfigFileMissing)) (\ xxx -> do
-                try $ Photographee.findPhotographee xxx i :: IO (Either ShakeError Photographee.Photographee)) locationFile 
+                
+                --try $ Photographee.findPhotographee xxx i :: IO (Either ShakeError Photographee.Photographee)) locationFile 
 
         case find of
                 Left errMsg -> do
@@ -227,7 +230,7 @@ funci config x = do
                                             setBuilt' config (Built  photographee "Færdig")
                                             return () ) locationFile 
         ) x
-
+-}
 
 funci2 :: MVar ShakeConfig -> (IORef String) -> IO ()
 funci2 config idd = do

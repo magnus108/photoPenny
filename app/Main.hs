@@ -46,6 +46,7 @@ main = do
         , A.dump = noDump
         , A.dumpFiles = NoDump
         , A.dagsdato = noDagsdato
+        , A.dagsdatoBackup = noDagsdato
         , A.doneshooting = noDoneshooting
         , A.photographers = noPhotographers 
         , A.photographee = Nothing
@@ -60,11 +61,17 @@ main = do
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
         , A.cancel = return ()
+        , A.cancelDumpFiles = return ()
         , A.control = Control.Empty
+        , A.cancelControl = return ()
         }
 
     messages <- Chan.newChan
-    manager <- startManagerConf defaultConfig 
+    manager <- startManagerConf (WatchConfig
+        { confDebounce = NoDebounce 
+        , confPollInterval = 10^(6 :: Int) -- 1 second
+        , confUsePolling = False
+        })
 
     _ <- L.initialMessage messages
 
