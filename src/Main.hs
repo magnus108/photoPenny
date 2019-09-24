@@ -2,44 +2,214 @@
 module Main
     ( mainSection 
     ) where
-import Elements
-import PhotoShake.Dagsdato
-import Control.Concurrent.MVar
+
+import Data.Maybe
 import Data.List
+import Data.Char
 import Control.Monad
 
-import Data.List
+import Utils.Comonad
+import qualified Utils.ListZipper as ListZipper
 
-import PhotoShake
-import PhotoShake.ShakeConfig
-import PhotoShake.Doneshooting
+import qualified Control.Concurrent.Chan as Chan
+import qualified Message as Msg
+
 import qualified PhotoShake.Grade as Grade
-import PhotoShake.Shooting
-import PhotoShake.Session hiding (getSessions)
-import qualified PhotoShake.Location as Location
-import PhotoShake.Photographer
-import PhotoShake.Dump
-import qualified PhotoShake.Photographee as Photographee
-import PhotoShake.Built
+import qualified PhotoShake.Id as Id
+import qualified PhotoShake.State as State
+import qualified PhotoShake.Session as Session
+import qualified PhotoShake.Photographee2 as Photographee
+import PhotoShake.ShakeConfig 
 
-import Data.Time.Clock
-import Control.Exception
-import System.FilePath
-
-import PhotoShake.ShakeError
-
-import Data.IORef
+import qualified Utils.ListZipper as ListZipper
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import Utils.ListZipper
-import Utils.Comonad
+import Elements
+import Menu
 
 
+mkBuild :: UI (Element, Element)
+mkBuild = do
+    (button, view) <- mkButton "mover" "Flyt filer"
+    _ <- element button # set (attr "id") "builderButton"
+    on UI.click button $ \_ -> do
+        --liftIO $ Chan.writeChan msgs $ Msg.build
+        return ()
+    return (button, view)
 
-mainSection :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI (Element, Element)
-mainSection _ _ config config' w = do
+sessionMissing :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> UI ()
+sessionMissing body msgs states = do
+    view <- string "Manger Session"
+    menu <- mkMenu msgs states  
+    _ <- element body # set children [menu, view]
+    return ()
+
+mainSection :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> Session.Sessions -> Maybe Photographee.Photographee -> [Photographee.Photographee] -> UI ()
+mainSection body msgs states grades id dumpFiles sessions photographee photographees = do
+    Session.sessions (sessionMissing body msgs states)
+        (\y -> Session.session 
+            (\ t -> mainSectionKindergarten body msgs states grades id dumpFiles)
+            ( mainSectionSchool body msgs states grades id dumpFiles photographee photographees) 
+            (ListZipper.focus y) 
+        ) sessions
+
+mainSectionKindergarten :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> UI ()
+mainSectionKindergarten body msgs states grades id dumpFiles = do
+    view <- mkColumns ["is-multiline"] 
+            [ mkColumn ["is-12"] [string "gg"]
+            ]
+    menu <- mkMenu msgs states  
+    _ <- element body # set children [menu, view]
+    return ()
+
+mainSectionSchool :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> Maybe Photographee.Photographee -> [Photographee.Photographee] -> UI ()
+mainSectionSchool body msgs states grades id dumpFiles photographee photographees = do
+    input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" 
+
+    (builderButton, buildView) <- mkBuild 
+
+    on UI.keyup input $ \keycode -> do
+        value <- get value input
+        when (Id.toString id /= value) $ do
+            liftIO $ Chan.writeChan msgs $ Msg.setId $ Id.fromString value
+
+    on UI.keydown input $ \keycode -> when (keycode == 13) $ do
+        UI.setFocus builderButton 
+        runFunction $ ffi "$('#builderButton').trigger('click')"
+
+    inputView <- UI.div #. "field" #+
+        [ UI.label #. "label has-text-dark" # set UI.text "Foto Id"
+        , UI.div #. "control" #+ [ element input ] 
+        ]
+    
+    let dumpFilesToCount x = case x of
+            DumpFiles xs ->
+                show $ length $ fmap fst xs
+            DumpFilesError ->
+                "Cr2 og jpg stemmer ikke overens"
+            NoDump ->
+                "Igen dump mappe"
+
+    label <- mkLabel "Antal billeder i dump:"
+
+    dumpSize <- mkColumn ["is-12"] 
+                    [ mkColumns ["is-multiline"]
+                        [ mkColumn ["is-12"] [ element label ]
+                        , mkColumn ["is-12"] [ UI.string (dumpFilesToCount dumpFiles) #. "is-size-1 has-text-danger has-text-weight-bold" ]
+                        ]
+                    ]
+
+    grade <- mkColumn ["is-4"] 
+        [ Grade.grades ( UI.div #. "field" #+
+                        [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen Stuer/Klasser"
+                        , UI.div # set (attr "style") "width:100%" #. "select" #+ 
+                                [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
+                                ]
+                        ]) (\(ListZipper.ListZipper ls y rs) -> do
+                                    -- list is sorted on the type level
+                                    let zipper = ListZipper.sorted (ls ++ rs) (ListZipper.ListZipper [] y [])
+
+                                    input <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter"
+                                    
+                                    --hack create extendI
+                                    gradeViews <- sequence $ ListZipper.iextend (\ i z -> do
+                                                        opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
+                                                        opt' <- if (z == zipper) then
+                                                                element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
+                                                            else
+                                                                return opt
+ 
+                                                        let name = ("t" ++ (show i))
+                                                        runFunction $ ffi "new CustomEvent(%1,{})" name
+                                                        onEvent (domEvent name input) $ \x -> do
+                                                                liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades z 
+
+                                                        return opt
+                                                    ) zipper
+
+                                    _ <- element input # set children (ListZipper.toList gradeViews)
+
+                                    on UI.selectionChange input $ \ i -> do
+                                        case i of
+                                            Nothing -> return ()
+                                            Just n -> do
+                                                runFunction $ ffi "$('#inputter').trigger(%1)" ("t"++(show n))
+
+                                    inputView <- UI.div #. "field" #+
+                                        [ UI.div # set (attr "style") "width:100%" #. "select" #+ [ element input ] 
+                                        ]
+
+
+                                    photographees <- UI.div #+ 
+                                        fmap (\c -> do
+                                                --(button, buttonView) <- mkButton "es s
+                                                --on UI.click button $ \_ -> do 
+                                                            --- SET
+                                                            --PHOTOGRAPHEEE
+                                                            --liftIO $ setIdSelection conf (Photographee.Idd tea)
+                                                            --hack <- liftIO $ getDagsdato conf
+                                                            --setDagsdato conf hack
+                                                ---return buttonView
+                                                
+                                                UI.div #+ [string (Photographee._name c)]
+                                            ) (sortOn (Photographee._name) photographees)
+                                        --setNumber config' input' (Photographee._ident c) (Photographee._name c ++ ", " ++ Photographee._ident c)])
+
+
+                                    inputId <- UI.input #. "input" # set UI.type_ "text" 
+                                    inputIdView <- UI.div #. "field" #+
+                                        [ UI.label #. "label has-text-dark" # set UI.text "Nummer"
+                                        , UI.div #. "control" #+ [ element inputId ] 
+                                        ]
+
+
+                                    inputName <- UI.input #. "input" # set UI.type_ "text" 
+                                    inputNameView <- UI.div #. "field" #+
+                                        [ UI.label #. "label has-text-dark" # set UI.text "Navn"
+                                        , UI.div #. "control" #+ [ element inputName ] 
+                                        ]
+
+
+                                    UI.div #. "field" #+
+                                        [ UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
+                                        , UI.div #. "control" #+ [ element inputView
+                                                                 , element inputIdView
+                                                                 , element inputNameView
+                                                                 ]
+                                        , element photographees
+                                        ]
+                            ) grades ]
+
+    view <- maybe 
+        ( mkSection 
+            [ mkColumns ["is-multiline"]
+                [ mkColumn ["is-4"] [ element inputView ]
+                , mkColumn ["is-12"] [ element buildView ]
+                , element dumpSize
+                , element grade
+                ]
+            ]) (\ x -> 
+        mkSection 
+            [ mkColumns ["is-multiline"]
+                [ mkColumn ["is-4"] [ element inputView ]
+                , mkColumn ["is-12"] [ element buildView ]
+                , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                , element dumpSize
+                , element grade
+                ]
+            ]) photographee
+
+    menu <- mkMenu msgs states  
+    _ <- element body # set children [menu, view]
+
+    _ <- UI.setFocus input
+    _ <- element input # set value (Id.toString id)
+
+    return ()
+
+{-
 
     built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
 
@@ -485,3 +655,4 @@ funci2 config idd = do
                                     Right _ -> do
                                         withMVar config (\conf -> setBuilt' conf (Built  photographee "Færdig"))
                                         return () ) locationFile
+-}

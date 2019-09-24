@@ -12,6 +12,7 @@ import Data.List
 
 import PhotoShake
 import PhotoShake.ShakeConfig
+import qualified PhotoShake.Id as Id
 import PhotoShake.Doneshooting
 import PhotoShake.Shooting
 import PhotoShake.Session
@@ -50,10 +51,10 @@ mainSection2 root _ config config' w = do
 
     (builderButton, buildView) <- mkBuild config'
     
-    (Photographee.Idd identi) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
+    identi <- liftIO $ withMVar config' $ (\conf -> getId conf)
 
 
-    input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" # set (attr "value") identi
+    input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" # set (attr "value") (Id.toString identi)
     input' <- if (not isBuilding) then return input else (element input) # set (attr "disabled") "" 
 
     inputView <- UI.div #. "field" #+
@@ -69,7 +70,7 @@ mainSection2 root _ config config' w = do
     on UI.keyup input $ \keycode -> when (keycode /= 13) $ do
         val <- get value input
         liftIO $ withMVar config' $ (\conf -> do
-                setIdSelection conf (Photographee.Idd val))
+                setId conf (Id.yesId val))
 
     builtMsg <- case built of
                         NoBuilt -> UI.div
@@ -85,18 +86,12 @@ mainSection2 root _ config config' w = do
 
 
 
-    -- antal billeder
-    dumpies <- liftIO $ withMVar config' $ (\conf -> getDump conf)
-    dumps <- liftIO $ try $ withMVar config' $ (\conf -> getDumpFiles dumpies) :: UI (Either ShakeError [(FilePath, FilePath)])
-    let dumps' = case dumps of 
-            Left e -> show e 
-            Right x -> show $ length $ fmap fst x
 
     label <- mkLabel "Antal billeder i dump:"
     dumpSize <- mkColumn ["is-12"] 
                     [ mkColumns ["is-multiline"]
                         [ mkColumn ["is-12"] [ element label ]
-                        , mkColumn ["is-12"] [ UI.string dumps' #. "is-size-1 has-text-danger has-text-weight-bold" ]
+                        , mkColumn ["is-12"] [ UI.string "gg" #. "is-size-1 has-text-danger has-text-weight-bold" ]
                         ]
                     ]
 
@@ -106,7 +101,7 @@ mainSection2 root _ config config' w = do
 
 
 
-    (Photographee.Idd val) <- liftIO $ withMVar config' $ (\conf -> getIdSelection conf)
+    val <- liftIO $ withMVar config' $ (\conf -> getId conf)
 
     idenName <- liftIO $ do
         locationFile <- try $ withMVar config' $ (\conf -> do
@@ -117,7 +112,7 @@ mainSection2 root _ config config' w = do
             Right loc -> do
                 Location.location (newIORef "") (\xxx -> do
                             liftIO $ withMVar config' $ (\conf -> do
-                                    what <- Photographee.findPhotographee3 xxx val
+                                    what <- Id.id (return Nothing) (\zzz -> Photographee.findPhotographee3 xxx zzz) val
                                     case what of
                                         Nothing -> newIORef ""
                                         Just iddd ->  newIORef (Photographee._name iddd))
@@ -126,7 +121,7 @@ mainSection2 root _ config config' w = do
     on UI.keyup input' $ \keycode -> when (keycode /= 13) $ do
         val <- get value input
         liftIO $ withMVar config' $ (\conf -> do
-                setIdSelection conf (Photographee.Idd val))
+                setId conf (Id.yesId val))
         locationFile <- liftIO $ try $ withMVar config' $ (\conf -> do
                 getLocationFile conf 
                 ) :: UI (Either ShakeError Location.Location)
@@ -182,7 +177,7 @@ setNumber config' input' tea s = do
     (button, view) <- mkButton s s
     on UI.click button $ \_ -> do 
         liftIO $ withMVar config' $ (\conf -> do
-                liftIO $ setIdSelection conf (Photographee.Idd tea)
+                liftIO $ setId conf (Id.yesId tea)
                 hack <- liftIO $ getDagsdato conf
                 setDagsdato conf hack
                 )
@@ -197,43 +192,41 @@ mkBuild config = do
     (button, view) <- mkButton "mover" "Flyt filer"
     set (attr "id") "builderButton" (element button)
     on UI.click button $ \_ -> do
-        (Photographee.Idd idd) <- liftIO $ withMVar config $ (\conf -> getIdSelection conf)
-        liftIO $ withMVar config $ (\conf -> setIdSelection conf (Photographee.Idd ""))
-        liftIO $ putStrLn "olll"
-        liftIO $liftIO $  putStrLn idd
-        case (idd == "" ) of
-            False -> liftIO $ withMVar config $ (\conf -> funci conf (Photographee.Idd idd))
-            True -> return ()
+        id <- liftIO $ withMVar config $ (\conf -> getId conf)
+        liftIO $ withMVar config $ (\conf -> setId conf (Id.noId))
+        Id.id (liftIO $ withMVar config $ (\conf -> funci conf id)) (\x -> return ()) id
     return (button, view)
 
 
-funci :: ShakeConfig -> Photographee.Idd -> IO ()
-funci config (Photographee.Idd idd2) = do
-    putStrLn "ol"
-    --have to look this up from config
-    locationFile <- getLocationFile config
-    -- kinda bad here
-    -- kinda bad here could cause errorr
-    find <- 
-        Location.location (return (Left LocationConfigFileMissing)) (\ xxx -> do
-            try $ Photographee.findPhotographee xxx idd2 :: IO (Either ShakeError Photographee.Photographee)) locationFile 
+funci :: ShakeConfig -> Id.Id -> IO ()
+funci config x = do
+    Id.id (setBuilt' config (NoFind (show "Elev ikke fundet"))) 
+        (\i -> do
+        --have to look this up from config
+        locationFile <- getLocationFile config
+        -- kinda bad here
+        -- kinda bad here could cause errorr
+        find <- 
+            Location.location (return (Left LocationConfigFileMissing)) (\ xxx -> do
+                try $ Photographee.findPhotographee xxx i :: IO (Either ShakeError Photographee.Photographee)) locationFile 
 
-    case find of
-            Left errMsg -> do
-                    setBuilt' config (NoFind (show errMsg))
+        case find of
+                Left errMsg -> do
+                        setBuilt' config (NoFind (show errMsg))
 
-            Right photographee -> do
-                    time <- getCurrentTime
-                    -- wtf????
-                    Location.location (setBuilt' config (NoFind (show LocationConfigFileMissing)))
-                        (\xxx -> do
-                            build <- try $ myShake config photographee (takeBaseName xxx) time True :: IO (Either ShakeError ())
-                            case build of
-                                    Left errMsg -> do
-                                        setBuilt' config (NoFind (show errMsg))
-                                    Right _ -> do
-                                        setBuilt' config (Built  photographee "Færdig")
-                                        return () ) locationFile 
+                Right photographee -> do
+                        time <- getCurrentTime
+                        -- wtf????
+                        Location.location (setBuilt' config (NoFind (show LocationConfigFileMissing)))
+                            (\xxx -> do
+                                build <- try $ myShake config photographee (takeBaseName xxx) time True :: IO (Either ShakeError ())
+                                case build of
+                                        Left errMsg -> do
+                                            setBuilt' config (NoFind (show errMsg))
+                                        Right _ -> do
+                                            setBuilt' config (Built  photographee "Færdig")
+                                            return () ) locationFile 
+        ) x
 
 
 funci2 :: MVar ShakeConfig -> (IORef String) -> IO ()

@@ -16,12 +16,14 @@ import Control.Monad
 import Data.List 
 
 import Elements
+import Menu
 
 import qualified PhotoShake.Location as Location
+import qualified PhotoShake.State as State
 
 
 import Utils.Comonad
-import qualified Utils.ListZipper as Zipper
+import qualified Utils.ListZipper as ListZipper
 
 import PhotoShake.Photographee
 import PhotoShake.Built
@@ -29,21 +31,20 @@ import PhotoShake.Dagsdato
 
 import qualified PhotoShake.Grade as Grade
 
-import Debug.Trace 
 
 
-locationSection :: Chan Msg.Message -> Location.Location -> Grade.Grades -> UI Element
-locationSection msgs x grades = do 
+locationSection :: Element -> Chan Msg.Message -> ListZipper.ListZipper State.State -> Location.Location -> Grade.Grades -> UI ()
+locationSection body msgs states location grades = do 
 
-    (_, picker) <- mkFilePicker "locationsPicker" "Vælg eksisterende CSV fil" $ \file -> do
+    (_, picker) <- mkFilePicker "locationsPicker" "Vælg eksisterende CSV fil" $ \file -> when (file /= "") $do
         liftIO $ Chan.writeChan msgs $ Msg.setLocation $ Location.yesLocation file
 
-    (_, picker2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> do -- wauw
+    (_, picker2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> when (file /= "") $ do
         liftIO $ Chan.writeChan msgs $ Msg.setLocation $ Location.yesLocation file
     
     pickers <- UI.div #. "field is-grouped" #+ [element picker, element picker2]
 
-    Location.location ( mkSection [ mkColumns ["is-multiline"]
+    view <- Location.location ( mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Lokations fil ikke valgt" # set (attr "id") "locationMissing" ]
                             , mkColumn ["is-12"] [ element pickers ]
                             ]
@@ -60,17 +61,17 @@ locationSection msgs x grades = do
                                         ]
                                 ])
 
-                        (\(Zipper.ListZipper ls y rs) -> do
+                        (\(ListZipper.ListZipper ls y rs) -> do
                                     -- i dont need this if i just make sure the
                                     -- list is sorted on the type level
                                     --let zipper = Zipper.ListZipper (reverse (sort ls)) y (sort rs)
 
-                                    let zipper = Zipper.sorted (ls ++ rs) (Zipper.ListZipper [] y [])
+                                    let zipper = ListZipper.sorted (ls ++ rs) (ListZipper.ListZipper [] y [])
 
                                     input <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter"
                                     
                                     --hack create extendI
-                                    gradeViews <- sequence $ Zipper.iextend (\ i z -> do
+                                    gradeViews <- sequence $ ListZipper.iextend (\ i z -> do
                                                         opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
                                                         opt' <- if (z == zipper) then
                                                                 element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
@@ -85,7 +86,7 @@ locationSection msgs x grades = do
                                                         return opt
                                                     ) zipper
 
-                                    _ <- element input # set children (Zipper.toList gradeViews)
+                                    _ <- element input # set children (ListZipper.toList gradeViews)
 
                                     on UI.selectionChange input $ \ i -> do
                                         case i of
@@ -96,7 +97,7 @@ locationSection msgs x grades = do
                                     (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj ny"
 
                                     on UI.click gradeInsert $ \_ -> do 
-                                            liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ Zipper.insert zipper mempty 
+                                            liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ ListZipper.insert zipper mempty 
 
                                     (gradeDelete, gradeDeletetView) <- mkButton "delete" "Slet alle klasser"
 
@@ -131,7 +132,7 @@ locationSection msgs x grades = do
                                     on UI.click gradeChange $ \_ -> do
                                         val <- get value input2
                                         -- simpel sortering vil ikke virke her
-                                        liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ Zipper.mapFocus (\focus -> val) zipper
+                                        liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ ListZipper.mapFocus (\focus -> val) zipper
 
 
                                     UI.div #. "field" #+
@@ -152,4 +153,10 @@ locationSection msgs x grades = do
                             , mkColumn ["is-4"] [ element gradesView ]
                             ]
                       ] 
-            ) x
+            ) location
+
+    menu <- mkMenu msgs states 
+
+    element body # set children [menu, view]
+
+    return () 

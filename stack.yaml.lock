@@ -5,19 +5,19 @@
 
 packages:
 - completed:
-    size: 39218
-    url: https://github.com/magnus108/photoShake/archive/refac2.zip#1232211111111111111241
+    size: 40646
+    url: https://github.com/magnus108/photoShake/archive/refac2.zip#12322111111111111112411111231111111111111
     cabal-file:
-      size: 4103
-      sha256: 2af104fe109210fd89bfa386dfc746a267fde04f99ad22a10fcb3542590c9e9c
+      size: 4154
+      sha256: 139d48157d70713bbd5b4ade484fec260523fbd84eccc223099ab22b53976942
     name: photoShake
     version: 0.1.0.0
-    sha256: 7b51f4b993f63ce06519e609827aed132c0773682a73c9a819d69bcd6e9d239c
+    sha256: 46600b48e82b6bff790e120fe69d241b7ff21de7b40a2b95a0006630aea96903
     pantry-tree:
-      size: 4880
-      sha256: 6274445a243c50d257e7edc0716c76273dfab99da7b3500fcba85c142ac29888
+      size: 5014
+      sha256: e84496beace1d82d62fee0226e693b46b438edae68cc71cad19b330804345626
   original:
-    url: https://github.com/magnus108/photoShake/archive/refac2.zip#1232211111111111111241
+    url: https://github.com/magnus108/photoShake/archive/refac2.zip#12322111111111111112411111231111111111111
 - completed:
     hackage: strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c,1617
     pantry-tree:

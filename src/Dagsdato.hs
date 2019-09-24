@@ -13,15 +13,19 @@ import qualified Message as Msg
 import Control.Monad 
 
 import Elements
+import Menu
 
-import PhotoShake.Dagsdato
+import qualified PhotoShake.Dagsdato as Dagsdato
 
-dagsdatoSection :: Chan Msg.Message -> Dagsdato -> UI Element
-dagsdatoSection msgs x = do
+import qualified Utils.ListZipper as ListZipper
+import qualified PhotoShake.State as State
+
+dagsdatoSection :: Element -> Chan Msg.Message -> ListZipper.ListZipper State.State -> Dagsdato.Dagsdato -> UI ()
+dagsdatoSection body msgs states dagsdato = do
     (_, picker) <- mkFolderPicker "doneshootingPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
-        liftIO $ Chan.writeChan msgs $ Msg.setDagsdato $ yesDagsdato folder
+        liftIO $ Chan.writeChan msgs $ Msg.setDagsdato $ Dagsdato.yesDagsdato folder
 
-    dagsdato ( mkSection [ mkColumns ["is-multiline"]
+    view <- Dagsdato.dagsdato ( mkSection [ mkColumns ["is-multiline"]
                             [ mkColumn ["is-12"] [ mkLabel "Dagsdato mappe ikke valgt" # set (attr "id") "dagsdatoMissing" ]
                             , mkColumn ["is-12"] [ element picker ]
                             ]
@@ -33,4 +37,10 @@ dagsdatoSection msgs x = do
                                     , mkColumn ["is-12"] [ UI.p # set UI.text y # set (attr "id") "dagsdatoPath" ]
                                     ]
                               ] 
-                ) x
+                ) dagsdato
+
+    menu <- mkMenu msgs states 
+
+    element body # set children [menu, view]
+
+    return () 

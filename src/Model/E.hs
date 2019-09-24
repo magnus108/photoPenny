@@ -12,12 +12,19 @@ module Model.E
     , _subscriptions
     , _configs 
     , _states
+    , _dumpFiles
+    , _photographee
+    , _photographees
     , _cancel
     , _location
+    , _setId
+    , _setPhotographee
+    , _setPhotographees
     , _setStates
     , _setControl
     , _setLocation
     , _setDump
+    , _setDumpFiles
     , _setCancel
     , _setDoneshooting
     , _setDagsdato
@@ -31,12 +38,14 @@ module Model.E
     , _dagsdato
     , _photographers
     , _grades
+    , _id
     , _setShootings
     , _setSessions
     , _locationFile
     , _shootingFile
     , _sessionFile
     , _stateFile
+    , _idFile
 
     , _gradesFile
 
@@ -52,6 +61,8 @@ import Utils.Env
 import Utils.Comonad
 
 
+import Prelude hiding (id)
+
 import PhotoShake.State
 
 import Utils.FP
@@ -59,10 +70,12 @@ import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
 import qualified PhotoShake.Dagsdato as DA
 import qualified PhotoShake.Photographer as Photographer
+import qualified PhotoShake.Photographee2 as Photographee
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
+import qualified PhotoShake.Id as Id
 import qualified PhotoShake.Control as Control
 
 import PhotoShake.ShakeConfig 
@@ -91,6 +104,9 @@ data Model = Model
     { states :: Maybe States 
 
     , dump :: D.Dump
+    , dumpFiles :: DumpFiles --bads
+    , photographee :: Maybe Photographee.Photographee --bads
+    , photographees :: [Photographee.Photographee] --bads
 
     , dagsdato :: DA.Dagsdato
 
@@ -102,6 +118,7 @@ data Model = Model
     , location :: Location.Location
 
     , grades :: Grade.Grades
+    , id :: Id.Id
 
 
     , dir1 :: FilePath -- deleteme
@@ -143,8 +160,13 @@ _stateFile :: App Model -> FilePath -- deleteme
 _stateFile  = _stateConfig . _shakeConfig
 
 
+_idFile :: App Model -> FilePath -- deleteme
+_idFile  = _idConfig . _shakeConfig
+
+
 _gradesFile :: App Model -> FilePath -- deleteme
 _gradesFile  = _gradeConfig . _shakeConfig
+
 
 _dumpFile :: App Model -> FilePath -- deleteme
 _dumpFile  = _dumpConfig . _shakeConfig
@@ -172,6 +194,10 @@ _locationFile = _locationConfig . _shakeConfig
 _states:: App Model -> Maybe States -- deleteme
 _states = states . extract . unApp
 
+
+_dumpFiles :: App Model -> DumpFiles -- deleteme
+_dumpFiles = dumpFiles . extract . unApp
+
 _location :: App Model -> Location.Location -- deleteme
 _location = location . extract . unApp
 
@@ -186,6 +212,10 @@ _setCancel :: App Model -> StopListening -> App Model -- deleteme
 _setCancel x y = App $ (unApp x) =>> (\x -> (extract x) { cancel = y } )
 
 
+_setDumpFiles:: App Model -> DumpFiles -> App Model -- deleteme
+_setDumpFiles x y = App $ (unApp x) =>> (\x -> (extract x) { dumpFiles = y } )
+
+
 _setControl :: App Model -> Control.Result -> App Model -- deleteme
 _setControl x y = App $ (unApp x) =>> (\x -> (extract x) { control = y } )
 
@@ -195,8 +225,17 @@ _setDump x y = App $ (unApp x) =>> (\x -> (extract x) { dump = y } )
 _setLocation :: App Model -> Location.Location -> App Model -- deleteme
 _setLocation x y = App $ (unApp x) =>> (\x -> (extract x) { location = y } )
 
+_setId :: App Model -> Id.Id -> App Model -- deleteme
+_setId x y = App $ (unApp x) =>> (\x -> (extract x) { id = y } )
+
 _setDoneshooting :: App Model -> DO.Doneshooting -> App Model -- deleteme
 _setDoneshooting x y = App $ (unApp x) =>> (\x -> (extract x) { doneshooting = y } )
+
+_setPhotographee :: App Model -> Maybe Photographee.Photographee -> App Model -- deleteme
+_setPhotographee x y = App $ (unApp x) =>> (\x -> (extract x) { photographee = y } )
+
+_setPhotographees :: App Model -> [Photographee.Photographee] -> App Model -- deleteme
+_setPhotographees x y = App $ (unApp x) =>> (\x -> (extract x) { photographees = y } )
 
 _setDagsdato :: App Model -> DA.Dagsdato -> App Model -- deleteme
 _setDagsdato x y = App $ (unApp x) =>> (\x -> (extract x) { dagsdato = y } )
@@ -224,6 +263,12 @@ _control = control . extract . unApp
 _doneshooting :: App Model -> DO.Doneshooting -- deleteme
 _doneshooting = doneshooting . extract . unApp
 
+_photographee :: App Model -> Maybe Photographee.Photographee -- deleteme
+_photographee = photographee . extract . unApp
+
+_photographees :: App Model -> [Photographee.Photographee] -- deleteme
+_photographees = photographees . extract . unApp
+
 _dagsdato :: App Model -> DA.Dagsdato -- deleteme
 _dagsdato = dagsdato . extract . unApp
 
@@ -240,6 +285,10 @@ _photographers = photographers . extract . unApp
 
 _grades :: App Model -> Grade.Grades -- deleteme
 _grades  = grades . extract . unApp
+
+
+_id :: App Model -> Id.Id -- deleteme
+_id = id . extract . unApp
 
 
 _shakeConfig :: App Model -> ShakeConfig -- deleteme

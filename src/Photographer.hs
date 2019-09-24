@@ -9,37 +9,39 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import Elements
+import Menu
 
 import qualified Message as Msg
 import Control.Concurrent.Chan (Chan)
 import qualified Control.Concurrent.Chan as Chan 
 
-import PhotoShake.Photographer
+import qualified PhotoShake.Photographer as Photographer
 
 import Utils.FP
 import Utils.Actions
-import Utils.ListZipper
 
 
+import qualified PhotoShake.State as State
+import qualified Utils.ListZipper as ListZipper
 
 import Shooting -- deleteme
 
-photographerSection :: Chan Msg.Message -> Photographers -> UI Element
-photographerSection msgs x = do
+photographerSection :: Element -> Chan Msg.Message -> ListZipper.ListZipper State.State -> Photographer.Photographers -> UI ()
+photographerSection body msgs states photographers   = do
 
     (_, picker) <- mkFilePicker "photographerPicker" "Vælg import fil" $ \file -> when (file /= "") $ do
-        photographers <- liftIO $ interpret $ getPhotographers $ fp $ start $ file
+        photographers <- liftIO $ interpret $ Photographer.getPhotographers $ fp $ start $ file
         liftIO $ Chan.writeChan msgs $ Msg.setPhotographers photographers
 
-    photographers ( mkSection [ mkColumns ["is-multiline"]
+    view <- Photographer.photographers ( mkSection [ mkColumns ["is-multiline"]
                                 [ mkColumn ["is-12"] [ mkLabel "Fotograf ikke valgt - importer fil" # set (attr "id") "photographersMissing" ]
                                 , mkColumn ["is-12"] [ element picker ]
                                 ]
                           ]) (\y -> do
                             let group = RadioGroup 
                                     { action = \xxx _ -> do
-                                            liftIO $ Chan.writeChan msgs $ Msg.setPhotographers $ yesPhotographers xxx
-                                    , view' = \xxx -> UI.string (_name (focus xxx))
+                                            liftIO $ Chan.writeChan msgs $ Msg.setPhotographers $ Photographer.yesPhotographers xxx
+                                    , view' = \xxx -> UI.string (Photographer._name (ListZipper.focus xxx))
                                     , title' = "photographers"
                                     , items = y 
                                     }
@@ -52,4 +54,10 @@ photographerSection msgs x = do
                                             , mkColumn ["is-12"] [ element picker ]
                                             ]
                                       ] 
-                        ) x
+                        ) photographers
+
+    menu <- mkMenu msgs states 
+
+    element body # set children [menu, view]
+
+    return () 

@@ -29,6 +29,8 @@ import PhotoShake.Session
 import PhotoShake.Location
 import PhotoShake.Location
 import PhotoShake.Grade
+import qualified PhotoShake.Id as Id
+import qualified PhotoShake.Photographee2 as Photographee
 import qualified PhotoShake.Control as Control
 
 main :: IO ()
@@ -42,13 +44,17 @@ main = do
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.dump = noDump
+        , A.dumpFiles = NoDump
         , A.dagsdato = noDagsdato
         , A.doneshooting = noDoneshooting
         , A.photographers = noPhotographers 
+        , A.photographee = Nothing
+        , A.photographees = []
         , A.shootings = noShootings 
         , A.sessions = noSessions 
         , A.location = noLocation 
         , A.grades = noGrades
+        , A.id = Id.noId
         , A.dir1 = "config" -- deleteme
         , A.root = fp (start root)  -- deletem
         , A.shakeConfig = config 
@@ -58,7 +64,7 @@ main = do
         }
 
     messages <- Chan.newChan
-    manager <- startManagerConf (defaultConfig { confDebounce = Debounce 0.1 } )
+    manager <- startManagerConf defaultConfig 
 
     _ <- L.initialMessage messages
 

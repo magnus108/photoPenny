@@ -48,6 +48,7 @@ import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Control as Control
+import qualified PhotoShake.Id as Id
 
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
@@ -58,6 +59,65 @@ runSessionThenClose action = runSession chromeConfig . finallyClose $ action
 main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
+
+    app <- newMVar $ A.app $ env A.production $ A.Model
+        { A.states = Nothing
+        , A.dump = D.noDump
+        , A.dagsdato = DA.noDagsdato
+        , A.doneshooting = DO.noDoneshooting
+        , A.photographers = Photographer.noPhotographers 
+        , A.shootings = Shooting.noShootings 
+        , A.id = Id.noId
+        , A.sessions = Session.noSessions 
+        , A.location = Location.noLocation 
+        , A.grades = Grade.noGrades
+        , A.dir1 = "test/config" -- deleteme
+        , A.root = fp (start "")  -- deletem
+        , A.shakeConfig = config 
+        , A.subscriptions = L.subscriptions
+        , A.control = Control.Empty
+        , A.cancel = return ()
+        }
+
+    messages <- Chan.newChan
+    manager <- startManager
+    _ <- L.initialMessage messages
+
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
+
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages (block empty)
+
+    race_ (L.main 9000 manager messages app)
+        (runSessionThenClose $ do                      
+
+            openPage "http://localhost:9000"
+
+            liftBase $ takeMVar empty
+            liftBase $ writeChan messages (block empty)
+            liftBase $ takeMVar empty
+
+
+            forM_ [1..10] (\x -> do
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                fotoId <- waitUntil 10000000 $ findElem ( ById "fotoId" ) 
+                sendKeys "1234" fotoId
+
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+
+                liftBase $ threadDelay 1000000
+
+                liftBase $ writeChan messages $ Message.setId $ Id.noId
+
+                --finisher
+                liftBase $ writeChan messages (block empty)
+                liftBase $ takeMVar empty
+                )
+        )
+
     -- dangerous difference between these params
 
     app <- newMVar $ A.app $ env A.production $ A.Model
@@ -70,6 +130,7 @@ main = do
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
         , A.grades = Grade.noGrades
+        , A.id = Id.noId
         , A.dir1 = "test/config" -- deleteme
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
@@ -92,23 +153,17 @@ main = do
         
     race_ (L.main 9000 manager messages app)
         (runSessionThenClose $ do                      
-            liftBase $ putStrLn "Lol"
             openPage "http://localhost:9000"
             liftBase $ takeMVar empty
-            liftBase $ putStrLn "Lol2"
 
-            forM_ [1..100] (\x -> do
-                liftBase $ putStrLn "Lol3"
+            forM_ [1..5] (\x -> do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
-                liftBase $ putStrLn "Lol4"
                 liftBase $ writeChan messages $ setLocation $ Location.yesLocation "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv"
-                liftBase $ putStrLn "Lol5"
  
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "locationPath" ) >>= getText >>= \x -> expect (x == "/home/magnus/Documents/projects/photoShake/locations/naerum_skole.csv")
-                liftBase $ putStrLn "Lol6"
 
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
@@ -118,11 +173,9 @@ main = do
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "locationMissing" )
                 
-                liftBase $ putStrLn "Lol7"
                 --finisher
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
-                liftBase $ putStrLn "Lol8"
                 )
         )
 
@@ -134,6 +187,7 @@ main = do
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
         , A.shootings = Shooting.noShootings 
+        , A.id = Id.noId
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
         , A.grades = Grade.noGrades
@@ -196,6 +250,7 @@ main = do
         , A.dagsdato = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
+        , A.id = Id.noId
         , A.shootings = Shooting.noShootings 
         , A.sessions = Session.noSessions 
         , A.location = Location.noLocation 
@@ -259,6 +314,7 @@ main = do
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.dump = D.noDump
+        , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
@@ -324,6 +380,7 @@ main = do
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.dump = D.noDump
+        , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
@@ -386,6 +443,7 @@ main = do
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.dump = D.noDump
+        , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
@@ -448,6 +506,7 @@ main = do
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.dump = D.noDump
+        , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
@@ -508,6 +567,7 @@ main = do
         { A.states = Nothing
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
+        , A.id = Id.noId
         , A.doneshooting = DO.noDoneshooting
         , A.photographers = Photographer.noPhotographers 
         , A.shootings = Shooting.noShootings 

@@ -9,19 +9,23 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import Elements
+import Menu
 
 
 import qualified Message as Msg
 import Control.Concurrent.Chan (Chan)
 import qualified Control.Concurrent.Chan as Chan 
 
-import PhotoShake.Dump
+import qualified PhotoShake.Dump as Dump
+import qualified PhotoShake.State as State
+import qualified Utils.ListZipper as ListZipper
 
 
-dumpSection :: Chan Msg.Message -> Dump -> UI Element
-dumpSection msgs x = do
+
+dumpSection :: Element -> Chan Msg.Message -> ListZipper.ListZipper State.State -> Dump.Dump -> UI ()
+dumpSection body msgs states dump = do
     (_, picker) <- mkFolderPicker "dumpPicker" "Vælg config folder" $ \folder -> when (folder /= "") $ do
-        liftIO $ Chan.writeChan msgs $ Msg.setDump  $ yesDump folder
+        liftIO $ Chan.writeChan msgs $ Msg.setDump  $ Dump.yesDump folder
 
 
     with <- mkSection [ mkColumns ["is-multiline"]
@@ -42,5 +46,9 @@ dumpSection msgs x = do
                             ]
                       ])
 
-    dump (element with) without x
+    menu <- mkMenu msgs states 
+    view <- Dump.dump (element with) without dump
 
+    element body # set children [menu, view]
+
+    return ()

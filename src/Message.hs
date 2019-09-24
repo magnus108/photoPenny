@@ -19,6 +19,10 @@ module Message
     , setLocation
     , getGrades
     , setGrades
+    , getId
+    , setId
+    , getDumpFiles
+    , getPhotographee
     ) where
 
 
@@ -34,12 +38,16 @@ import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
+import qualified PhotoShake.Id as Id
 
 data Message 
     = Block (MVar ())
 
     | GetStates
     | SetStates States
+
+    | GetId
+    | SetId Id.Id
 
     | GetDump
     | SetDump Dump.Dump
@@ -64,6 +72,9 @@ data Message
 
     | GetGrades
     | SetGrades Grade.Grades
+
+    | GetDumpFiles
+    | GetPhotographee
 
 
 
@@ -130,3 +141,17 @@ getGrades = GetGrades
 
 setGrades :: Grade.Grades -> Message
 setGrades = SetGrades
+
+
+getId :: Message
+getId = GetId
+
+setId :: Id.Id -> Message
+setId = SetId
+
+
+getDumpFiles :: Message
+getDumpFiles = GetDumpFiles
+
+getPhotographee :: Message
+getPhotographee = GetPhotographee

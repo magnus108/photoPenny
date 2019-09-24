@@ -7,6 +7,8 @@ module Lib2
 
 import Debug.Trace
 
+import Utils.Debounce
+
 import System.Directory
 
 import Control.Concurrent.MVar
@@ -44,11 +46,13 @@ import Session
 import Photographer
 import Locations -- wrong name
 import Control
+import Main
 
 import Control.Exception
 import PhotoShake.ShakeConfig 
 import qualified PhotoShake.Grade as Grade
-import PhotoShake.Dump
+import qualified PhotoShake.Dump as Dump
+import qualified PhotoShake.Photographee2 as Photographee2
 import PhotoShake.Doneshooting hiding (setDoneshooting, getDoneshooting) --this correcto
 import qualified PhotoShake.Doneshooting as Doneshooting --this correcto
 import qualified PhotoShake.Location as Location --this correcto
@@ -92,6 +96,7 @@ setupDumpListener manager msgChan app = do -- THIS BAD
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
         (\e -> takeFileName (Notify.eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getDump)
+        
 
 setupDoneshootingListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
 setupDoneshootingListener manager msgChan app = do -- THIS BAD
@@ -145,6 +150,14 @@ setupLocationListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (Notify.eventPath e) == takeFileName locationConfig) (\_ -> writeChan msgChan Msg.getLocation)
 
 
+setupIdListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
+setupIdListener manager msgChan app = do -- THIS BAD
+    let fpConfig = E._configs app
+    let idConfig = E._idFile app
+    Notify.watchDir manager fpConfig 
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName idConfig) (\_ -> writeChan msgChan Msg.getId)
+
+
 setupControlListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
 setupControlListener manager msgChan app = do -- THIS BAD
     let location = E._location app
@@ -161,7 +174,6 @@ setupControlListener manager msgChan app = do -- THIS BAD
                     else
                         return (return ())) grades ) doneshooting) location
 
-
 eventNotModified :: Notify.Event -> Bool
 eventNotModified (Notify.Added    _ _ _) = True
 eventNotModified (Notify.Modified _ _ _) = False
@@ -169,11 +181,20 @@ eventNotModified (Notify.Removed  _ _ _) = True
 eventNotModified (Notify.Unknown  _ _ _) = True
 
 
-getStates :: Chan Msg.Message -> UI ()
-getStates msgChan = liftIO $ writeChan msgChan Msg.getStates
-
-setStates :: Chan Msg.Message -> S.States -> UI ()
-setStates msgChan states = liftIO $ writeChan msgChan (Msg.setStates states) 
+setupDumpFilesListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
+setupDumpFilesListener manager msgChan app = do -- THIS BAD
+    let dump = E._dump app
+    Dump.dump (return (return ())) (\d -> do
+        b <- doesDirectoryExist d
+        action <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan msgChan Msg.getDumpFiles
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+        if b then 
+            Notify.watchDir manager d (const True) (\_ -> action)
+        else
+            return (return ())) dump
 
 
 initialMessage :: Chan Msg.Message -> IO ()
@@ -187,6 +208,8 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getSessions
     _ <- writeChan msgs Msg.getLocation
     _ <- writeChan msgs Msg.getGrades
+    _ <- writeChan msgs Msg.getId
+    _ <- writeChan msgs Msg.getDumpFiles
     return ()
 
 subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening
@@ -200,7 +223,9 @@ subscriptions manager msgs app = do
     session <- setupSessionListener manager msgs app
     location <- setupLocationListener manager msgs app
     grade <- setupGradesListener manager msgs app
+    id <- setupIdListener manager msgs app
     control <- setupControlListener manager msgs app
+    dumpFiles <- setupDumpFilesListener manager msgs app
     return $ msum 
         [ state
         , dump
@@ -211,7 +236,9 @@ subscriptions manager msgs app = do
         , session
         , location
         , grade
+        , id
         , control
+        , dumpFiles
         ]
 
 setup :: Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> UI ()
@@ -282,6 +309,41 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 dump <- getDump shakeConfig
                 let app'' = E._setDump app' dump
+                dumpFiles <- getDumpFiles dump
+                let app''' = E._setDumpFiles app'' dumpFiles
+                app'''' <- subs manager msgs app'''
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''''
+
+                putMVar app app''''
+
+            Msg.GetPhotographee -> do
+                app' <- takeMVar app 
+                _ <- E._cancel app'
+                let location = E._location app'
+                let id = E._id app'
+                photographee <- Photographee2.findPhotographee location id
+                let app'' = E._setPhotographee app' photographee
+                app''' <- subs manager msgs app''
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app'''
+                putMVar app app'''
+
+            Msg.GetDumpFiles -> do
+                app' <- takeMVar app 
+                _ <- E._cancel app'
+                let dump = E._dump app'
+                dumpFiles <- getDumpFiles dump
+                let app'' = E._setDumpFiles app' dumpFiles
+                --Most Fedup ever
+                --Most Fedup ever
+                --Most Fedup ever
+                --Most Fedup ever
+                _ <- E._cancel app'' --EHHH ?
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -362,7 +424,6 @@ receive manager msgs app w = do
 
                 putMVar app app'''
 
-
             Msg.SetSessions sessions -> do
                 app' <- takeMVar app 
                 let shakeConfig = E._shakeConfig app'
@@ -409,6 +470,33 @@ receive manager msgs app w = do
                     redoLayout body msgs app'''
                 putMVar app app'''
 
+            Msg.SetId id -> do
+                app' <- takeMVar app 
+                let shakeConfig = E._shakeConfig app'
+                _ <- setId shakeConfig id -- should be called setShootings
+                let app'' = E._setStates app' Nothing -- i dont think i have to do this
+                _ <- runUI w $ do
+                    body <- getBody w
+                    redoLayout body msgs app''
+                putMVar app app'
+
+            Msg.GetId -> do
+                app' <- takeMVar app 
+                _ <- E._cancel app'
+                let shakeConfig = E._shakeConfig app'
+                let location = E._location app'
+                let id = E._id app'
+                id <- getId shakeConfig 
+                photographee <- Photographee2.findPhotographee location id
+                let app'' = E._setId app' id
+                let app''' = E._setPhotographee app'' photographee
+                app'''' <- subs manager msgs app'''
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app''''
+                putMVar app app''''
+
             Msg.SetLocation location -> do
                 app' <- takeMVar app 
                 let shakeConfig = E._shakeConfig app'
@@ -423,14 +511,20 @@ receive manager msgs app w = do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
                 let shakeConfig = E._shakeConfig app'
+                let id = E._id app'--wrong--wrong--wrong--wrong--wrong--wrong--wrong
                 location <- getLocationFile shakeConfig --wrong naming
-                let app'' = E._setLocation app' location
-                app''' <- subs manager msgs app''
+                photographee <- Photographee2.findPhotographee location id
+                grades <- getGrades shakeConfig
+                photographees <- Photographee2.fromGrade location grades
+                let app'' = E._setPhotographee app' photographee
+                let app''' = E._setLocation app'' location
+                let app'''' = E._setPhotographees app''' photographees 
+                app''''' <- subs manager msgs app''''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
-                    redoLayout body msgs app'''
-                putMVar app app'''
+                    redoLayout body msgs app'''''
+                putMVar app app'''''
 
             Msg.SetGrades grades -> do
                 app' <- takeMVar app 
@@ -447,22 +541,25 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 let shakeConfig = E._shakeConfig app'
                 grades <- getGrades shakeConfig
+                location <- getLocationFile shakeConfig --wrong naming
                 control <- Grade.grades (return Control.Empty) (\zipper -> Control.controlXMP shakeConfig (extract zipper)) grades -- POORLY optimized
+                photographees <- Photographee2.fromGrade location grades
                 let app'' = E._setGrades app' grades
                 let app''' = E._setControl app'' control
+                let app'''' = E._setPhotographees app''' photographees
 
                 --Most Fedup ever
                 --Most Fedup ever
                 --Most Fedup ever
                 --Most Fedup ever
-                _ <- E._cancel app''' --EHHH ?
+                _ <- E._cancel app'''' --EHHH ?
 
-                app'''' <- subs manager msgs app'''
+                app''''' <- subs manager msgs app''''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
-                    redoLayout body msgs app''''
-                putMVar app app''''
+                    redoLayout body msgs app'''''
+                putMVar app app'''''
     
             -- not sure about this..
             Msg.Block x -> do -- i can maybe do something good with this.
@@ -478,6 +575,7 @@ receive manager msgs app w = do
                 putMVar x () 
 
 
+
 redoLayout :: Element -> Chan Msg.Message -> E.App E.Model -> UI ()
 redoLayout body msgs app = void $ do
     
@@ -485,44 +583,28 @@ redoLayout body msgs app = void $ do
 
     case states of
         Just (S.States states) -> do
-            let buttons = states =>> (\ states' -> do
-                                button <- UI.button # set (attr "id") ("tab" ++ show (focus states')) #. "button" #+ [string (show (focus states'))]
-
-                                button' <- if (states' == states) then
-                                    set (UI.attr  "class") "button is-dark is-selected" (element button)
-                                else
-                                    return button
-
-                                on UI.click button' $ \_ -> do
-                                    setStates msgs (S.States states')
-
-                                return button')
-
-            menu <- mkSection [UI.div #. "buttons has-addons" #+ (toList buttons)]
-
-            view <- states =>> viewState msgs app & focus
-
-            element body # set children [menu, view]
-                 
+            states =>> viewState body msgs app & focus 
 
         Nothing -> do
             element body # set children []
+            return ()
 
 
 --viewState :: Element -> Chan Msg.Message -> App Model > UI (Element, Element)
-viewState :: Chan Msg.Message -> E.App E.Model -> (ListZipper S.State) -> UI Element
-viewState msgs app states = do
-    case (focus states) of 
-            S.Dump -> dumpSection msgs (E._dump app)
-            S.Doneshooting -> doneshootingSection msgs (E._doneshooting app)
-            S.Dagsdato -> dagsdatoSection msgs (E._dagsdato app)
-            S.Photographer -> photographerSection msgs (E._photographers app)
-            S.Session -> sessionSection msgs (E._sessions app)
-            S.Shooting -> shootingSection msgs (E._shootings app)
-            S.Location -> locationSection msgs (E._location app) (E._grades app)
-            S.Control -> controlSection msgs (E._grades app) (E._control app)
-            _ -> do
-                string "bob"
+viewState :: Element -> Chan Msg.Message -> E.App E.Model -> ListZipper S.State -> UI ()
+viewState body msgs app states = do
+    let state = focus states
+    case state of 
+            S.Dump -> dumpSection body msgs states (E._dump app)
+            S.Doneshooting -> doneshootingSection body msgs states (E._doneshooting app)
+            S.Dagsdato -> dagsdatoSection body msgs states (E._dagsdato app)
+            S.Photographer -> photographerSection body msgs states (E._photographers app)
+            S.Session -> sessionSection body msgs states (E._sessions app)
+            S.Shooting -> shootingSection body msgs states (E._shootings app)
+            S.Location -> locationSection body msgs states (E._location app) (E._grades app)
+            S.Main -> mainSection body msgs states (E._grades app) (E._id app) (E._dumpFiles app) (E._sessions app) (E._photographee app) (E._photographees app)
+            S.Control -> controlSection body msgs states (E._grades app) (E._control app)
+            --element body # set children [menu, view]
 
 
 
