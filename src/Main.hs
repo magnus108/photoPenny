@@ -15,6 +15,7 @@ import qualified Utils.ListZipper as ListZipper
 import qualified Control.Concurrent.Chan as Chan
 import qualified Message as Msg
 
+import qualified PhotoShake.Build as Build
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Id as Id
 import qualified PhotoShake.State as State
@@ -39,6 +40,20 @@ mkBuild msgs = do
         liftIO $ Chan.writeChan msgs $ Msg.build
     return (button, view)
 
+mkCreate :: Chan.Chan Msg.Message -> Element -> Element -> UI (Element, Element)
+mkCreate msgs id name = do
+    (button, view) <- mkButton "mover" "Opret ny elev"
+    on UI.click button $ \_ -> do
+        id' <- get value id
+        name' <- get value name
+        if (id' /= "") || (name' /= "") then
+            liftIO $ Chan.writeChan msgs $ Msg.insertPhotographee id' name'
+        else 
+            return ()
+        --Photographee.insertPhotographee xxx idd clas name)
+
+    return (button, view)
+
 sessionMissing :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> UI ()
 sessionMissing body msgs states = do
     view <- string "Manger Session"
@@ -46,12 +61,12 @@ sessionMissing body msgs states = do
     _ <- element body # set children [menu, view]
     return ()
 
-mainSection :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> Session.Sessions -> Maybe Photographee.Photographee -> [Photographee.Photographee] -> UI ()
-mainSection body msgs states grades id dumpFiles sessions photographee photographees = do
+mainSection :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> Session.Sessions -> Build.Build -> Maybe Photographee.Photographee -> [Photographee.Photographee] -> UI ()
+mainSection body msgs states grades id dumpFiles sessions build photographee photographees = do
     Session.sessions (sessionMissing body msgs states)
         (\y -> Session.session 
             (\ t -> mainSectionKindergarten body msgs states grades id dumpFiles)
-            ( mainSectionSchool body msgs states grades id dumpFiles photographee photographees) 
+            ( mainSectionSchool body msgs states grades id dumpFiles build photographee photographees) 
             (ListZipper.focus y) 
         ) sessions
 
@@ -64,8 +79,8 @@ mainSectionKindergarten body msgs states grades id dumpFiles = do
     _ <- element body # set children [menu, view]
     return ()
 
-mainSectionSchool :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> Maybe Photographee.Photographee -> [Photographee.Photographee] -> UI ()
-mainSectionSchool body msgs states grades id dumpFiles photographee photographees = do
+mainSectionSchool :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Id.Id -> DumpFiles -> Build.Build -> Maybe Photographee.Photographee -> [Photographee.Photographee] -> UI ()
+mainSectionSchool body msgs states grades id dumpFiles build photographee photographees = do
     input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" 
 
     (builderButton, buildView) <- mkBuild msgs
@@ -88,7 +103,8 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
         [ UI.label #. "label has-text-dark" # set UI.text "Foto Id"
         , UI.div #. "control" #+ [ element input ] 
         ]
-    
+
+ 
     let dumpFilesToCount x = case x of
             DumpFiles xs ->
                 show $ length $ fmap fst xs
@@ -96,6 +112,11 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
                 "Cr2 og jpg stemmer ikke overens"
             NoDump ->
                 "Igen dump mappe"
+
+    let dumpFilesCount x = case x of
+            DumpFilesError -> 0
+            NoDump -> 0
+            DumpFiles xs -> length $ fmap fst xs
 
     label <- mkLabel "Antal billeder i dump:"
 
@@ -106,7 +127,7 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
                         ]
                     ]
 
-    grade <- mkColumn ["is-4"] 
+    grade <- mkColumn ["is-12"] 
         [ Grade.grades ( UI.div #. "field" #+
                         [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen Stuer/Klasser"
                         , UI.div # set (attr "style") "width:100%" #. "select" #+ 
@@ -149,18 +170,14 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
 
                                     photographees <- UI.div #+ 
                                         fmap (\c -> do
-                                                --(button, buttonView) <- mkButton "es s
-                                                --on UI.click button $ \_ -> do 
-                                                            --- SET
-                                                            --PHOTOGRAPHEEE
-                                                            --liftIO $ setIdSelection conf (Photographee.Idd tea)
-                                                            --hack <- liftIO $ getDagsdato conf
-                                                            --setDagsdato conf hack
-                                                ---return buttonView
-                                                
-                                                UI.div #+ [string (Photographee._name c)]
+                                                let ident = Photographee._ident c
+                                                let name = Photographee._name c
+                                                let s = name ++ ", " ++ ident
+                                                (button, buttonView) <- mkButton ident s
+                                                on UI.click button $ \_ -> do 
+                                                    liftIO $ Chan.writeChan msgs $ Msg.setId $ Id.fromString ident
+                                                mkColumn ["is-12"] [ element buttonView ]
                                             ) (sortOn (Photographee._name) photographees)
-                                        --setNumber config' input' (Photographee._ident c) (Photographee._name c ++ ", " ++ Photographee._ident c)])
 
 
                                     inputId <- UI.input #. "input" # set UI.type_ "text" 
@@ -176,16 +193,26 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
                                         , UI.div #. "control" #+ [ element inputName ] 
                                         ]
 
+                                    (buttonAlt, buttonAltView) <- mkCreate msgs inputId inputName
+                                    
 
-                                    UI.div #. "field" #+
-                                        [ UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
-                                        , UI.div #. "control" #+ [ element inputView
-                                                                 , element inputIdView
-                                                                 , element inputNameView
-                                                                 ]
-                                        , element photographees
+                                    UI.div #+
+                                        [ UI.br
+                                        , UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
+                                        , mkColumns ["is-multiline"] 
+                                            [ mkColumn ["is-4"] 
+                                                [ UI.div #. "control" #+ [ element inputView
+                                                                        , element inputIdView
+                                                                        , element inputNameView
+                                                                        , element buttonAltView
+                                                                        ]
+                                                ]
+                                            ]
+                                        , UI.br
+                                        , mkColumns ["is-multiline"] [element photographees]
                                         ]
                             ) grades ]
+
 
     view <- maybe 
         ( mkSection 
@@ -195,25 +222,84 @@ mainSectionSchool body msgs states grades id dumpFiles photographee photographee
                         [ mkColumn ["is-4"] [ element inputView ]
                         ]
                     ]
-                , element grade
-                ]
-            ]) (\ x -> 
-        mkSection 
-            [ mkColumns ["is-multiline"]
-                [ mkColumn ["is-12"]
-                    [ mkColumns ["is-multiline"] 
-                        [ mkColumn ["is-4"] [ element inputView ]
-                        , mkColumn ["is-12"] [ element buildView ]
-                        , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
-                        ]
-                    ]
                 , element dumpSize
                 , element grade
                 ]
-            ]) photographee
+            ]) (\ x -> 
+        if (dumpFilesCount dumpFiles) == 0 then 
+            ( mkSection 
+                [ mkColumns ["is-multiline"]
+                    [ mkColumn ["is-12"]
+                        [ mkColumns ["is-multiline"] 
+                            [ mkColumn ["is-4"] [ element inputView ]
+                            , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                            ]
+                        ]
+                    , element dumpSize
+                    , element grade
+                    ]
+                ])
+        else
+            mkSection 
+                [ mkColumns ["is-multiline"]
+                    [ mkColumn ["is-12"]
+                        [ mkColumns ["is-multiline"] 
+                            [ mkColumn ["is-4"] [ element inputView ]
+                            , mkColumn ["is-12"] [ element buildView ]
+                            , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                            ]
+                        ]
+                    , element dumpSize
+                    , element grade
+                    ]
+                ]) photographee
+
+    let view2 = \ s -> maybe ( mkSection 
+                [ mkColumns ["is-multiline"]
+                    [ mkColumn ["is-12"]
+                        [ mkColumns ["is-multiline"] 
+                            [ mkColumn ["is-4"] [ element inputView ]
+                            ]
+                        ]
+                    , mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result" ]
+                    , element dumpSize
+                    , element grade
+                    ]
+                ]) (\ x -> 
+                    if (dumpFilesCount dumpFiles) == 0 then 
+                        ( mkSection 
+                            [ mkColumns ["is-multiline"]
+                                [ mkColumn ["is-12"]
+                                    [ mkColumns ["is-multiline"] 
+                                        [ mkColumn ["is-4"] [ element inputView ]
+                                        , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                                        ]
+                                    ]
+                                , mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result" ]
+                                , element dumpSize
+                                , element grade
+                                ]
+                            ])
+                    else
+                        mkSection 
+                            [ mkColumns ["is-multiline"]
+                                [ mkColumn ["is-12"]
+                                    [ mkColumns ["is-multiline"] 
+                                        [ mkColumn ["is-4"] [ element inputView ]
+                                        , mkColumn ["is-12"] [ element buildView ]
+                                        , mkColumn ["is-12"] [ UI.p #. "is-size-3" #+ [string ("Navn: " ++ (Photographee._name x))] ]
+                                        ]
+                                    ]
+                                , mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result" ]
+                                , element dumpSize
+                                , element grade
+                                ]
+                            ]) photographee
+
+    buildMsg <- Build.build' (element view) (\y -> view2 y) (\p s -> view2 (Photographee._name p ++ " - " ++ s))  build
 
     menu <- mkMenu msgs states  
-    _ <- element body # set children [menu, view]
+    _ <- element body # set children [menu, buildMsg]
 
     _ <- UI.setFocus input
     _ <- element input # set value (Id.toString id)

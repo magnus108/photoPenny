@@ -26,6 +26,8 @@ module Message
     , getDumpFiles
     , getPhotographee
     , build
+    , getBuild
+    , insertPhotographee
     ) where
 
 
@@ -82,6 +84,8 @@ data Message
     | GetDumpFiles
     | GetPhotographee
     | Build
+    | GetBuild
+    | InsertPhotographee String String
 
 
 
@@ -172,3 +176,10 @@ getPhotographee = GetPhotographee
 
 build :: Message
 build = Build
+
+
+getBuild :: Message
+getBuild = GetBuild
+
+insertPhotographee :: String -> String -> Message
+insertPhotographee = InsertPhotographee

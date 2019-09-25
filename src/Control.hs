@@ -24,7 +24,7 @@ import qualified Utils.ListZipper as Zipper
 import Utils.Comonad
 
 import PhotoShake.ShakeConfig
-import PhotoShake.Built
+import PhotoShake.Build
 import qualified PhotoShake.Control as Control
 import qualified PhotoShake.Grade as Grade
 

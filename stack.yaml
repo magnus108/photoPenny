@@ -39,7 +39,7 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- archive: https://github.com/magnus108/photoShake/archive/refac2.zip#123221111111111111124111112311111111111111
+- archive: https://github.com/magnus108/photoShake/archive/refac2.zip#12322111111111111112411111231111111111111111111111111122222222111
 - strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c
 
 # Override default flag values for local packages and extra-deps

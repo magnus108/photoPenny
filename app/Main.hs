@@ -29,6 +29,7 @@ import PhotoShake.Session
 import PhotoShake.Location
 import PhotoShake.Location
 import PhotoShake.Grade
+import qualified PhotoShake.Build as Build
 import qualified PhotoShake.Id as Id
 import qualified PhotoShake.Photographee2 as Photographee
 import qualified PhotoShake.Control as Control
@@ -43,6 +44,7 @@ main = do
     
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = noDump
         , A.dumpFiles = NoDump
         , A.dagsdato = noDagsdato
@@ -64,6 +66,7 @@ main = do
         , A.cancelDumpFiles = return ()
         , A.control = Control.Empty
         , A.cancelControl = return ()
+        , A.cancelLocation = return ()
         }
 
     messages <- Chan.newChan

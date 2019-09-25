@@ -26,7 +26,7 @@ import Utils.Comonad
 import qualified Utils.ListZipper as ListZipper
 
 import PhotoShake.Photographee
-import PhotoShake.Built
+import PhotoShake.Build
 import PhotoShake.Dagsdato
 
 import qualified PhotoShake.Grade as Grade
@@ -94,7 +94,7 @@ locationSection body msgs states location grades = do
                                             Just n -> do
                                                 runFunction $ ffi "$('#inputter').trigger(%1)" ("t"++(show n))
 
-                                    (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj ny"
+                                    (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj ny klasse"
 
                                     on UI.click gradeInsert $ \_ -> do 
                                             liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ ListZipper.insert zipper mempty 

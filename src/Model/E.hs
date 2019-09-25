@@ -13,16 +13,20 @@ module Model.E
     , _configs 
     , _states
     , _dumpFiles
+    , _buildFile
     , _photographee
     , _photographees
     , _cancel
     , _cancelDumpFiles
     , _cancelControl
+    , _cancelLocation
     , _location
+    , _build
     , _setId
     , _setPhotographee
     , _setPhotographees
     , _setStates
+    , _setBuild
     , _setControl
     , _setLocation
     , _setDump
@@ -30,6 +34,7 @@ module Model.E
     , _setCancel
     , _setCancelDumpFiles
     , _setCancelControl
+    , _setCancelLocation
     , _setDoneshooting
     , _setDagsdato
     , _setDagsdatoBackup
@@ -84,6 +89,7 @@ import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Id as Id
 import qualified PhotoShake.Control as Control
+import qualified PhotoShake.Build as Build
 
 import PhotoShake.ShakeConfig 
 
@@ -117,6 +123,7 @@ data Model = Model
 
     , dagsdato :: DA.Dagsdato
     , dagsdatoBackup :: DA.Dagsdato
+    , build :: Build.Build
 
     , doneshooting :: DO.Doneshooting
     , photographers :: Photographer.Photographers
@@ -134,10 +141,11 @@ data Model = Model
     , control :: Control.Result -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
-    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening) -- ??? 
+    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening, StopListening) -- ??? 
     , cancel :: StopListening
     , cancelDumpFiles :: StopListening
     , cancelControl :: StopListening
+    , cancelLocation :: StopListening
     }
 
 
@@ -159,7 +167,7 @@ _root :: App Model -> FP -- deleteme
 _root = root . extract . unApp
 
 
-_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening)) -- ???
+_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening, StopListening)) -- ???
 _subscriptions = subscriptions . extract . unApp
 
 
@@ -168,6 +176,10 @@ _configs = dir1 . extract . unApp
 
 _stateFile :: App Model -> FilePath -- deleteme
 _stateFile  = _stateConfig . _shakeConfig
+
+
+_buildFile :: App Model -> FilePath -- deleteme
+_buildFile  = _buildConfig . _shakeConfig
 
 
 _idFile :: App Model -> FilePath -- deleteme
@@ -214,6 +226,9 @@ _dumpFiles = dumpFiles . extract . unApp
 _location :: App Model -> Location.Location -- deleteme
 _location = location . extract . unApp
 
+_build :: App Model -> Build.Build -- deleteme
+_build = build . extract . unApp
+
 _cancel :: App Model -> StopListening -- deleteme
 _cancel = cancel . extract . unApp
 
@@ -223,6 +238,9 @@ _cancelDumpFiles = cancelDumpFiles . extract . unApp
 _cancelControl :: App Model -> StopListening -- deleteme
 _cancelControl = cancelControl . extract . unApp
 
+_cancelLocation :: App Model -> StopListening -- deleteme
+_cancelLocation = cancelLocation . extract . unApp
+
 
 _setStates :: App Model -> Maybe States -> App Model -- deleteme
 _setStates x (Just s) = App $ (unApp x) =>> (\x -> (extract x) { states = Just s } )
@@ -231,11 +249,19 @@ _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing
 _setCancel :: App Model -> StopListening -> App Model -- deleteme
 _setCancel x y = App $ (unApp x) =>> (\x -> (extract x) { cancel = y } )
 
+
+_setBuild :: App Model -> Build.Build -> App Model -- deleteme
+_setBuild x y = App $ (unApp x) =>> (\x -> (extract x) { build = y } )
+
+
 _setCancelDumpFiles :: App Model -> StopListening -> App Model -- deleteme
 _setCancelDumpFiles x y = App $ (unApp x) =>> (\x -> (extract x) { cancelDumpFiles = y } )
 
 _setCancelControl :: App Model -> StopListening -> App Model -- deleteme
 _setCancelControl x y = App $ (unApp x) =>> (\x -> (extract x) { cancelControl = y } )
+
+_setCancelLocation :: App Model -> StopListening -> App Model -- deleteme
+_setCancelLocation x y = App $ (unApp x) =>> (\x -> (extract x) { cancelLocation = y } )
 
 _setDumpFiles:: App Model -> DumpFiles -> App Model -- deleteme
 _setDumpFiles x y = App $ (unApp x) =>> (\x -> (extract x) { dumpFiles = y } )

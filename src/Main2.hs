@@ -20,7 +20,7 @@ import qualified PhotoShake.Location as Location
 import PhotoShake.Photographer
 import PhotoShake.Dump
 import qualified PhotoShake.Photographee as Photographee
-import PhotoShake.Built
+import PhotoShake.Build
 
 import Data.Time.Clock
 import Control.Exception
@@ -41,13 +41,8 @@ import Utils.Comonad
 mainSection2 :: FilePath -> FilePath -> ShakeConfig -> MVar ShakeConfig -> Window -> UI (Element, Element)
 mainSection2 root _ config config' w = do
 
-    built <- liftIO $ withMVar config' $ (\conf -> getBuilt conf)
 
-    let isBuilding = case built of
-                        NoBuilt -> False
-                        NoFind s -> False
-                        Building _ _ -> True
-                        Built _ _ -> False
+    let isBuilding = False
 
     (builderButton, buildView) <- mkBuild config'
     
@@ -72,17 +67,9 @@ mainSection2 root _ config config' w = do
         liftIO $ withMVar config' $ (\conf -> do
                 setId conf (Id.yesId val))
 
-    builtMsg <- case built of
-                        NoBuilt -> UI.div
-                        NoFind s -> mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result" ]
-                        Built _ s ->mkColumn ["is-12"] [ UI.p # set text s # set (attr "id") "result" ]
-                        Building _ s -> mkColumn ["is-12"] [UI.p # set text s # set (attr "id") "result"]
+    builtMsg <- UI.div
 
-    msg <- case built of
-                    NoBuilt -> UI.div 
-                    NoFind _ -> UI.div
-                    Built p _ -> mkColumn ["is-12"] [UI.p # set text (Photographee._name p)]
-                    Building p _ -> mkColumn ["is-12"] [UI.p # set text (Photographee._name p)]
+    msg <- UI.div 
 
 
 
@@ -232,29 +219,3 @@ funci config x = do
         ) x
 -}
 
-funci2 :: MVar ShakeConfig -> (IORef String) -> IO ()
-funci2 config idd = do
-    --have to look this up from config
-    idd2 <- readIORef idd
-    locationFile <- withMVar config $ (\conf -> getLocationFile conf)
-    -- kinda bad here
-    -- kinda bad here could cause errorr
-    find <- Location.location (return (Left LocationConfigFileMissing)) (\ xxx -> do
-            try $ Photographee.findPhotographee2 xxx idd2 :: IO (Either ShakeError Photographee.Photographee)) locationFile 
-
-    case find of
-            Left errMsg -> do
-                    withMVar config $ (\conf -> setBuilt' conf (NoFind (show errMsg)))
-
-            Right photographee -> do
-                    time <- getCurrentTime
-                    -- wtf????
-                    Location.location (withMVar config $ (\conf -> setBuilt' conf (NoFind (show LocationConfigFileMissing))))
-                        (\xxx -> do  
-                            build <- try $ withMVar config (\conf -> myShake conf photographee (takeBaseName xxx) time True) :: IO (Either ShakeError ())
-                            case build of
-                                    Left errMsg -> do
-                                        withMVar config (\conf -> setBuilt' conf (NoFind (show errMsg))  )
-                                    Right _ -> do
-                                        withMVar config (\conf -> setBuilt' conf (Built  photographee "Færdig"))
-                                        return () ) locationFile

@@ -23,7 +23,7 @@ import PhotoShake.State
 
 import PhotoShake.ShakeConfig hiding (setDump, setDoneshooting, setDagsdato, getPhotographers, setPhotographers, setLocation, setDagsdatoBackup)
 import PhotoShake.Photographee
-import PhotoShake.Built
+import qualified PhotoShake.Build as Build
 
 
 import Control.Monad
@@ -63,6 +63,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
@@ -81,6 +82,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -126,6 +128,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -144,6 +147,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -188,6 +192,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -206,6 +211,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -264,6 +270,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -282,6 +289,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -336,8 +344,6 @@ main = do
                 liftBase $ writeChan messages (block empty)
                 liftBase $ takeMVar empty
 
-
-                waitUntil 10000 $ (\result -> expect (result == "0")) =<< getText =<< findElem (ById "count")
                 )
         )
 
@@ -345,6 +351,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -363,6 +370,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -411,6 +419,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -429,6 +438,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -477,6 +487,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -495,6 +506,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -547,6 +559,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -565,6 +578,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -620,6 +634,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
@@ -638,6 +653,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -692,6 +708,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
@@ -710,6 +727,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -761,6 +779,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
@@ -779,6 +798,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -830,6 +850,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
         , A.dagsdato = DA.noDagsdato
@@ -848,6 +869,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
@@ -896,6 +918,7 @@ main = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
         , A.dagsdatoBackup = DA.noDagsdato
@@ -914,6 +937,7 @@ main = do
         , A.subscriptions = L.subscriptions
         , A.control = Control.Empty
         , A.cancel = return ()
+        , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }

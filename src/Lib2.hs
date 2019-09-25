@@ -68,10 +68,11 @@ import qualified PhotoShake.Control as Control
 main :: Int -> Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> IO ()
 main port manager messages app = do 
     setupSubscriptions <- withMVar app (return . E._subscriptions)
-    (cancel, dumpFiles, control) <- withMVar app (setupSubscriptions manager messages)
+    (cancel, dumpFiles, control, location) <- withMVar app (setupSubscriptions manager messages)
     _ <- modifyMVar_ app $ \a -> return (E._setCancel a cancel)
     _ <- modifyMVar_ app $ \a -> return (E._setCancelDumpFiles a dumpFiles)
     _ <- modifyMVar_ app $ \a -> return (E._setCancelControl a control)
+    _ <- modifyMVar_ app $ \a -> return (E._setCancelLocation a location)
     
     startGUI defaultConfig { jsPort = Just port
                            , jsWindowReloadOnDisconnect = False
@@ -164,12 +165,34 @@ setupLocationListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (Notify.eventPath e) == takeFileName locationConfig) (\_ -> writeChan msgChan Msg.getLocation)
 
 
+setupLocationFileListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
+setupLocationFileListener manager msgChan app = do -- THIS BAD
+    let fpConfig = E._configs app
+    let location = E._location app
+    Location.location (return (return ())) (\d -> do
+        action <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan msgChan Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+        Notify.watchDir manager (dropFileName d)
+            (\e -> takeFileName (Notify.eventPath e) == takeFileName d) (\_ -> action)) location
+
+
 setupIdListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
 setupIdListener manager msgChan app = do -- THIS BAD
     let fpConfig = E._configs app
     let idConfig = E._idFile app
     Notify.watchDir manager fpConfig 
         (\e -> takeFileName (Notify.eventPath e) == takeFileName idConfig) (\_ -> writeChan msgChan Msg.getId)
+
+
+setupBuildListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
+setupBuildListener manager msgChan app = do -- THIS BAD
+    let fpConfig = E._configs app
+    let buildConfig = E._buildFile app
+    Notify.watchDir manager fpConfig 
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName buildConfig) (\_ -> writeChan msgChan Msg.getBuild)
 
 
 setupControlListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
@@ -233,9 +256,10 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getGrades
     _ <- writeChan msgs Msg.getId
     _ <- writeChan msgs Msg.getDumpFiles
+    _ <- writeChan msgs Msg.getBuild
     return ()
 
-subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (Notify.StopListening, Notify.StopListening, Notify.StopListening)
+subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (Notify.StopListening, Notify.StopListening, Notify.StopListening, Notify.StopListening)
 subscriptions manager msgs app = do
     state <- setupStateListener manager msgs app
     dump <- setupDumpListener manager msgs app
@@ -246,10 +270,12 @@ subscriptions manager msgs app = do
     shooting <- setupShootingListener manager msgs app
     session <- setupSessionListener manager msgs app
     location <- setupLocationListener manager msgs app
+    locationFile <- setupLocationFileListener manager msgs app
     grade <- setupGradesListener manager msgs app
     id <- setupIdListener manager msgs app
     control <- setupControlListener manager msgs app
     dumpFiles <- setupDumpFilesListener manager msgs app
+    build <- setupBuildListener manager msgs app
     return $ (msum 
         [ state
         , dump
@@ -262,9 +288,11 @@ subscriptions manager msgs app = do
         , location
         , grade
         , id
+        , build
         ]
         , dumpFiles
         , control
+        , locationFile
         )
 
 setup :: Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> UI ()
@@ -278,11 +306,12 @@ setup manager msgs app w = do
 subs :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (E.App E.Model)
 subs manager msgs app = do 
     let setupSubscriptions = E._subscriptions app
-    (cancel, dumpFiles, control) <- setupSubscriptions manager msgs app 
+    (cancel, dumpFiles, control, location) <- setupSubscriptions manager msgs app 
     let app'' = E._setCancel app cancel
     let app''' = E._setCancelDumpFiles app'' dumpFiles
     let app'''' = E._setCancelControl app''' control
-    return app''''
+    let app''''' = E._setCancelLocation app'''' location
+    return app'''''
 
 
 receive :: Notify.WatchManager -> Chan Msg.Message -> MVar (E.App E.Model) -> Window -> IO ()
@@ -295,19 +324,33 @@ receive manager msgs app w = do
         -- setup new ones
 
         case msg of
-            Msg.Build -> do                
+            Msg.GetBuild -> do                
                 app' <- takeMVar app 
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
+                let shakeConfig = E._shakeConfig app'
+                build <- getBuild shakeConfig
+                let app'' = E._setBuild app' build
 
+                app''' <- subs manager msgs app''
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app'''
+
+                putMVar app app'''
+
+            Msg.Build -> do                
+                app' <- takeMVar app 
                 --REAL SHITTY all the way
                 let config = E._shakeConfig app'
                 let photographee = E._photographee app'
                 let location = E._location app'
                 time <- liftIO $ getCurrentTime
 
-                build <- Location.location (return ()) 
+                build <- Location.location (return ())  --dangerous as no change will cause bug
                         (\l -> maybe (return ()) (\p ->
                                 myShake config p (takeBaseName l) time True) photographee) location
 
@@ -317,11 +360,26 @@ receive manager msgs app w = do
                     redoLayout body msgs app''
                 putMVar app app'
 
+            Msg.InsertPhotographee id name-> do                
+                app' <- takeMVar app 
+                --REAL SHITTY all the way
+                let shakeConfig = E._shakeConfig app'
+                location <- getLocationFile shakeConfig --wrong naming
+                grades <- getGrades shakeConfig
+                res <- Grade.grades (return Nothing) (\g -> Photographee2.insert location (focus g) id name) grades
+
+                forM_ res (\_ -> runUI w $ do
+                        let app'' = E._setStates app' Nothing -- i dont think i have to do this
+                        body <- getBody w
+                        redoLayout body msgs app'')
+                putMVar app app'
+
             Msg.GetStates -> do                
                 app' <- takeMVar app 
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let root = E._root app'
                 let stateFile = E._stateFile app'
                 states <- interpret $ S.getStates $ fp $ unFP root =>> combine stateFile
@@ -360,6 +418,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 dump <- getDump shakeConfig
                 let app'' = E._setDump app' dump
@@ -378,6 +437,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let location = E._location app'
                 let id = E._id app'
                 photographee <- Photographee2.findPhotographee location id
@@ -393,6 +453,7 @@ receive manager msgs app w = do
                 app' <- takeMVar app 
                 _ <- E._cancel app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 _ <- E._cancelDumpFiles app'
 
                 let dump = E._dump app'
@@ -422,6 +483,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 doneshooting <- getDoneshooting shakeConfig
                 let app'' = E._setDoneshooting app' doneshooting
@@ -448,6 +510,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 dagsdatoBackup <- getDagsdatoBackup shakeConfig
                 let app'' = E._setDagsdatoBackup app' dagsdatoBackup
@@ -474,6 +537,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 dagsdato <- getDagsdato shakeConfig
                 let app'' = E._setDagsdato app' dagsdato
@@ -500,6 +564,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 photographers <- getPhotographers shakeConfig
                 let app'' = E._setPhotographers app' photographers
@@ -526,6 +591,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 sessions <- getSessions shakeConfig
                 let app'' = E._setSessions app' sessions
@@ -551,6 +617,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 shootings <- getShootings shakeConfig
                 let app'' = E._setShootings app' shootings
@@ -576,6 +643,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 let location = E._location app'
                 let id = E._id app'
@@ -605,6 +673,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 let id = E._id app'--wrong--wrong--wrong--wrong--wrong--wrong--wrong
                 location <- getLocationFile shakeConfig --wrong naming
@@ -636,6 +705,7 @@ receive manager msgs app w = do
                 _ <- E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 grades <- getGrades shakeConfig
                 location <- getLocationFile shakeConfig --wrong naming
@@ -693,7 +763,7 @@ viewState body msgs app states = do
             S.Session -> sessionSection body msgs states (E._sessions app)
             S.Shooting -> shootingSection body msgs states (E._shootings app)
             S.Location -> locationSection body msgs states (E._location app) (E._grades app)
-            S.Main -> mainSection body msgs states (E._grades app) (E._id app) (E._dumpFiles app) (E._sessions app) (E._photographee app) (E._photographees app)
+            S.Main -> mainSection body msgs states (E._grades app) (E._id app) (E._dumpFiles app) (E._sessions app) (E._build app) (E._photographee app) (E._photographees app)
             S.Control -> controlSection body msgs states (E._grades app) (E._control app)
             --element body # set children [menu, view]
 
