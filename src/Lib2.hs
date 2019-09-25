@@ -187,12 +187,12 @@ setupIdListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (Notify.eventPath e) == takeFileName idConfig) (\_ -> writeChan msgChan Msg.getId)
 
 
-setupBuildListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupBuildListener manager msgChan app = do -- THIS BAD
+setupBuildListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupBuildListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let buildConfig = E._buildFile app
     Notify.watchDir manager fpConfig 
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName buildConfig) (\_ -> writeChan msgChan Msg.getBuild)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName buildConfig) (\_ -> action)
 
 
 setupControlListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
@@ -225,17 +225,12 @@ eventNotModified (Notify.Removed  _ _ _) = True
 eventNotModified (Notify.Unknown  _ _ _) = True
 
 
-setupDumpFilesListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupDumpFilesListener manager msgChan app = do -- THIS BAD
+setupDumpFilesListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupDumpFilesListener manager msgChan app action = do -- THIS BAD
     let dump = E._dump app
     let cancelDumpFiles = return () --E._cancelDumpFiles app
     Dump.dump (return cancelDumpFiles) (\d -> do
         b <- doesDirectoryExist d
-        action <- mkDebounce defaultDebounceSettings
-                 { debounceAction = writeChan msgChan Msg.getDumpFiles
-                 , debounceFreq = 1000000 -- 5 seconds
-                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
-                 }
         if b then 
             Notify.watchDir manager d (\x -> eventNotModified x) (\_ -> action)
         else
@@ -261,6 +256,20 @@ initialMessage msgs = do
 
 subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (Notify.StopListening, Notify.StopListening, Notify.StopListening, Notify.StopListening)
 subscriptions manager msgs app = do
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan msgs Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan msgs Msg.getBuild
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+
     state <- setupStateListener manager msgs app
     dump <- setupDumpListener manager msgs app
     doneshooting <- setupDoneshootingListener manager msgs app
@@ -274,8 +283,8 @@ subscriptions manager msgs app = do
     grade <- setupGradesListener manager msgs app
     id <- setupIdListener manager msgs app
     control <- setupControlListener manager msgs app
-    dumpFiles <- setupDumpFilesListener manager msgs app
-    build <- setupBuildListener manager msgs app
+    dumpFiles <- setupDumpFilesListener manager msgs app actionDumpFiles
+    build <- setupBuildListener manager msgs app actionGetBuild
     return $ (msum 
         [ state
         , dump
@@ -334,6 +343,8 @@ receive manager msgs app w = do
                 build <- getBuild shakeConfig
                 let app'' = E._setBuild app' build
 
+                putStrLn "bob2"
+
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -384,6 +395,8 @@ receive manager msgs app w = do
                 let stateFile = E._stateFile app'
                 states <- interpret $ S.getStates $ fp $ unFP root =>> combine stateFile
                 let app'' = E._setStates app' (Just states)
+
+                putStrLn "bob3"
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -419,6 +432,7 @@ receive manager msgs app w = do
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
+                putStrLn "bob4"
                 let shakeConfig = E._shakeConfig app'
                 dump <- getDump shakeConfig
                 let app'' = E._setDump app' dump
@@ -432,22 +446,6 @@ receive manager msgs app w = do
 
                 putMVar app app''''
 
-            Msg.GetPhotographee -> do
-                app' <- takeMVar app 
-                _ <- E._cancel app'
-                _ <- E._cancelDumpFiles app'
-                _ <- E._cancelControl app'
-                _ <- E._cancelLocation app'
-                let location = E._location app'
-                let id = E._id app'
-                photographee <- Photographee2.findPhotographee location id
-                let app'' = E._setPhotographee app' photographee
-                app''' <- subs manager msgs app''
-                runUI w $ do
-                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
-                    body <- getBody w
-                    redoLayout body msgs app'''
-                putMVar app app'''
 
             Msg.GetDumpFiles -> do
                 app' <- takeMVar app 
@@ -459,6 +457,8 @@ receive manager msgs app w = do
                 let dump = E._dump app'
                 dumpFiles <- getDumpFiles dump
                 let app'' = E._setDumpFiles app' dumpFiles
+            
+                putStrLn "bob"
 
                 app''' <- subs manager msgs app''
                 runUI w $ do
@@ -486,6 +486,7 @@ receive manager msgs app w = do
                 _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
                 doneshooting <- getDoneshooting shakeConfig
+                putStrLn "bob6"
                 let app'' = E._setDoneshooting app' doneshooting
                 app''' <- subs manager msgs app''
                 runUI w $ do
@@ -514,6 +515,7 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 dagsdatoBackup <- getDagsdatoBackup shakeConfig
                 let app'' = E._setDagsdatoBackup app' dagsdatoBackup
+                putStrLn "bob7"
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -527,6 +529,7 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 _ <- setDagsdato shakeConfig dagsdato
                 let app'' = E._setStates app' Nothing -- i dont think i have to do this
+                putStrLn "bob8"
                 _ <- runUI w $ do
                     body <- getBody w
                     redoLayout body msgs app''
@@ -542,6 +545,7 @@ receive manager msgs app w = do
                 dagsdato <- getDagsdato shakeConfig
                 let app'' = E._setDagsdato app' dagsdato
                 app''' <- subs manager msgs app''
+                putStrLn "bob9"
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -569,6 +573,7 @@ receive manager msgs app w = do
                 photographers <- getPhotographers shakeConfig
                 let app'' = E._setPhotographers app' photographers
                 app''' <- subs manager msgs app''
+                putStrLn "bob10"
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -596,6 +601,7 @@ receive manager msgs app w = do
                 sessions <- getSessions shakeConfig
                 let app'' = E._setSessions app' sessions
                 app''' <- subs manager msgs app''
+                putStrLn "bob11"
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -622,6 +628,7 @@ receive manager msgs app w = do
                 shootings <- getShootings shakeConfig
                 let app'' = E._setShootings app' shootings
                 app''' <- subs manager msgs app''
+                putStrLn "bob12"
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -644,6 +651,7 @@ receive manager msgs app w = do
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
+                putStrLn "bob13"
                 let shakeConfig = E._shakeConfig app'
                 let location = E._location app'
                 let id = E._id app'
@@ -684,6 +692,7 @@ receive manager msgs app w = do
                 let app''' = E._setLocation app'' location
                 let app'''' = E._setPhotographees app''' photographees 
                 app''''' <- subs manager msgs app''''
+                putStrLn "bob14"
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
@@ -715,6 +724,7 @@ receive manager msgs app w = do
                 let app''' = E._setControl app'' control
                 let app'''' = E._setPhotographees app''' photographees
                 app''''' <- subs manager msgs app''''
+                putStrLn "bob15"
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w

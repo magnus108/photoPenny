@@ -24,7 +24,6 @@ module Message
     , getId
     , setId
     , getDumpFiles
-    , getPhotographee
     , build
     , getBuild
     , insertPhotographee
@@ -171,8 +170,6 @@ setId = SetId
 getDumpFiles :: Message
 getDumpFiles = GetDumpFiles
 
-getPhotographee :: Message
-getPhotographee = GetPhotographee
 
 build :: Message
 build = Build

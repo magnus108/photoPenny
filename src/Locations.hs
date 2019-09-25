@@ -40,6 +40,7 @@ locationSection body msgs states location grades = do
         liftIO $ Chan.writeChan msgs $ Msg.setLocation $ Location.yesLocation file
 
     (_, picker2) <- mkFileMaker "locationsPicker" "Ny CSV" $ \file -> when (file /= "") $ do
+        liftIO $ writeFile file ""
         liftIO $ Chan.writeChan msgs $ Msg.setLocation $ Location.yesLocation file
     
     pickers <- UI.div #. "field is-grouped" #+ [element picker, element picker2]
@@ -54,11 +55,18 @@ locationSection body msgs states location grades = do
             on UI.click buttonOpen $ \_ -> do 
                     runFunction $ ffi $ "require('electron').shell.openItem(" ++ (show y) ++ ")"
 
-            gradesView <- Grade.grades (UI.div #. "field" #+
+            (gradeInsert', gradeInsertView') <- mkButton "insert" "Tilføj ny klasse" --remove
+
+            on UI.click gradeInsert' $ \_ -> do 
+                    liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades $ ListZipper.ListZipper [] mempty []
+
+            gradesView <- Grade.grades (UI.div #+ [UI.div #. "field" #+
                                 [ UI.label #. "label has-text-dark" # set UI.text "Ingen stuer/klasser"
                                 , UI.div # set (attr "style") "width:100%" #. "select" #+ 
                                         [ UI.select # set (attr "disabled") "true" # set (attr "style") "width:100%" #+ []
                                         ]
+                                ]
+                                , UI.div #. "control" #+ [element gradeInsertView']
                                 ])
 
                         (\(ListZipper.ListZipper ls y rs) -> do
