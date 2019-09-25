@@ -61,8 +61,36 @@ main :: IO ()
 main = do
     config <- toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
@@ -87,7 +115,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
     
@@ -126,8 +153,36 @@ main = do
                 )
         )
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -152,7 +207,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
@@ -190,8 +244,36 @@ main = do
                 )
         )
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -216,7 +298,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
@@ -268,8 +349,36 @@ main = do
 
 
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -294,7 +403,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
@@ -349,8 +457,36 @@ main = do
 
 
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -375,7 +511,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
@@ -417,8 +552,36 @@ main = do
 
     -- dangerous difference between these params
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -443,7 +606,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
@@ -485,8 +647,36 @@ main = do
         )
 
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -511,7 +701,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
@@ -556,9 +745,37 @@ main = do
                 )
         )
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -583,7 +800,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
     
@@ -632,8 +848,37 @@ main = do
         )
 
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
@@ -657,8 +902,6 @@ main = do
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
         }
-
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
             
@@ -705,9 +948,37 @@ main = do
                 liftBase $ takeMVar empty
                 )
         )
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
@@ -732,7 +1003,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
     
@@ -777,8 +1047,37 @@ main = do
                 )
         )
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
@@ -803,8 +1102,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
             
@@ -847,9 +1144,37 @@ main = do
                 liftBase $ takeMVar empty
                 )
         )
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.id = Id.noId
@@ -874,7 +1199,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
     --fuckthis
@@ -916,8 +1240,36 @@ main = do
                 )
         )
 
+    messages <- Chan.newChan
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = D.noDump
         , A.dagsdato = DA.noDagsdato
@@ -942,7 +1294,6 @@ main = do
         , A.cancelControl = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManager
     _ <- L.initialMessage messages
 
