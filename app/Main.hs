@@ -65,7 +65,7 @@ main = do
 
     actionGrades <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getGrades
-             , debounceFreq = 4000000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
     
@@ -74,6 +74,7 @@ main = do
         , A.actionDumpFiles = actionDumpFiles
         , A.actionGetBuild = actionGetBuild
         , A.actionLocation = actionLocation
+        , A.actionGrades= actionGrades
         , A.build = Build.noBuild
         , A.dump = noDump
         , A.dumpFiles = NoDump
