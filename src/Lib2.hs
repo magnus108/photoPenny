@@ -79,90 +79,90 @@ main port manager messages app = do
                            } $ setup manager messages app
 
 
-setupGradesListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupGradesListener manager msgChan app = do -- THIS BAD
+setupGradesListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupGradesListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let stateConfig = E._gradesFile app
     Notify.watchDir manager fpConfig 
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getGrades)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName stateConfig) (\_ -> action ) 
 
 
-setupStateListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupStateListener manager msgChan app = do -- THIS BAD
+setupStateListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupStateListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let stateConfig = E._stateFile app
     Notify.watchDir manager fpConfig 
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName stateConfig) (\_ -> writeChan msgChan Msg.getStates)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName stateConfig) (\_ -> action )
 
 
-setupDumpListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupDumpListener manager msgChan app = do -- THIS BAD
+setupDumpListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupDumpListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let dumpConfig = E._dumpFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName dumpConfig) (\_ -> writeChan msgChan Msg.getDump)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName dumpConfig) (\_ -> action)
         
 
-setupDoneshootingListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupDoneshootingListener manager msgChan app = do -- THIS BAD
+setupDoneshootingListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupDoneshootingListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let doneshootingConfig = E._doneshootingFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName doneshootingConfig) (\_ -> writeChan msgChan Msg.getDoneshooting)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName doneshootingConfig) (\_ -> action )
 
 
-setupDagsdatoListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupDagsdatoListener manager msgChan app = do -- THIS BAD
+setupDagsdatoListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupDagsdatoListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let dagsdatoConfig = E._dagsdatoFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName dagsdatoConfig) (\_ -> writeChan msgChan Msg.getDagsdato)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName dagsdatoConfig) (\_ -> action) 
 
 
-setupDagsdatoBackupListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupDagsdatoBackupListener manager msgChan app = do -- THIS BAD
+setupDagsdatoBackupListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupDagsdatoBackupListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let dagsdatoBackupConfig = E._dagsdatoBackupFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName dagsdatoBackupConfig) (\_ -> writeChan msgChan Msg.getDagsdatoBackup)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName dagsdatoBackupConfig) (\_ -> action)
 
 
-setupPhotographerListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupPhotographerListener manager msgChan app = do -- THIS BAD
+setupPhotographerListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupPhotographerListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let photographerConfig = E._photographerFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName photographerConfig) (\_ -> writeChan msgChan Msg.getPhotographers)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName photographerConfig) (\_ -> action) 
 
-setupShootingListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupShootingListener manager msgChan app = do -- THIS BAD
+setupShootingListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupShootingListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let shootingConfig = E._shootingFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName shootingConfig) (\_ -> writeChan msgChan Msg.getShootings)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName shootingConfig) (\_ -> action) 
 
-setupSessionListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupSessionListener manager msgChan app = do -- THIS BAD
+setupSessionListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupSessionListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let sessionConfig = E._sessionFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName sessionConfig) (\_ -> writeChan msgChan Msg.getSessions)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName sessionConfig) (\_ -> action) 
 
 
-setupLocationListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupLocationListener manager msgChan app = do -- THIS BAD
+setupLocationListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupLocationListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let locationConfig = E._locationFile app
     Notify.watchDir manager fpConfig 
         -- THIS IS LIE
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName locationConfig) (\_ -> writeChan msgChan Msg.getLocation)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName locationConfig) (\_ -> action) 
 
 
 setupLocationFileListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
@@ -251,22 +251,34 @@ subscriptions manager msgs app = do
 
     let actionLocation = E._actionLocation app
     let actionGrades = E._actionGrades app
+    let actionGrades2 = E._actionGrades2 app
 
     let actionId = E._actionId app
 
-    state <- setupStateListener manager msgs app
-    dump <- setupDumpListener manager msgs app
-    doneshooting <- setupDoneshootingListener manager msgs app
-    dagsdato <- setupDagsdatoListener manager msgs app
-    dagsdatoBackup <- setupDagsdatoBackupListener manager msgs app
-    photographer <- setupPhotographerListener manager msgs app
-    shooting <- setupShootingListener manager msgs app
-    session <- setupSessionListener manager msgs app
-    location <- setupLocationListener manager msgs app 
+    let actionSession = E._actionSession app
+    let actionShooting = E._actionShooting app
+    let actionPhotographer = E._actionPhotographer app
+
+    let actionDagsdato = E._actionDagsdato app
+    let actionDagsdatoBackup = E._actionDagsdatoBackup app
+    let actionDoneshooting = E._actionDoneshooting app
+
+    let actionDump= E._actionDump app
+    let actionState = E._actionState app
+
+    state <- setupStateListener manager msgs app actionState
+    dump <- setupDumpListener manager msgs app actionDump
+    doneshooting <- setupDoneshootingListener manager msgs app actionDoneshooting
+    dagsdato <- setupDagsdatoListener manager msgs app actionDagsdato
+    dagsdatoBackup <- setupDagsdatoBackupListener manager msgs app actionDagsdatoBackup
+    photographer <- setupPhotographerListener manager msgs app actionPhotographer
+    shooting <- setupShootingListener manager msgs app actionShooting
+    session <- setupSessionListener manager msgs app actionSession
+    location <- setupLocationListener manager msgs app actionLocation
     locationFile <- setupLocationFileListener manager msgs app actionLocation
-    grade <- setupGradesListener manager msgs app
+    grade <- setupGradesListener manager msgs app actionGrades 
     id <- setupIdListener manager msgs app actionId
-    control <- setupControlListener manager msgs app actionGrades
+    control <- setupControlListener manager msgs app actionGrades2
     dumpFiles <- setupDumpFilesListener manager msgs app actionDumpFiles
     build <- setupBuildListener manager msgs app actionGetBuild
     return $ (msum 

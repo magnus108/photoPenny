@@ -68,19 +68,86 @@ main = do
              , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
+
+    actionGrades2 <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     
     actionId <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getId
              , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
-    
+
+    actionLocation <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getLocation
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+    actionSession <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getSessions
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+    actionShooting <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getShootings
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+    actionPhotographer <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getPhotographers
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+             
+    actionDagsdato <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDagsdato
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+    actionDagsdatoBackup <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDagsdatoBackup
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+             
+    actionDoneshooting <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDoneshooting
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionDump <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDump
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionState <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getStates
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+             
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionSession = actionSession
+        , A.actionShooting = actionShooting
+        , A.actionPhotographer = actionPhotographer
+        , A.actionDagsdato = actionDagsdato
+        , A.actionDagsdatoBackup = actionDagsdatoBackup
+        , A.actionState = actionState
+        , A.actionDump = actionDump
+        , A.actionDoneshooting = actionDoneshooting
+        
+
+        , A.actionLocation = actionLocation 
         , A.actionDumpFiles = actionDumpFiles
         , A.actionGetBuild = actionGetBuild
-        , A.actionLocation = actionLocation
-        , A.actionGrades= actionGrades
+        , A.actionGrades = actionGrades
+        , A.actionGrades2 = actionGrades2
         , A.actionId = actionId
         , A.build = Build.noBuild
         , A.dump = noDump

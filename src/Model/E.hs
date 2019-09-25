@@ -9,6 +9,15 @@ module Model.E
     , Model (..)
     , model
 
+    , _actionState
+    , _actionDump 
+    , _actionDoneshooting
+    , _actionDagsdato
+    , _actionDagsdatoBackup
+    , _actionSession
+    , _actionShooting
+    , _actionPhotographer
+    , _actionGrades2
     , _actionGrades
     , _actionLocation
     , _actionDumpFiles
@@ -139,9 +148,20 @@ data Model = Model
     , actionGetBuild :: IO ()
     , actionDumpFiles :: IO ()
 
+    , actionDagsdato :: IO ()
+    , actionDagsdatoBackup :: IO ()
+
+    , actionGrades2 :: IO ()
     , actionGrades :: IO ()
     , actionLocation :: IO ()
     , actionId :: IO ()
+
+    , actionState :: IO ()
+    , actionDump :: IO ()
+    , actionDoneshooting :: IO ()
+    , actionSession :: IO ()
+    , actionShooting :: IO ()
+    , actionPhotographer :: IO ()
 
     , grades :: Grade.Grades
     , id :: Id.Id
@@ -357,11 +377,38 @@ _grades  = grades . extract . unApp
 _id :: App Model -> Id.Id -- deleteme
 _id = id . extract . unApp
 
+_actionDump :: App Model -> IO ()-- deleteme
+_actionDump = actionDump . extract . unApp
+
+_actionState :: App Model -> IO ()-- deleteme
+_actionState = actionState . extract . unApp
+
+_actionDoneshooting :: App Model -> IO ()-- deleteme
+_actionDoneshooting = actionDoneshooting . extract . unApp
+
+_actionDagsdato :: App Model -> IO ()-- deleteme
+_actionDagsdato = actionDagsdato . extract . unApp
+
+_actionDagsdatoBackup :: App Model -> IO ()-- deleteme
+_actionDagsdatoBackup = actionDagsdatoBackup . extract . unApp
+
+_actionSession:: App Model -> IO ()-- deleteme
+_actionSession = actionSession . extract . unApp
+
+_actionShooting :: App Model -> IO ()-- deleteme
+_actionShooting = actionShooting . extract . unApp
+
+_actionPhotographer :: App Model -> IO ()-- deleteme
+_actionPhotographer = actionPhotographer . extract . unApp
+
 _actionId :: App Model -> IO ()-- deleteme
 _actionId = actionId . extract . unApp
 
 _actionLocation :: App Model -> IO ()-- deleteme
 _actionLocation = actionLocation . extract . unApp
+
+_actionGrades2 :: App Model -> IO ()-- deleteme
+_actionGrades2 = actionGrades2 . extract . unApp
 
 _actionGrades :: App Model -> IO ()-- deleteme
 _actionGrades = actionGrades . extract . unApp
