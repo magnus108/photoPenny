@@ -69,12 +69,19 @@ main = do
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
     
+    actionId <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getId
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+    
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
         , A.actionDumpFiles = actionDumpFiles
         , A.actionGetBuild = actionGetBuild
         , A.actionLocation = actionLocation
         , A.actionGrades= actionGrades
+        , A.actionId = actionId
         , A.build = Build.noBuild
         , A.dump = noDump
         , A.dumpFiles = NoDump
