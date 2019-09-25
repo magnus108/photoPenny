@@ -51,6 +51,8 @@ import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Control as Control
 import qualified PhotoShake.Id as Id
 
+import Utils.Debounce
+import qualified Message as Msg
 chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
 
