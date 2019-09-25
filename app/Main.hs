@@ -100,12 +100,7 @@ main = do
         , A.cancelLocation = return ()
         }
 
-    manager <- startManagerConf (WatchConfig
-        { confDebounce = NoDebounce 
-        , confPollInterval = 10^(6 :: Int) -- 1 second
-        , confUsePolling = False
-        })
-
+    manager <- startManagerConf defaultConfig
     _ <- L.initialMessage messages
 
     L.main (read port) manager messages app 
