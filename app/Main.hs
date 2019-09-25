@@ -4,6 +4,8 @@ module Main where
 import qualified Lib2 as L
 import System.Environment (getArgs)
 import System.IO
+import Utils.Debounce
+import qualified Message as Msg
 
 
 import qualified Model.E as A
@@ -41,9 +43,37 @@ main = do
     
     config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
 
+    messages <- Chan.newChan
+
+    actionLocation <- mkDebounce defaultDebounceSettings
+                 { debounceAction = writeChan messages Msg.getLocation
+                 , debounceFreq = 1000000 -- 5 seconds
+                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
+                 }
+
+    actionDumpFiles <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getDumpFiles
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGetBuild <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getBuild
+             , debounceFreq = 5000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
+    actionGrades <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getGrades
+             , debounceFreq = 4000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
     
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.actionDumpFiles = actionDumpFiles
+        , A.actionGetBuild = actionGetBuild
+        , A.actionLocation = actionLocation
         , A.build = Build.noBuild
         , A.dump = noDump
         , A.dumpFiles = NoDump
@@ -69,7 +99,6 @@ main = do
         , A.cancelLocation = return ()
         }
 
-    messages <- Chan.newChan
     manager <- startManagerConf (WatchConfig
         { confDebounce = NoDebounce 
         , confPollInterval = 10^(6 :: Int) -- 1 second

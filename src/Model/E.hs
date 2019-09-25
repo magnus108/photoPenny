@@ -9,6 +9,10 @@ module Model.E
     , Model (..)
     , model
 
+    , _actionGrades
+    , _actionLocation
+    , _actionDumpFiles
+    , _actionGetBuild
     , _subscriptions
     , _configs 
     , _states
@@ -131,6 +135,11 @@ data Model = Model
     , sessions :: Session.Sessions
 
     , location :: Location.Location
+    , actionGetBuild :: IO ()
+    , actionDumpFiles :: IO ()
+
+    , actionGrades :: IO ()
+    , actionLocation :: IO ()
 
     , grades :: Grade.Grades
     , id :: Id.Id
@@ -346,6 +355,17 @@ _grades  = grades . extract . unApp
 _id :: App Model -> Id.Id -- deleteme
 _id = id . extract . unApp
 
+_actionLocation :: App Model -> IO ()-- deleteme
+_actionLocation = actionLocation . extract . unApp
+
+_actionGrades :: App Model -> IO ()-- deleteme
+_actionGrades = actionGrades . extract . unApp
+
+_actionDumpFiles :: App Model -> IO ()-- deleteme
+_actionDumpFiles = actionDumpFiles . extract . unApp
+
+_actionGetBuild :: App Model -> IO ()-- deleteme
+_actionGetBuild = actionGetBuild . extract . unApp
 
 _shakeConfig :: App Model -> ShakeConfig -- deleteme
 _shakeConfig = shakeConfig . extract . unApp

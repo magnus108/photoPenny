@@ -94,16 +94,19 @@ mainSectionKindergarten :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZi
 mainSectionKindergarten body msgs states grades id dumpFiles build photographee photographees typ = do
     input <- UI.input #. "input" # set (attr "id") "fotoId" #  set UI.type_ "text" 
 
+    action <- liftIO $ mkDebounce defaultDebounceSettings
+             { debounceAction = do
+                    w <- getWindow input
+                    value <- runUI w (get value input)
+                    when (Id.toString id /= value) $ do
+                        Chan.writeChan msgs $ Msg.setId $ Id.fromString value
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
     buildView <- mkBuildKinderGarten msgs typ
 
     on UI.keyup input $ \keycode -> do
-        value <- get value input
-        when (Id.toString id /= value) $ do
-            action <- liftIO $ mkDebounce defaultDebounceSettings
-                     { debounceAction = Chan.writeChan msgs $ Msg.setId $ Id.fromString value
-                     , debounceFreq = 1000000 -- 5 seconds
-                     , debounceEdge = trailingEdge -- Trigger on the trailing edge
-                     }
             liftIO $ action 
 
     inputView <- UI.div #. "field" #+
@@ -326,15 +329,18 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
 
     (builderButton, buildView) <- mkBuild msgs
 
+    action <- liftIO $ mkDebounce defaultDebounceSettings
+             { debounceAction = do
+                    w <- getWindow input
+                    value <- runUI w (get value input)
+                    when (Id.toString id /= value) $ do
+                        Chan.writeChan msgs $ Msg.setId $ Id.fromString value
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
     on UI.keyup input $ \keycode -> do
-        value <- get value input
-        when (Id.toString id /= value) $ do
-            action <- liftIO $ mkDebounce defaultDebounceSettings
-                     { debounceAction = Chan.writeChan msgs $ Msg.setId $ Id.fromString value
-                     , debounceFreq = 1000000 -- 5 seconds
-                     , debounceEdge = trailingEdge -- Trigger on the trailing edge
-                     }
-            liftIO $ action 
+            liftIO $ action
 
     on UI.keydown input $ \keycode -> when (keycode == 13) $ do
         UI.setFocus builderButton 

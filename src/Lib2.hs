@@ -165,16 +165,11 @@ setupLocationListener manager msgChan app = do -- THIS BAD
         (\e -> takeFileName (Notify.eventPath e) == takeFileName locationConfig) (\_ -> writeChan msgChan Msg.getLocation)
 
 
-setupLocationFileListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupLocationFileListener manager msgChan app = do -- THIS BAD
+setupLocationFileListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupLocationFileListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let location = E._location app
     Location.location (return (return ())) (\d -> do
-        action <- mkDebounce defaultDebounceSettings
-                 { debounceAction = writeChan msgChan Msg.getLocation
-                 , debounceFreq = 1000000 -- 5 seconds
-                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
-                 }
         Notify.watchDir manager (dropFileName d)
             (\e -> takeFileName (Notify.eventPath e) == takeFileName d) (\_ -> action)) location
 
@@ -195,8 +190,8 @@ setupBuildListener manager msgChan app action = do -- THIS BAD
         (\e -> takeFileName (Notify.eventPath e) == takeFileName buildConfig) (\_ -> action)
 
 
-setupControlListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupControlListener manager msgChan app = do -- THIS BAD
+setupControlListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupControlListener manager msgChan app action = do -- THIS BAD
     let location = E._location app
     let doneshooting = E._doneshooting app
     let grades = E._grades app
@@ -206,11 +201,6 @@ setupControlListener manager msgChan app = do -- THIS BAD
         (\l -> Doneshooting.doneshooting (return cancelControl)
             (\d -> Grade.grades (return cancelControl)
                 (\g -> do
-                    action <- mkDebounce defaultDebounceSettings
-                             { debounceAction = writeChan msgChan Msg.getGrades
-                             , debounceFreq = 1000000 -- 5 seconds
-                             , debounceEdge = trailingEdge -- Trigger on the trailing edge
-                             }
                     b <- doesDirectoryExist (d </> (takeBaseName l) </> "cr2" </> (extract g))
                     if b then
                         Notify.watchDir manager (d </> (takeBaseName l) </> "cr2" </> (extract g)) 
@@ -256,19 +246,11 @@ initialMessage msgs = do
 
 subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (Notify.StopListening, Notify.StopListening, Notify.StopListening, Notify.StopListening)
 subscriptions manager msgs app = do
+    let actionDumpFiles = E._actionDumpFiles app
+    let actionGetBuild = E._actionGetBuild app
 
-    actionDumpFiles <- mkDebounce defaultDebounceSettings
-             { debounceAction = writeChan msgs Msg.getDumpFiles
-             , debounceFreq = 1000000 -- 5 seconds
-             , debounceEdge = trailingEdge -- Trigger on the trailing edge
-             }
-
-    actionGetBuild <- mkDebounce defaultDebounceSettings
-             { debounceAction = writeChan msgs Msg.getBuild
-             , debounceFreq = 1000000 -- 5 seconds
-             , debounceEdge = trailingEdge -- Trigger on the trailing edge
-             }
-
+    let actionLocation = E._actionLocation app
+    let actionGrades = E._actionGrades app
 
     state <- setupStateListener manager msgs app
     dump <- setupDumpListener manager msgs app
@@ -278,11 +260,11 @@ subscriptions manager msgs app = do
     photographer <- setupPhotographerListener manager msgs app
     shooting <- setupShootingListener manager msgs app
     session <- setupSessionListener manager msgs app
-    location <- setupLocationListener manager msgs app
-    locationFile <- setupLocationFileListener manager msgs app
+    location <- setupLocationListener manager msgs app 
+    locationFile <- setupLocationFileListener manager msgs app actionLocation
     grade <- setupGradesListener manager msgs app
     id <- setupIdListener manager msgs app
-    control <- setupControlListener manager msgs app
+    control <- setupControlListener manager msgs app actionGrades
     dumpFiles <- setupDumpFilesListener manager msgs app actionDumpFiles
     build <- setupBuildListener manager msgs app actionGetBuild
     return $ (msum 
