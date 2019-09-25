@@ -174,12 +174,12 @@ setupLocationFileListener manager msgChan app action = do -- THIS BAD
             (\e -> takeFileName (Notify.eventPath e) == takeFileName d) (\_ -> action)) location
 
 
-setupIdListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO Notify.StopListening --- ??? STOP
-setupIdListener manager msgChan app = do -- THIS BAD
+setupIdListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupIdListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let idConfig = E._idFile app
     Notify.watchDir manager fpConfig 
-        (\e -> takeFileName (Notify.eventPath e) == takeFileName idConfig) (\_ -> writeChan msgChan Msg.getId)
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName idConfig) (\_ -> action)
 
 
 setupBuildListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
@@ -252,6 +252,8 @@ subscriptions manager msgs app = do
     let actionLocation = E._actionLocation app
     let actionGrades = E._actionGrades app
 
+    let actionId = E._actionId app
+
     state <- setupStateListener manager msgs app
     dump <- setupDumpListener manager msgs app
     doneshooting <- setupDoneshootingListener manager msgs app
@@ -263,7 +265,7 @@ subscriptions manager msgs app = do
     location <- setupLocationListener manager msgs app 
     locationFile <- setupLocationFileListener manager msgs app actionLocation
     grade <- setupGradesListener manager msgs app
-    id <- setupIdListener manager msgs app
+    id <- setupIdListener manager msgs app actionId
     control <- setupControlListener manager msgs app actionGrades
     dumpFiles <- setupDumpFilesListener manager msgs app actionDumpFiles
     build <- setupBuildListener manager msgs app actionGetBuild

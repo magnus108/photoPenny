@@ -13,6 +13,7 @@ module Model.E
     , _actionLocation
     , _actionDumpFiles
     , _actionGetBuild
+    , _actionId
     , _subscriptions
     , _configs 
     , _states
@@ -140,6 +141,7 @@ data Model = Model
 
     , actionGrades :: IO ()
     , actionLocation :: IO ()
+    , actionId :: IO ()
 
     , grades :: Grade.Grades
     , id :: Id.Id
@@ -354,6 +356,9 @@ _grades  = grades . extract . unApp
 
 _id :: App Model -> Id.Id -- deleteme
 _id = id . extract . unApp
+
+_actionId :: App Model -> IO ()-- deleteme
+_actionId = actionId . extract . unApp
 
 _actionLocation :: App Model -> IO ()-- deleteme
 _actionLocation = actionLocation . extract . unApp
