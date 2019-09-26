@@ -409,8 +409,6 @@ receive manager msgs app w = do
                 app' <- takeMVar app 
                 let root = E._root app'
                 let stateFile = E._stateFile app'
-                putStrLn $ show (unFP root & extract)
-                putStrLn $ show stateFile
 
                 _ <- interpret $ S.setStates (fp (unFP root =>> combine stateFile)) states
                 let app'' = E._setStates app' Nothing -- i dont think i have to do this
