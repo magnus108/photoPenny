@@ -92,7 +92,7 @@ setupStateListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
     let stateConfig = E._stateFile app
     Notify.watchDir manager fpConfig 
-        (\e -> traceShow e (takeFileName (Notify.eventPath e) == takeFileName stateConfig)) (\_ -> action )
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName stateConfig) (\_ -> action )
 
 
 setupDumpListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
@@ -371,17 +371,18 @@ receive manager msgs app w = do
             Msg.InsertPhotographee id name-> do                
                 putStrLn "insertPhotographee"
                 app' <- takeMVar app 
-                app' <- takeMVar app 
                 --REAL SHITTY all the way
                 let shakeConfig = E._shakeConfig app'
                 location <- getLocationFile shakeConfig --wrong naming
                 grades <- getGrades shakeConfig
-                res <- Grade.grades (return Nothing) (\g -> Photographee2.insert location (focus g) id name) grades
+                let res = Grade.grades Nothing (\g -> Photographee2.insert location (focus g) id name) grades
 
-                forM_ res (\_ -> runUI w $ do
-                        let app'' = E._setStates app' Nothing -- i dont think i have to do this
-                        body <- getBody w
-                        redoLayout body msgs app'')
+                forM_ res (\a -> do
+                        _ <- a
+                        runUI w $ do
+                            let app'' = E._setStates app' Nothing -- i dont think i have to do this
+                            body <- getBody w
+                            redoLayout body msgs app'')
                 putMVar app app'
 
             Msg.GetStates -> do                

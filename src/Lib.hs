@@ -21,7 +21,6 @@ import System.FilePath
 
 import Summary
 import Main
-import Main2
 import Dump
 import Dagsdato
 import DagsdatoBackup
@@ -107,7 +106,6 @@ viewState root stateFile config w chan chanPhotographer chanSession states'' con
                 return (c,tmp)
 
 
-            Main2 -> mainSection2 root stateFile config config'' w
 
 
 
