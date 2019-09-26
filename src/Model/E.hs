@@ -91,6 +91,7 @@ import Prelude hiding (id)
 
 import PhotoShake.State
 
+import Data.Function ((&))
 import Utils.FP
 import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
@@ -202,8 +203,11 @@ _subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model ->
 _subscriptions = subscriptions . extract . unApp
 
 
-_configs :: App Model -> FilePath -- deleteme
-_configs = dir1 . extract . unApp
+_dir1 :: App Model -> FilePath -- deleteme
+_dir1 = dir1 . extract . unApp
+
+_configs :: App Model -> FilePath
+_configs app = unFP (_root app) =>> combine (_dir1 app) & extract --super bad
 
 _stateFile :: App Model -> FilePath -- deleteme
 _stateFile  = _stateConfig . _shakeConfig

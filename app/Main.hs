@@ -41,7 +41,10 @@ main = do
     hSetBuffering stdout LineBuffering
     [port, root] <- getArgs
     
-    config <- toShakeConfig Nothing "config.cfg" -- Bad and unsafe
+    --- FIX ME PLS
+    --- FIX ME PLS
+    --- FIX ME PLS
+    config <- toShakeConfig (Just root) "config.cfg" -- Bad and unsafe
 
     messages <- Chan.newChan
 
