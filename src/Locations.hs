@@ -99,7 +99,7 @@ locationSection body msgs states location grades = do
                                     on UI.selectionChange input $ \ i -> do
                                         case i of
                                             Nothing -> return ()
-                                            Just n -> do
+                                            Just n -> when (length ls /= n) $ do
                                                 runFunction $ ffi "$('#inputter').trigger(%1)" ("t"++(show n))
 
                                     (gradeInsert, gradeInsertView) <- mkButton "insert" "Tilføj ny klasse"

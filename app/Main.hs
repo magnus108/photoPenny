@@ -1,7 +1,7 @@
 module Main where
 
 --import Lib
-import qualified Lib2 as L
+import qualified Lib as L
 import System.Environment (getArgs)
 import System.IO
 import Utils.Debounce
