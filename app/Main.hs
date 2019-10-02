@@ -49,10 +49,10 @@ main = do
     messages <- Chan.newChan
 
     actionLocation <- mkDebounce defaultDebounceSettings
-                 { debounceAction = writeChan messages Msg.getLocation
-                 , debounceFreq = 1000000 -- 5 seconds
-                 , debounceEdge = trailingEdge -- Trigger on the trailing edge
-                 }
+             { debounceAction = writeChan messages Msg.getLocation
+             , debounceFreq = 1000000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
 
     actionDumpFiles <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getDumpFiles
