@@ -5,6 +5,3 @@ photoPenny.cabal
 .build/
 node_modules/
 photoPenny-linux-x64/
-
-test/doneshooting/
-test/images/
