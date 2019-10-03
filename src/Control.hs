@@ -52,7 +52,7 @@ controlSection body msgs states grades result = do
                                     
                                     --hack create extendI
                                     gradeViews <- sequence $ Zipper.iextend (\ i z -> do
-                                                        opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
+                                                        opt <- UI.option # set (attr "value") (extract z) # set (attr "id") (extract z) # set text (extract z)
                                                         opt' <- if (z == zipper) then
                                                                 element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
                                                             else
@@ -71,7 +71,7 @@ controlSection body msgs states grades result = do
                                     on UI.selectionChange input $ \ i -> do
                                         case i of
                                             Nothing -> return ()
-                                            Just n -> do
+                                            Just n -> when (length ls /= n) $ do
                                                 runFunction $ ffi "$('#inputter').trigger(%1)" ("t"++(show n))
 
                                     inputView <- UI.div #. "field" #+

@@ -744,8 +744,64 @@ setState = do
             return True
         )
 
+
+
+
+
+
+
+
+setGradeDropDown :: IO ()
+setGradeDropDown = do
+    messages <- Chan.newChan
+    empty <- liftBase newEmptyMVar
+    liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
+    liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
+    liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["stue"] "ggg" ["ccc"]
+
+    race_ (setupApp messages)
+        (runSessionThenClose $ do                      
+            openPage "http://localhost:9000"
+
+            liftBase $ threadDelay 50000
+            liftBase $ writeChan messages (Message.block empty)
+            liftBase $ takeMVar empty
+
+
+            forM_ [1..10] (\x -> do
+                liftBase $ threadDelay 5000000
+                liftBase $ writeChan messages (Message.block empty)
+                liftBase $ takeMVar empty
+
+                waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
+                liftBase $ putStrLn "bobab1"
+                liftBase $ threadDelay 1000000
+
+                waitUntil 50000 $ findElem ( ById "stue" ) >>= click
+                liftBase $ putStrLn "bobab2"
+                
+                --finisher
+                liftBase $ threadDelay 5000000
+                liftBase $ writeChan messages (Message.block empty)
+                liftBase $ takeMVar empty
+
+                waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
+                liftBase $ putStrLn "bobab3"
+
+                waitUntil 50000 $ findElem ( ById "ggg" ) >>= click 
+                liftBase $ putStrLn "bobab4"
+                )
+            return True
+        )
+
+
+
+
+
+
 main :: IO ()
 main = do
+    setGradeDropDown 
     putStrLn "1"
     setDagsdatoBackup
     putStrLn "2"

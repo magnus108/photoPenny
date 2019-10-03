@@ -151,7 +151,7 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
                                     
                                     --hack create extendI
                                     gradeViews <- sequence $ ListZipper.iextend (\ i z -> do
-                                                        opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
+                                                        opt <- UI.option # set (attr "value") (extract z) # set (attr "id") (extract z) # set text (extract z)
                                                         opt' <- if (z == zipper) then
                                                                 element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
                                                             else
@@ -170,7 +170,7 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
                                     on UI.selectionChange input $ \ i -> do
                                         case i of
                                             Nothing -> return ()
-                                            Just n -> do
+                                            Just n -> when (length ls /= n) $ do
                                                 runFunction $ ffi "$('#inputter').trigger(%1)" ("t"++(show n))
 
                                     inputView <- UI.div #. "field" #+

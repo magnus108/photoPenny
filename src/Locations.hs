@@ -80,7 +80,7 @@ locationSection body msgs states location grades = do
                                     
                                     --hack create extendI
                                     gradeViews <- sequence $ ListZipper.iextend (\ i z -> do
-                                                        opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
+                                                        opt <- UI.option # set (attr "value") (extract z) # set (attr "id") (extract z) # set text (extract z)
                                                         opt' <- if (z == zipper) then
                                                                 element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
                                                             else
