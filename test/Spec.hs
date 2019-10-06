@@ -229,6 +229,7 @@ setDagsdatoBackup = do
                 liftBase $ takeMVar empty
                 waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
                 )
+            return True
         )
 
 setGrades :: IO ()
@@ -261,6 +262,7 @@ setGrades = do
 
                 liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "A" ["B","C"]
                 )
+            return True
         )
 
 controlXMP :: IO ()
@@ -305,6 +307,7 @@ controlXMP = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 counter :: IO ()
@@ -350,6 +353,7 @@ counter = do
                 liftBase $ takeMVar empty
 
                 )
+            return True
         )
 
 setPhotoId :: IO ()
@@ -389,6 +393,7 @@ setPhotoId = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 
@@ -432,6 +437,7 @@ setLocation = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 
@@ -480,6 +486,7 @@ setShooting = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 
@@ -526,6 +533,7 @@ setSession = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 setPhotographers :: IO ()
@@ -572,6 +580,7 @@ setPhotographers = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 setDagsdato :: IO ()
@@ -616,6 +625,7 @@ setDagsdato = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 
@@ -661,6 +671,7 @@ setDoneshooting = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 setDump :: IO ()
@@ -705,6 +716,7 @@ setDump = do
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
                 )
+            return True
         )
 
 setState :: IO ()
