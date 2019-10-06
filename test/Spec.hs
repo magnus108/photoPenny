@@ -800,9 +800,6 @@ main = do
     putStrLn "1"
     threadDelay 5000000
     setDagsdatoBackup
-    putStrLn "2"
-    threadDelay 5000000
-    setGrades
     putStrLn "4"
     threadDelay 5000000
     counter
@@ -839,3 +836,6 @@ main = do
     putStrLn "15"
     threadDelay 5000000
     controlXMP 
+    putStrLn "BADNESS"
+    threadDelay 5000000
+    setGrades
