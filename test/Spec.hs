@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import Test.WebDriver.Session as WD
 import Test.WebDriver hiding (setLocation)
 import Control.Monad.Base
 import Test.WebDriver.Commands.Wait
@@ -200,17 +201,21 @@ setupApp messages port = do
     L.main port manager messages app
 
 
-setDagsdatoBackup :: IO ()
+setDagsdatoBackup :: WD ()
 setDagsdatoBackup = do
-    messages <- Chan.newChan
+    liftBase $ putStrLn "gg"
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] DagsdatoBackup []
+    session <- WD.getSession 
+    liftBase $ race_ (setupApp messages 9000) 
+        (runWD session $ do
+            liftBase $ threadDelay 5000000
 
-    race_ (setupApp messages 9000)
-        (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
             forM_ [1..5] (\x -> do
+                liftBase $ putStrLn "gg2"
                 liftBase $ threadDelay 5000
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
@@ -232,7 +237,8 @@ setDagsdatoBackup = do
                 waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
                 )
             return True
-        )
+            )
+
 
 setGrades :: IO ()
 setGrades = do
@@ -631,21 +637,22 @@ setDagsdato = do
         )
 
 
-setDoneshooting :: IO ()
+setDoneshooting :: WD ()
 setDoneshooting = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Doneshooting []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9010)
-        (runSessionThenClose $ do                      
+    session <- WD.getSession 
+    liftBase $ race_ (setupApp messages 9010)
+        (runWD session $ do
+            liftBase $ threadDelay 5000000
             openPage "http://localhost:9010"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
             liftBase $ takeMVar empty
-
 
             forM_ [1..2] (\x -> do
                 liftBase $ threadDelay 50000
@@ -675,6 +682,7 @@ setDoneshooting = do
                 )
             return True
         )
+            
 
 setDump :: IO ()
 setDump = do
@@ -811,8 +819,14 @@ setGradeDropDown = do
 
 main :: IO ()
 main = do
-    putStrLn "1"
-    setDagsdatoBackup 
+    runSessionThenClose $ do
+        setDagsdatoBackup 
+        liftBase <- liftBase $ putStrLn "11"
+        setDoneshooting
+        return ()
+
+
+        {-
     putStrLn "12"
     setDump
     putStrLn "2"
@@ -829,8 +843,6 @@ main = do
     setPhotographers
     putStrLn "10"
     setDagsdato
-    putStrLn "11"
-    setDoneshooting
     putStrLn "13"
     setState
     putStrLn "14"
@@ -839,3 +851,4 @@ main = do
     controlXMP 
     putStrLn "BADNESS"
     setGrades
+    -}
