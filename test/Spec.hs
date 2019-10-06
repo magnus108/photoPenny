@@ -57,7 +57,7 @@ chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
 
 runSessionThenClose :: WD a -> IO a
-runSessionThenClose action = runSession chromeConfig . finallyClose $ action
+runSessionThenClose action = runSession chromeConfig .  closeOnException $ action
 
 
 
@@ -154,6 +154,7 @@ setupApp messages port = do
 
     app <- newMVar $ A.app $ env A.production $ A.Model
         { A.states = Nothing
+        , A.dumpFiles = Config.NoDump
         , A.actionSession = actionSession
         , A.actionShooting = actionShooting
         , A.actionPhotographer = actionPhotographer
