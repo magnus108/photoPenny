@@ -798,30 +798,44 @@ setGradeDropDown = do
 main :: IO ()
 main = do
     putStrLn "1"
+    threadDelay 5000
     setDagsdatoBackup
     putStrLn "2"
+    threadDelay 5000
     setGrades
     putStrLn "4"
+    threadDelay 5000
     counter
     putStrLn "5"
+    threadDelay 5000
     setPhotoId
     putStrLn "6"
+    threadDelay 5000
     setLocation
     putStrLn "7"
+    threadDelay 5000
     setShooting
     putStrLn "8"
+    threadDelay 5000
     setSession
     putStrLn "9"
+    threadDelay 5000
     setPhotographers
     putStrLn "10"
+    threadDelay 5000
     setDagsdato
     putStrLn "11"
+    threadDelay 5000
     setDoneshooting
     putStrLn "12"
+    threadDelay 5000
     setDump
     putStrLn "13"
+    threadDelay 5000
     setState
     putStrLn "14"
+    threadDelay 5000
     setGradeDropDown 
-    putStrLn "3"
+    putStrLn "15"
+    threadDelay 5000
     controlXMP 
