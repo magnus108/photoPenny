@@ -60,8 +60,8 @@ runSessionThenClose action = runSession chromeConfig . finallyClose $ action
 
 
 
-setupApp :: Chan Msg.Message -> IO ()
-setupApp messages = do
+setupApp :: Chan Msg.Message -> Int -> IO ()
+setupApp messages port = do
     config <- Config.toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
 
     actionLocation <- mkDebounce defaultDebounceSettings
@@ -195,7 +195,7 @@ setupApp messages = do
     _ <- L.initialMessage messages
     
     
-    L.main 9000 manager messages app
+    L.main port manager messages app
 
 
 setDagsdatoBackup :: IO ()
@@ -204,7 +204,7 @@ setDagsdatoBackup = do
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] DagsdatoBackup []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9000)
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
@@ -238,10 +238,10 @@ setGrades = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9001 )
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9001"
 
             liftBase $ threadDelay 5000
             liftBase $ writeChan messages (Message.block empty)
@@ -273,10 +273,10 @@ controlXMP = do
     liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "PKB" [] 
     liftBase $ writeChan messages $ Message.setDoneshooting $ DO.yesDoneshooting "test/doneshooting"
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9002 )
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9002"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -315,10 +315,10 @@ counter = do
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9003)
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9003"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -359,10 +359,10 @@ setPhotoId = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9004)
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9004"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -400,9 +400,9 @@ setLocation = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Location []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
         
-    race_ (setupApp messages)
+    race_ (setupApp messages 9005)
         (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9005"
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
             liftBase $ takeMVar empty
@@ -442,10 +442,10 @@ setShooting = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Shooting []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9006)
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9006"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -490,10 +490,10 @@ setSession = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Session []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9007)
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9007"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -535,10 +535,10 @@ setPhotographers = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Photographer []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9008)
         (runSessionThenClose $ do                      
 
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9008"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -581,9 +581,9 @@ setDagsdato = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dagsdato []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9009)
         (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9009"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -626,9 +626,9 @@ setDoneshooting = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Doneshooting []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9010)
         (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9010"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -670,9 +670,9 @@ setDump = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dump []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     
-    race_ (setupApp messages)
+    race_ (setupApp messages 9011)
         (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9011"
 
             
             liftBase $ threadDelay 50000
@@ -714,9 +714,9 @@ setState = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [Dump] Photographer []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9012)
         (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9012"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -759,9 +759,9 @@ setGradeDropDown = do
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["stue"] "ggg" ["ccc"]
 
-    race_ (setupApp messages)
+    race_ (setupApp messages 9013)
         (runSessionThenClose $ do                      
-            openPage "http://localhost:9000"
+            openPage "http://localhost:9013"
 
             liftBase $ threadDelay 50000
             liftBase $ writeChan messages (Message.block empty)
@@ -799,8 +799,8 @@ main :: IO ()
 main = do
     putStrLn "1"
     threadDelay 5000000
-    setDagsdatoBackup
-    putStrLn "4"
+    setDagsdatoBackup 
+    putStrLn "2"
     threadDelay 5000000
     counter
     putStrLn "5"
