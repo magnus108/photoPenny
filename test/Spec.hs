@@ -774,11 +774,9 @@ setGradeDropDown = do
                 liftBase $ takeMVar empty
 
                 waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
-                liftBase $ putStrLn "bobab1"
                 liftBase $ threadDelay 1000000
 
                 waitUntil 50000 $ findElem ( ById "stue" ) >>= click
-                liftBase $ putStrLn "bobab2"
                 
                 --finisher
                 liftBase $ threadDelay 5000000
@@ -786,10 +784,8 @@ setGradeDropDown = do
                 liftBase $ takeMVar empty
 
                 waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
-                liftBase $ putStrLn "bobab3"
 
                 waitUntil 50000 $ findElem ( ById "ggg" ) >>= click 
-                liftBase $ putStrLn "bobab4"
                 )
             return True
         )
@@ -801,7 +797,6 @@ setGradeDropDown = do
 
 main :: IO ()
 main = do
-    setGradeDropDown 
     putStrLn "1"
     setDagsdatoBackup
     putStrLn "2"
@@ -828,3 +823,5 @@ main = do
     setDump
     putStrLn "13"
     setState
+    putStrLn "14"
+    setGradeDropDown 
