@@ -208,7 +208,7 @@ setDagsdatoBackup = do
         (runSessionThenClose $ do                      
             openPage "http://localhost:9000"
 
-            forM_ [1..2] (\x -> do
+            forM_ [1..5] (\x -> do
                 liftBase $ threadDelay 5000
                 liftBase $ writeChan messages (Message.block empty)
                 liftBase $ takeMVar empty
@@ -811,6 +811,8 @@ main :: IO ()
 main = do
     putStrLn "1"
     setDagsdatoBackup 
+    putStrLn "12"
+    setDump
     putStrLn "2"
     counter
     putStrLn "5"
@@ -827,8 +829,6 @@ main = do
     setDagsdato
     putStrLn "11"
     setDoneshooting
-    putStrLn "12"
-    setDump
     putStrLn "13"
     setState
     putStrLn "14"
