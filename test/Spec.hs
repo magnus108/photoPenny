@@ -801,8 +801,6 @@ main = do
     setDagsdatoBackup
     putStrLn "2"
     setGrades
-    putStrLn "3"
-    controlXMP 
     putStrLn "4"
     counter
     putStrLn "5"
@@ -825,3 +823,5 @@ main = do
     setState
     putStrLn "14"
     setGradeDropDown 
+    putStrLn "3"
+    controlXMP 
