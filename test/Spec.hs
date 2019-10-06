@@ -14,6 +14,7 @@ import System.FilePath
 import System.Directory
 
 import System.FSNotify hiding (defaultConfig)
+import qualified System.FSNotify as FSN
 
 import Test.WebDriver.Common.Keys (enter)
 
@@ -191,7 +192,7 @@ setupApp messages port = do
         , A.cancelControl = return ()
         }
 
-    manager <- startManager
+    manager <- startManagerConf (FSN.defaultConfig { confUsePolling = True })
     _ <- L.initialMessage messages
     
     
