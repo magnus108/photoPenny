@@ -203,79 +203,71 @@ setupApp messages port = do
 
 setDagsdatoBackup :: WD ()
 setDagsdatoBackup = do
-    liftBase $ putStrLn "gg"
     messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] DagsdatoBackup []
-    session <- WD.getSession 
-    liftBase $ race_ (setupApp messages 9000) 
-        (runWD session $ do
-            liftBase $ threadDelay 5000000
+    liftBase $ forkIO $ setupApp messages 9000
+    liftBase $ threadDelay 5000000
 
-            openPage "http://localhost:9000"
+    openPage "http://localhost:9000"
 
-            forM_ [1..5] (\x -> do
-                liftBase $ putStrLn "gg2"
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.yesDagsdato "test/dump"
+    forM_ [1..5] (\x -> do
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.yesDagsdato "test/dump"
 
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 10000000 $ findElem ( ById "dagsdatoBackupPath" ) >>= getText >>= \x -> expect (x == "test/dump")
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 10000000 $ findElem ( ById "dagsdatoBackupPath" ) >>= getText >>= \x -> expect (x == "test/dump")
 
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.noDagsdato
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.noDagsdato
 
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
-                )
-            return True
-            )
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
+        )
 
 
-setGrades :: IO ()
+setGrades :: WD ()
 setGrades = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9001 )
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9001 
 
-            openPage "http://localhost:9001"
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9001"
 
-            liftBase $ threadDelay 5000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 5000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
 
-            forM_ [1..10] (\x -> do
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..10] (\x -> do
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["A"] "B" ["C"]
+        liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["A"] "B" ["C"]
 
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "A" ["B","C"]
-                )
-            return True
+        liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "A" ["B","C"]
         )
 
-controlXMP :: IO ()
+controlXMP :: WD ()
 controlXMP = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
@@ -283,357 +275,341 @@ controlXMP = do
     liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "PKB" [] 
     liftBase $ writeChan messages $ Message.setDoneshooting $ DO.yesDoneshooting "test/doneshooting"
 
-    race_ (setupApp messages 9002 )
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9002 
 
-            openPage "http://localhost:9002"
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9002"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
-            forM_ [1..10] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..10] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                liftBase $ writeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
+        liftBase $ writeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                waitUntil 100000 $ findElem (ById "SYS_77201")
-                
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        waitUntil 100000 $ findElem (ById "SYS_77201")
+        
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                liftBase $ removeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2"
+        liftBase $ removeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2"
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
-counter :: IO ()
+counter :: WD ()
 counter = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
 
-    race_ (setupApp messages 9003)
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9003
+    liftBase $ threadDelay 5000000
 
-            openPage "http://localhost:9003"
+    openPage "http://localhost:9003"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
 
-            forM_ [1..10] (\x -> do
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                
-                files <- liftBase $ listDirectory "test/images"  
-                liftBase $ mapM_ (\ f -> copyFile ("test/images" </> f) ("test/dump" </> f)) files
+    forM_ [1..10] (\x -> do
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        
+        files <- liftBase $ listDirectory "test/images"  
+        liftBase $ mapM_ (\ f -> copyFile ("test/images" </> f) ("test/dump" </> f)) files
 
-                liftBase $ threadDelay 5000000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 10000 $ (\result -> expect (result == "32")) =<< getText =<< findElem (ById "count")
+        liftBase $ threadDelay 5000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 10000 $ (\result -> expect (result == "32")) =<< getText =<< findElem (ById "count")
 
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                files <- liftBase $ listDirectory "test/dump"  
-                liftBase $ mapM_ (\f -> removeFile ("test/dump" </> f)) files
+        files <- liftBase $ listDirectory "test/dump"  
+        liftBase $ mapM_ (\f -> removeFile ("test/dump" </> f)) files
 
-                liftBase $ threadDelay 5000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        liftBase $ threadDelay 5000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                )
-            return True
         )
 
-setPhotoId :: IO ()
+setPhotoId :: WD ()
 setPhotoId = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9004)
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9004
 
-            openPage "http://localhost:9004"
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9004"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
-
-
-            forM_ [1..10] (\x -> do
-                liftBase $ threadDelay 500000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-
-                fotoId <- waitUntil 50000 $ findElem ( ById "fotoId" ) 
-                sendKeys "1234" fotoId
-
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
 
-                liftBase $ writeChan messages $ Message.setId $ Id.noId
+    forM_ [1..10] (\x -> do
+        liftBase $ threadDelay 2000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                --finisher
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        fotoId <- waitUntil 50000 $ findElem ( ById "fotoId" ) 
+        sendKeys "1234" fotoId
+
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+
+
+        liftBase $ writeChan messages $ Message.setId $ Id.noId
+
+        --finisher
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
 
 
-setLocation :: IO ()
+setLocation :: WD ()
 setLocation = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Location []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
         
-    race_ (setupApp messages 9005)
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9005"
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ forkIO $ setupApp messages 9005
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9005"
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
-            forM_ [1..5] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setLocation $ Location.yesLocation "test/cis.csv"
- 
-                liftBase $ threadDelay 500000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 50000 $ findElem ( ById "locationPath" ) >>= getText >>= \x -> expect (x == "test/cis.csv")
+    forM_ [1..5] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setLocation $ Location.yesLocation "test/cis.csv"
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setLocation $ Location.noLocation
+        liftBase $ threadDelay 2000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 50000 $ findElem ( ById "locationPath" ) >>= getText >>= \x -> expect (x == "test/cis.csv")
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 50000 $ findElem ( ById "locationMissing" )
-                
-                --finisher
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setLocation $ Location.noLocation
+
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 50000 $ findElem ( ById "locationMissing" )
+        
+        --finisher
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
 
-setShooting :: IO ()
+setShooting :: WD ()
 setShooting = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Shooting []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9006)
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9006
 
-            openPage "http://localhost:9006"
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9006"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
 
-            forM_ [1..2] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..2] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                shootings <- liftBase $ A.interpret $ Shooting.getShootings $ fp $ start $ "imports/shooting.json" -- cant run on all system and this should not read a file
-                liftBase $ writeChan messages $ Message.setShootings $ shootings
+        shootings <- liftBase $ A.interpret $ Shooting.getShootings $ fp $ start $ "imports/shooting.json" -- cant run on all system and this should not read a file
+        liftBase $ writeChan messages $ Message.setShootings $ shootings
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 50000 $ findElem ( ById "shootingOK" ) 
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 50000 $ findElem ( ById "shootingOK" ) 
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setShootings $ Shooting.noShootings
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setShootings $ Shooting.noShootings
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 50000 $ findElem ( ById "shootingMissing" )
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 50000 $ findElem ( ById "shootingMissing" )
 
-                --finisher
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        --finisher
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
 
-setSession :: IO ()
+setSession :: WD ()
 setSession = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Session []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9007)
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9007
 
-            openPage "http://localhost:9007"
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9007"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
-            forM_ [1..2] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..2] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                sessions <- liftBase $ A.interpret $ Session.getSessions $ fp $ start $ "imports/session.json" -- cant run on all system and this should not read a file
-                liftBase $ writeChan messages $ Message.setSessions $ sessions
+        sessions <- liftBase $ A.interpret $ Session.getSessions $ fp $ start $ "imports/session.json" -- cant run on all system and this should not read a file
+        liftBase $ writeChan messages $ Message.setSessions $ sessions
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "sessionOK" ) 
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "sessionOK" ) 
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setSessions $ Session.noSessions
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setSessions $ Session.noSessions
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000$ findElem ( ById "sessionMissing" )
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000$ findElem ( ById "sessionMissing" )
 
-                --finisher
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        --finisher
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
-setPhotographers :: IO ()
+
+setPhotographers :: WD ()
 setPhotographers = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Photographer []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9008)
-        (runSessionThenClose $ do                      
+    liftBase $ forkIO $ setupApp messages 9008
 
-            openPage "http://localhost:9008"
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9008"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
-            forM_ [1..2] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..2] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                photographers <- liftBase $ A.interpret $ Photographer.getPhotographers $ fp $ start $ "imports/photographers.json" -- cant run on all system and this should not read a file
-                liftBase $ writeChan messages $ Message.setPhotographers $ photographers 
+        photographers <- liftBase $ A.interpret $ Photographer.getPhotographers $ fp $ start $ "imports/photographers.json" -- cant run on all system and this should not read a file
+        liftBase $ writeChan messages $ Message.setPhotographers $ photographers 
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "photographerOK" ) 
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "photographerOK" ) 
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setPhotographers $ Photographer.noPhotographers
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setPhotographers $ Photographer.noPhotographers
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "photographersMissing" )
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "photographersMissing" )
 
-                --finisher
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        --finisher
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
-setDagsdato :: IO ()
+setDagsdato :: WD ()
 setDagsdato = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dagsdato []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9009)
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9009"
+    liftBase $ forkIO $ setupApp messages 9009
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9009"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
+    forM_ [1..2] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDagsdato $ DA.yesDagsdato "test/dagsdato"
 
-            forM_ [1..2] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDagsdato $ DA.yesDagsdato "test/dagsdato"
+        liftBase $ threadDelay 2000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "dagsdatoPath" ) >>= getText >>= \x -> expect (x == "test/dagsdato")
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "dagsdatoPath" ) >>= getText >>= \x -> expect (x == "test/dagsdato")
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDagsdato $ DA.noDagsdato
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDagsdato $ DA.noDagsdato
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "dagsdatoMissing" )
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "dagsdatoMissing" )
-
-                --finisher
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        --finisher
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
 
@@ -645,171 +621,157 @@ setDoneshooting = do
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
     session <- WD.getSession 
-    liftBase $ race_ (setupApp messages 9010)
-        (runWD session $ do
-            liftBase $ threadDelay 5000000
-            openPage "http://localhost:9010"
+    liftBase $ forkIO $ (setupApp messages 9010)
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9010"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
-            forM_ [1..2] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDoneshooting $ DO.yesDoneshooting "test/doneshooting"
+    forM_ [1..2] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDoneshooting $ DO.yesDoneshooting "test/doneshooting"
 
-                liftBase $ threadDelay 500000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "doneshootingPath" ) >>= getText >>= \x -> expect (x == "test/doneshooting")
+        liftBase $ threadDelay 500000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "doneshootingPath" ) >>= getText >>= \x -> expect (x == "test/doneshooting")
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDoneshooting $ DO.noDoneshooting
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDoneshooting $ DO.noDoneshooting
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "doneshootingMissing" )
-                
-                --finisher
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "doneshootingMissing" )
+        
+        --finisher
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
             
 
-setDump :: IO ()
+setDump :: WD ()
 setDump = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dump []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     
-    race_ (setupApp messages 9011)
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9011"
+    liftBase $ forkIO $ setupApp messages 9011
+    liftBase $ threadDelay 500000
+    openPage "http://localhost:9011"
+    
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
-            
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    forM_ [1..2] (\x -> do
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
 
-            forM_ [1..2] (\x -> do
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "dumpPath" ) >>= getText >>= \x -> expect (x == "test/dump")
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "dumpPath" ) >>= getText >>= \x -> expect (x == "test/dump")
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        liftBase $ writeChan messages $ Message.setDump $ D.noDump 
 
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                liftBase $ writeChan messages $ Message.setDump $ D.noDump 
-
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                waitUntil 5000 $ findElem ( ById "dumpMissing" )
-                
-                --finisher
-                liftBase $ threadDelay 50000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
+        waitUntil 5000 $ findElem ( ById "dumpMissing" )
+        
+        --finisher
+        liftBase $ threadDelay 50000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
-setState :: IO ()
+setState :: WD ()
 setState = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [Dump] Photographer []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    race_ (setupApp messages 9012)
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9012"
+    liftBase $ forkIO $ setupApp messages 9012
+            
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9012"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
 
-            forM_ [1..10] (\x -> do
-                liftBase $ threadDelay 5000000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..10] (\x -> do
+        liftBase $ threadDelay 5000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                waitUntil 50000 $ findElem ( ById "tabDump" ) >>= click
+        waitUntil 50000 $ findElem ( ById "tabDump" ) >>= click
 
-                liftBase $ threadDelay 5000000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        liftBase $ threadDelay 5000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                waitUntil 50000 $ findElem ( ById "tabPhotographer" ) >>= click
-                
-                --finisher
-                liftBase $ threadDelay 1000000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
-                )
-            return True
+        waitUntil 50000 $ findElem ( ById "tabPhotographer" ) >>= click
+        
+        --finisher
+        liftBase $ threadDelay 1000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
         )
 
 
 
-
-
-
-
-
-setGradeDropDown :: IO ()
+setGradeDropDown :: WD ()
 setGradeDropDown = do
-    messages <- Chan.newChan
+    messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["stue"] "ggg" ["ccc"]
 
-    race_ (setupApp messages 9013)
-        (runSessionThenClose $ do                      
-            openPage "http://localhost:9013"
+    liftBase $ forkIO $ setupApp messages 9013
+    liftBase $ threadDelay 5000000
+    openPage "http://localhost:9013"
 
-            liftBase $ threadDelay 50000
-            liftBase $ writeChan messages (Message.block empty)
-            liftBase $ takeMVar empty
+    liftBase $ threadDelay 50000
+    liftBase $ writeChan messages (Message.block empty)
+    liftBase $ takeMVar empty
 
 
-            forM_ [1..10] (\x -> do
-                liftBase $ threadDelay 5000000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+    forM_ [1..10] (\x -> do
+        liftBase $ threadDelay 5000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
-                liftBase $ threadDelay 1000000
+        waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
+        liftBase $ threadDelay 1000000
 
-                waitUntil 50000 $ findElem ( ById "stue" ) >>= click
-                
-                --finisher
-                liftBase $ threadDelay 5000000
-                liftBase $ writeChan messages (Message.block empty)
-                liftBase $ takeMVar empty
+        waitUntil 50000 $ findElem ( ById "stue" ) >>= click
+        
+        --finisher
+        liftBase $ threadDelay 5000000
+        liftBase $ writeChan messages (Message.block empty)
+        liftBase $ takeMVar empty
 
-                waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
+        waitUntil 50000 $ findElem ( ById "inputter" ) >>= click
 
-                waitUntil 50000 $ findElem ( ById "ggg" ) >>= click 
-                )
-            return True
+        waitUntil 50000 $ findElem ( ById "ggg" ) >>= click 
         )
 
 
@@ -821,34 +783,30 @@ main :: IO ()
 main = do
     runSessionThenClose $ do
         setDagsdatoBackup 
-        liftBase <- liftBase $ putStrLn "11"
+        liftBase $ putStrLn "11"
         setDoneshooting
+        liftBase $ putStrLn "12"
+        setDump
+        liftBase $ putStrLn "2"
+        counter
+        liftBase $ putStrLn "5"
+        setPhotoId
+        liftBase $ putStrLn "6"
+        setLocation
+        liftBase $ putStrLn "7"
+        setShooting
+        liftBase $ putStrLn "8"
+        setSession
+        liftBase $ putStrLn "9"
+        setPhotographers
+        liftBase $ putStrLn "10"
+        setDagsdato
+        liftBase $ putStrLn "13"
+        setState
+        liftBase $ putStrLn "14"
+        setGradeDropDown 
+        liftBase $ putStrLn "15"
+        controlXMP 
+        liftBase $ putStrLn "BADNESS"
+        setGrades
         return ()
-
-
-        {-
-    putStrLn "12"
-    setDump
-    putStrLn "2"
-    counter
-    putStrLn "5"
-    setPhotoId
-    putStrLn "6"
-    setLocation
-    putStrLn "7"
-    setShooting
-    putStrLn "8"
-    setSession
-    putStrLn "9"
-    setPhotographers
-    putStrLn "10"
-    setDagsdato
-    putStrLn "13"
-    setState
-    putStrLn "14"
-    setGradeDropDown 
-    putStrLn "15"
-    controlXMP 
-    putStrLn "BADNESS"
-    setGrades
-    -}
