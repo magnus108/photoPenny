@@ -56,7 +56,7 @@ chromeConfig :: WDConfig
 chromeConfig = useBrowser chrome defaultConfig
 
 runSessionThenClose :: WD a -> IO a
-runSessionThenClose action = runSession chromeConfig . closeOnException $ action
+runSessionThenClose action = runSession chromeConfig . finallyClose $ action
 
 
 
@@ -798,44 +798,30 @@ setGradeDropDown = do
 main :: IO ()
 main = do
     putStrLn "1"
-    threadDelay 5000000
     setDagsdatoBackup 
     putStrLn "2"
-    threadDelay 5000000
     counter
     putStrLn "5"
-    threadDelay 5000000
     setPhotoId
     putStrLn "6"
-    threadDelay 5000000
     setLocation
     putStrLn "7"
-    threadDelay 5000000
     setShooting
     putStrLn "8"
-    threadDelay 5000000
     setSession
     putStrLn "9"
-    threadDelay 5000000
     setPhotographers
     putStrLn "10"
-    threadDelay 5000000
     setDagsdato
     putStrLn "11"
-    threadDelay 5000000
     setDoneshooting
     putStrLn "12"
-    threadDelay 5000000
     setDump
     putStrLn "13"
-    threadDelay 5000000
     setState
     putStrLn "14"
-    threadDelay 5000000
     setGradeDropDown 
     putStrLn "15"
-    threadDelay 5000000
     controlXMP 
     putStrLn "BADNESS"
-    threadDelay 5000000
     setGrades
