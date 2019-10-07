@@ -148,6 +148,24 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
                                     let zipper = ListZipper.sorted (ls ++ rs) (ListZipper.ListZipper [] y [])
 
                                     input <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter"
+                                    input2 <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter2"
+
+                                    gradeViews2 <- sequence $ ListZipper.iextend (\ i z -> do
+                                                        opt <- UI.option # set (attr "value") (extract z) # set (attr "id") (extract z) # set text (extract z)
+                                                        opt' <- if (z == zipper) then
+                                                                element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
+                                                            else
+                                                                return opt
+ 
+                                                        let name = ("w" ++ (show i))
+                                                        runFunction $ ffi "new CustomEvent(%1,{})" name
+                                                        onEvent (domEvent name input2) $ \x -> do
+                                                                liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades z 
+
+                                                        return opt
+                                                    ) zipper
+
+                                    _ <- element input2 # set children (ListZipper.toList gradeViews2)
                                     
                                     --hack create extendI
                                     gradeViews <- sequence $ ListZipper.iextend (\ i z -> do
@@ -167,6 +185,12 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
 
                                     _ <- element input # set children (ListZipper.toList gradeViews)
 
+                                    on UI.selectionChange input2 $ \ i -> do
+                                        case i of
+                                            Nothing -> return ()
+                                            Just n -> when (length ls /= n) $ do
+                                                runFunction $ ffi "$('#inputter2').trigger(%1)" ("w"++(show n))
+
                                     on UI.selectionChange input $ \ i -> do
                                         case i of
                                             Nothing -> return ()
@@ -178,8 +202,12 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
                                         ]
 
 
-                                    photographees <- UI.div #+ 
-                                        fmap (\c -> do
+                                    inputView2 <- UI.div #. "field" #+
+                                        [ UI.div # set (attr "style") "width:100%" #. "select" #+ [ element input2 ]
+                                        ]
+
+
+                                    let photographeesUI = fmap (\c -> do
                                                 let ident = Photographee._ident c
                                                 let name = Photographee._name c
                                                 let s = name ++ ", " ++ ident
@@ -208,6 +236,7 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
 
                                     UI.div #+
                                         [ UI.br
+                                        , UI.label #. "label has-text-dark" # set UI.text "Opret"
                                         , UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
                                         , mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-4"] 
@@ -219,7 +248,11 @@ mainSectionKindergarten body msgs states grades id dumpFiles build photographee 
                                                 ]
                                             ]
                                         , UI.br
-                                        , mkColumns ["is-multiline"] [element photographees]
+                                        , UI.label #. "label has-text-dark" # set UI.text "Find elev"
+                                        , mkColumns ["is-multiline"]
+                                            ([ mkColumn ["is-4"]
+                                                [ element inputView2 ]
+                                            ] ++ photographeesUI )
                                         ]
                             ) grades ]
 
@@ -385,7 +418,25 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
                                     let zipper = ListZipper.sorted (ls ++ rs) (ListZipper.ListZipper [] y [])
 
                                     input <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter"
+                                    input2 <- UI.select # set (attr "style") "width:100%" # set (attr "id") "inputter2"
                                     
+                                    gradeViews2 <- sequence $ ListZipper.iextend (\ i z -> do
+                                                        opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
+                                                        opt' <- if (z == zipper) then
+                                                                element opt # set (UI.attr "selected") "" # set (UI.attr "id") "selected"
+                                                            else
+                                                                return opt
+ 
+                                                        let name = ("w" ++ (show i))
+                                                        runFunction $ ffi "new CustomEvent(%1,{})" name
+                                                        onEvent (domEvent name input2) $ \x -> do
+                                                                liftIO $ Chan.writeChan msgs $ Msg.setGrades $ Grade.yesGrades z 
+
+                                                        return opt
+                                                    ) zipper
+
+
+                                    _ <- element input2 # set children (ListZipper.toList gradeViews2)
                                     --hack create extendI
                                     gradeViews <- sequence $ ListZipper.iextend (\ i z -> do
                                                         opt <- UI.option # set (attr "value") (extract z) # set text (extract z)
@@ -410,21 +461,31 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
                                             Just n -> do
                                                 runFunction $ ffi "$('#inputter').trigger(%1)" ("t"++(show n))
 
+                                    on UI.selectionChange input2 $ \ i -> do
+                                        case i of
+                                            Nothing -> return ()
+                                            Just n -> do
+                                                runFunction $ ffi "$('#inputter2').trigger(%1)" ("w"++(show n))
+
                                     inputView <- UI.div #. "field" #+
                                         [ UI.div # set (attr "style") "width:100%" #. "select" #+ [ element input ] 
                                         ]
 
+                                    inputView2 <- UI.div #. "field" #+
+                                        [ UI.div # set (attr "style") "width:100%" #. "select" #+ [ element input2 ] 
+                                        ]
 
-                                    photographees <- UI.div #+ 
-                                        fmap (\c -> do
-                                                let ident = Photographee._ident c
-                                                let name = Photographee._name c
-                                                let s = name ++ ", " ++ ident
-                                                (button, buttonView) <- mkButton ident s
-                                                on UI.click button $ \_ -> do 
-                                                    liftIO $ Chan.writeChan msgs $ Msg.setId $ Id.fromString ident
-                                                mkColumn ["is-12"] [ element buttonView ]
-                                            ) (sortOn (Photographee._name) photographees)
+
+                                    let photographeesUI = fmap 
+                                                (\c -> do
+                                                    let ident = Photographee._ident c
+                                                    let name = Photographee._name c
+                                                    let s = name ++ ", " ++ ident
+                                                    (button, buttonView) <- mkButton ident s
+                                                    on UI.click button $ \_ -> do 
+                                                        liftIO $ Chan.writeChan msgs $ Msg.setId $ Id.fromString ident
+                                                    mkColumn ["is-12"] [ element buttonView ]
+                                                ) (sortOn (Photographee._name) photographees)
 
 
                                     inputId <- UI.input #. "input" # set UI.type_ "text" 
@@ -445,6 +506,7 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
 
                                     UI.div #+
                                         [ UI.br
+                                        , UI.label #. "label has-text-dark" # set UI.text "Opret elev"
                                         , UI.label #. "label has-text-dark" # set UI.text "Klasse/stue"
                                         , mkColumns ["is-multiline"] 
                                             [ mkColumn ["is-4"] 
@@ -456,7 +518,11 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
                                                 ]
                                             ]
                                         , UI.br
-                                        , mkColumns ["is-multiline"] [element photographees]
+                                        , UI.label #. "label has-text-dark" # set UI.text "Find elev"
+                                        , mkColumns ["is-multiline"]
+                                            ([ mkColumn ["is-4"]
+                                                [ element inputView2 ]
+                                            ] ++ photographeesUI )
                                         ]
                             ) grades ]
 
