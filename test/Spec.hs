@@ -212,22 +212,22 @@ setDagsdatoBackup = do
     openPage "http://localhost:9000"
 
     forM_ [1..5] (\x -> do
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.yesDagsdato "test/dump"
 
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 10000000 $ findElem ( ById "dagsdatoBackupPath" ) >>= getText >>= \x -> expect (x == "test/dump")
 
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDagsdatoBackup $ DA.noDagsdato
 
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
@@ -246,19 +246,19 @@ setGrades = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9001"
 
-    liftBase $ threadDelay 5000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
 
     forM_ [1..10] (\x -> do
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["A"] "B" ["C"]
 
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
@@ -280,30 +280,30 @@ controlXMP = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9002"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..10] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         liftBase $ writeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         waitUntil 100000 $ findElem (ById "SYS_77201")
         
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         liftBase $ removeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2"
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -321,13 +321,13 @@ counter = do
 
     openPage "http://localhost:9003"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 3000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
 
     forM_ [1..10] (\x -> do
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 3000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         
@@ -339,14 +339,14 @@ counter = do
         liftBase $ takeMVar empty
         waitUntil 10000 $ (\result -> expect (result == "32")) =<< getText =<< findElem (ById "count")
 
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 3000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         files <- liftBase $ listDirectory "test/dump"  
         liftBase $ mapM_ (\f -> removeFile ("test/dump" </> f)) files
 
-        liftBase $ threadDelay 5000
+        liftBase $ threadDelay 3000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
@@ -364,7 +364,7 @@ setPhotoId = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9004"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
@@ -377,7 +377,7 @@ setPhotoId = do
         fotoId <- waitUntil 50000 $ findElem ( ById "fotoId" ) 
         sendKeys "1234" fotoId
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
@@ -385,7 +385,7 @@ setPhotoId = do
         liftBase $ writeChan messages $ Message.setId $ Id.noId
 
         --finisher
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -402,12 +402,12 @@ setLocation = do
     liftBase $ forkIO $ setupApp messages 9005
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9005"
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..5] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setLocation $ Location.yesLocation "test/cis.csv"
@@ -417,12 +417,12 @@ setLocation = do
         liftBase $ takeMVar empty
         waitUntil 50000 $ findElem ( ById "locationPath" ) >>= getText >>= \x -> expect (x == "test/cis.csv")
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setLocation $ Location.noLocation
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 50000 $ findElem ( ById "locationMissing" )
@@ -445,36 +445,36 @@ setShooting = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9006"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
 
     forM_ [1..2] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         shootings <- liftBase $ A.interpret $ Shooting.getShootings $ fp $ start $ "imports/shooting.json" -- cant run on all system and this should not read a file
         liftBase $ writeChan messages $ Message.setShootings $ shootings
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 50000 $ findElem ( ById "shootingOK" ) 
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setShootings $ Shooting.noShootings
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 50000 $ findElem ( ById "shootingMissing" )
 
         --finisher
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -492,29 +492,29 @@ setSession = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9007"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..2] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         sessions <- liftBase $ A.interpret $ Session.getSessions $ fp $ start $ "imports/session.json" -- cant run on all system and this should not read a file
         liftBase $ writeChan messages $ Message.setSessions $ sessions
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "sessionOK" ) 
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setSessions $ Session.noSessions
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000$ findElem ( ById "sessionMissing" )
@@ -537,35 +537,35 @@ setPhotographers = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9008"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..2] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
         photographers <- liftBase $ A.interpret $ Photographer.getPhotographers $ fp $ start $ "imports/photographers.json" -- cant run on all system and this should not read a file
         liftBase $ writeChan messages $ Message.setPhotographers $ photographers 
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "photographerOK" ) 
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setPhotographers $ Photographer.noPhotographers
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "photographersMissing" )
 
         --finisher
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -581,12 +581,12 @@ setDagsdato = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9009"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..2] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDagsdato $ DA.yesDagsdato "test/dagsdato"
@@ -596,18 +596,18 @@ setDagsdato = do
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "dagsdatoPath" ) >>= getText >>= \x -> expect (x == "test/dagsdato")
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDagsdato $ DA.noDagsdato
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "dagsdatoMissing" )
 
         --finisher
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -625,33 +625,33 @@ setDoneshooting = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9010"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 2000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..2] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 2000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDoneshooting $ DO.yesDoneshooting "test/doneshooting"
 
-        liftBase $ threadDelay 500000
+        liftBase $ threadDelay 2000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "doneshootingPath" ) >>= getText >>= \x -> expect (x == "test/doneshooting")
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 2000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDoneshooting $ DO.noDoneshooting
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 2000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "doneshootingMissing" )
         
         --finisher
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 2000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -668,33 +668,33 @@ setDump = do
     liftBase $ threadDelay 500000
     openPage "http://localhost:9011"
     
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
     forM_ [1..2] (\x -> do
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "dumpPath" ) >>= getText >>= \x -> expect (x == "test/dump")
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         liftBase $ writeChan messages $ Message.setDump $ D.noDump 
 
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         waitUntil 5000 $ findElem ( ById "dumpMissing" )
         
         --finisher
-        liftBase $ threadDelay 50000
+        liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
@@ -711,7 +711,7 @@ setState = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9012"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
@@ -749,7 +749,7 @@ setGradeDropDown = do
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9013"
 
-    liftBase $ threadDelay 50000
+    liftBase $ threadDelay 1000000
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
