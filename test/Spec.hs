@@ -148,7 +148,7 @@ setupApp messages port = do
 
     actionState <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getStates
-             , debounceFreq = 1000000 -- 5 seconds
+             , debounceFreq = 0 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
