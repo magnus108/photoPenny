@@ -33,7 +33,7 @@ import PhotoShake.Location
 import PhotoShake.Grade
 import qualified PhotoShake.Build as Build
 import qualified PhotoShake.Id as Id
-import qualified PhotoShake.Photographee2 as Photographee
+import qualified PhotoShake.Photographee as Photographee
 import qualified PhotoShake.Control as Control
 
 main :: IO ()

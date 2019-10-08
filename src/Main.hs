@@ -20,7 +20,7 @@ import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Id as Id
 import qualified PhotoShake.State as State
 import qualified PhotoShake.Session as Session
-import qualified PhotoShake.Photographee2 as Photographee
+import qualified PhotoShake.Photographee as Photographee
 import PhotoShake.ShakeConfig 
 
 import qualified Utils.ListZipper as ListZipper

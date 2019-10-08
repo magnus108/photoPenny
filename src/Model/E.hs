@@ -97,7 +97,7 @@ import qualified PhotoShake.Dump as D
 import qualified PhotoShake.Doneshooting as DO
 import qualified PhotoShake.Dagsdato as DA
 import qualified PhotoShake.Photographer as Photographer
-import qualified PhotoShake.Photographee2 as Photographee
+import qualified PhotoShake.Photographee as Photographee
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
 import qualified PhotoShake.Location as Location

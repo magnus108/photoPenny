@@ -55,7 +55,7 @@ import PhotoShake
 import PhotoShake.ShakeConfig 
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Dump as Dump
-import qualified PhotoShake.Photographee2 as Photographee2
+import qualified PhotoShake.Photographee as Photographee
 import PhotoShake.Doneshooting hiding (setDoneshooting, getDoneshooting) --this correcto
 import qualified PhotoShake.Doneshooting as Doneshooting --this correcto
 import qualified PhotoShake.Location as Location --this correcto
@@ -371,7 +371,7 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 location <- getLocationFile shakeConfig --wrong naming
                 grades <- getGrades shakeConfig
-                let res = Grade.grades Nothing (\g -> Photographee2.insert location (focus g) id name) grades
+                let res = Grade.grades Nothing (\g -> Photographee.insert location (focus g) id name) grades
                 putMVar app app'
 
             Msg.GetStates -> do                
@@ -618,7 +618,7 @@ receive manager msgs app w = do
                 let location = E._location app'
                 let id = E._id app'
                 id <- getId shakeConfig 
-                photographee <- Photographee2.findPhotographee location id
+                photographee <- Photographee.findPhotographee location id
                 let app'' = E._setId app' id
                 let app''' = E._setPhotographee app'' photographee
                 app'''' <- subs manager msgs app'''
@@ -645,9 +645,9 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 let id = E._id app'--wrong--wrong--wrong--wrong--wrong--wrong--wrong
                 location <- getLocationFile shakeConfig --wrong naming
-                photographee <- Photographee2.findPhotographee location id
+                photographee <- Photographee.findPhotographee location id
                 grades <- getGrades shakeConfig
-                photographees <- Photographee2.fromGrade location grades
+                photographees <- Photographee.fromGrade location grades
                 let app'' = E._setPhotographee app' photographee
                 let app''' = E._setLocation app'' location
                 let app'''' = E._setPhotographees app''' photographees 
@@ -676,7 +676,7 @@ receive manager msgs app w = do
                 grades <- getGrades shakeConfig
                 location <- getLocationFile shakeConfig --wrong naming
                 control <- Grade.grades (return Control.Empty) (\zipper -> Control.controlXMP shakeConfig (extract zipper)) grades -- POORLY optimized
-                photographees <- Photographee2.fromGrade location grades
+                photographees <- Photographee.fromGrade location grades
                 let app'' = E._setGrades app' grades
                 let app''' = E._setControl app'' control
                 let app'''' = E._setPhotographees app''' photographees
