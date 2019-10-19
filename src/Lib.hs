@@ -41,6 +41,7 @@ import Data.Function ((&))
 
 import Dump
 import Doneshooting
+import Camera
 import Dagsdato
 import DagsdatoBackup
 import Shooting
@@ -139,6 +140,14 @@ setupPhotographerListener manager msgChan app action = do -- THIS BAD
         -- THIS IS LIE
         (\e -> takeFileName (Notify.eventPath e) == takeFileName photographerConfig) (\_ -> action) 
 
+setupCamerasListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
+setupCamerasListener manager msgChan app action = do -- THIS BAD
+    let fpConfig = E._configs app
+    let camerasConfig = E._camerasFile app
+    Notify.watchDir manager fpConfig 
+        -- THIS IS LIE
+        (\e -> takeFileName (Notify.eventPath e) == takeFileName camerasConfig) (\_ -> action) 
+
 setupShootingListener :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO () -> IO Notify.StopListening --- ??? STOP
 setupShootingListener manager msgChan app action = do -- THIS BAD
     let fpConfig = E._configs app
@@ -236,6 +245,7 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getDagsdatoBackup
     _ <- writeChan msgs Msg.getPhotographers
     _ <- writeChan msgs Msg.getShootings
+    _ <- writeChan msgs Msg.getCameras
     _ <- writeChan msgs Msg.getSessions
     _ <- writeChan msgs Msg.getLocation
     _ <- writeChan msgs Msg.getGrades
@@ -257,6 +267,7 @@ subscriptions manager msgs app = do
 
     let actionSession = E._actionSession app
     let actionShooting = E._actionShooting app
+    let actionCameras = E._actionCameras app
     let actionPhotographer = E._actionPhotographer app
 
     let actionDagsdato = E._actionDagsdato app
@@ -273,6 +284,7 @@ subscriptions manager msgs app = do
     dagsdatoBackup <- setupDagsdatoBackupListener manager msgs app actionDagsdatoBackup
     photographer <- setupPhotographerListener manager msgs app actionPhotographer
     shooting <- setupShootingListener manager msgs app actionShooting
+    cameras <- setupCamerasListener manager msgs app actionCameras
     session <- setupSessionListener manager msgs app actionSession
     location <- setupLocationListener manager msgs app actionLocation
     locationFile <- setupLocationFileListener manager msgs app actionLocation
@@ -289,6 +301,7 @@ subscriptions manager msgs app = do
         , dagsdatoBackup
         , photographer
         , shooting
+        , cameras
         , session
         , location
         , grade
@@ -418,9 +431,10 @@ receive manager msgs app w = do
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
                 let shakeConfig = E._shakeConfig app'
+                let cameras = E._cameras app'
                 dump <- getDump shakeConfig
                 let app'' = E._setDump app' dump
-                dumpFiles <- getDumpFiles dump
+                dumpFiles <- getDumpFiles dump cameras
                 let app''' = E._setDumpFiles app'' dumpFiles
                 app'''' <- subs manager msgs app'''
                 runUI w $ do
@@ -439,8 +453,9 @@ receive manager msgs app w = do
                 _ <- E._cancelLocation app'
                 _ <- E._cancelDumpFiles app'
 
+                let cameras = E._cameras app'
                 let dump = E._dump app'
-                dumpFiles <- getDumpFiles dump
+                dumpFiles <- getDumpFiles dump cameras
                 let app'' = E._setDumpFiles app' dumpFiles
             
 
@@ -569,6 +584,30 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 sessions <- getSessions shakeConfig
                 let app'' = E._setSessions app' sessions
+                app''' <- subs manager msgs app''
+                runUI w $ do
+                    _ <- addStyleSheet w "" "bulma.min.css" --delete me
+                    body <- getBody w
+                    redoLayout body msgs app'''
+                putMVar app app'''
+            
+            Msg.SetCameras cameras -> do
+                putStrLn "setcameras"
+                app' <- takeMVar app 
+                let shakeConfig = E._shakeConfig app'
+                _ <- setCameras shakeConfig cameras -- should be called setShootings
+                putMVar app app'
+
+            Msg.GetCameras -> do
+                putStrLn "bobGetCameras"
+                app' <- takeMVar app 
+                _ <- E._cancel app'
+                _ <- E._cancelDumpFiles app'
+                _ <- E._cancelControl app'
+                _ <- E._cancelLocation app'
+                let shakeConfig = E._shakeConfig app'
+                cameras <- getCameras shakeConfig
+                let app'' = E._setCameras app' cameras 
                 app''' <- subs manager msgs app''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
@@ -727,6 +766,7 @@ viewState body msgs app states = do
             S.DagsdatoBackup -> dagsdatoBackupSection body msgs states (E._dagsdatoBackup app)
             S.Photographer -> photographerSection body msgs states (E._photographers app)
             S.Session -> sessionSection body msgs states (E._sessions app)
+            S.Camera -> cameraSection body msgs states (E._cameras app)
             S.Shooting -> shootingSection body msgs states (E._shootings app)
             S.Location -> locationSection body msgs states (E._location app) (E._grades app)
             S.Main -> mainSection body msgs states (E._grades app) (E._id app) (E._dumpFiles app) (E._sessions app) (E._build app) (E._photographee app) (E._photographees app)

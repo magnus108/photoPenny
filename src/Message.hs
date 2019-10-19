@@ -15,6 +15,8 @@ module Message
     , setPhotographers
     , getShootings
     , setShootings
+    , getCameras
+    , setCameras
     , getSessions
     , setSessions
     , getLocation
@@ -39,6 +41,7 @@ import qualified PhotoShake.Doneshooting as Doneshooting
 import qualified PhotoShake.Dagsdato as Dagsdato
 import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Shooting as Shooting
+import qualified PhotoShake.Camera as Camera
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
@@ -73,6 +76,9 @@ data Message
 
     | GetShootings
     | SetShootings Shooting.Shootings
+
+    | GetCameras
+    | SetCameras Camera.Cameras
 
     | GetLocation
     | SetLocation Location.Location
@@ -145,6 +151,13 @@ getShootings = GetShootings
 
 setShootings :: Shooting.Shootings -> Message
 setShootings = SetShootings
+
+
+getCameras :: Message
+getCameras = GetCameras 
+
+setCameras :: Camera.Cameras -> Message
+setCameras = SetCameras 
 
 
 getLocation :: Message

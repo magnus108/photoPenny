@@ -16,6 +16,7 @@ module Model.E
     , _actionDagsdatoBackup
     , _actionSession
     , _actionShooting
+    , _actionCameras
     , _actionPhotographer
     , _actionGrades2
     , _actionGrades
@@ -58,6 +59,7 @@ module Model.E
     , _control
     , _doneshooting
     , _shootings
+    , _cameras
     , _sessions
     , _dagsdato
     , _dagsdatoBackup
@@ -65,8 +67,10 @@ module Model.E
     , _grades
     , _id
     , _setShootings
+    , _setCameras
     , _setSessions
     , _locationFile
+    , _camerasFile
     , _shootingFile
     , _sessionFile
     , _stateFile
@@ -100,6 +104,7 @@ import qualified PhotoShake.Photographer as Photographer
 import qualified PhotoShake.Photographee as Photographee
 import qualified PhotoShake.Session as Session
 import qualified PhotoShake.Shooting as Shooting
+import qualified PhotoShake.Camera as Camera
 import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Id as Id
@@ -143,6 +148,7 @@ data Model = Model
     , doneshooting :: DO.Doneshooting
     , photographers :: Photographer.Photographers
     , shootings :: Shooting.Shootings
+    , cameras :: Camera.Cameras
     , sessions :: Session.Sessions
 
     , location :: Location.Location
@@ -162,6 +168,7 @@ data Model = Model
     , actionDoneshooting :: IO ()
     , actionSession :: IO ()
     , actionShooting :: IO ()
+    , actionCameras :: IO ()
     , actionPhotographer :: IO ()
 
     , grades :: Grade.Grades
@@ -246,6 +253,9 @@ _sessionFile = _sessionConfig . _shakeConfig
 
 _shootingFile :: App Model -> FilePath -- deleteme
 _shootingFile = _shootingsConfig . _shakeConfig
+
+_camerasFile :: App Model -> FilePath -- deleteme
+_camerasFile = _camerasConfig . _shakeConfig
 
 
 _locationFile :: App Model -> FilePath -- deleteme
@@ -338,6 +348,9 @@ _setSessions x y = App $ (unApp x) =>> (\x -> (extract x) { sessions = y } )
 _setShootings :: App Model -> Shooting.Shootings -> App Model -- deleteme
 _setShootings x y = App $ (unApp x) =>> (\x -> (extract x) { shootings = y } )
 
+_setCameras :: App Model -> Camera.Cameras -> App Model -- deleteme
+_setCameras x y = App $ (unApp x) =>> (\x -> (extract x) { cameras = y } )
+
 
 _setGrades :: App Model -> Grade.Grades -> App Model -- deleteme
 _setGrades x y = App $ (unApp x) =>> (\x -> (extract x) { grades = y } )
@@ -370,6 +383,9 @@ _sessions = sessions . extract . unApp
 _shootings :: App Model -> Shooting.Shootings -- deleteme
 _shootings = shootings . extract . unApp
 
+_cameras :: App Model -> Camera.Cameras -- deleteme
+_cameras = cameras . extract . unApp
+
 
 _photographers :: App Model -> Photographer.Photographers -- deleteme
 _photographers = photographers . extract . unApp
@@ -401,6 +417,10 @@ _actionSession = actionSession . extract . unApp
 
 _actionShooting :: App Model -> IO ()-- deleteme
 _actionShooting = actionShooting . extract . unApp
+
+
+_actionCameras :: App Model -> IO ()-- deleteme
+_actionCameras = actionCameras . extract . unApp
 
 _actionPhotographer :: App Model -> IO ()-- deleteme
 _actionPhotographer = actionPhotographer . extract . unApp

@@ -27,6 +27,7 @@ import PhotoShake.Doneshooting
 import PhotoShake.Dagsdato
 import PhotoShake.Photographer
 import PhotoShake.Shooting
+import PhotoShake.Camera
 import PhotoShake.Session
 import PhotoShake.Location
 import PhotoShake.Location
@@ -99,6 +100,13 @@ main = do
              , debounceFreq = 300000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
+
+    actionCameras <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getCameras
+             , debounceFreq = 300000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
+
     actionPhotographer <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getPhotographers
              , debounceFreq = 300000 -- 5 seconds
@@ -138,6 +146,7 @@ main = do
         { A.states = Nothing
         , A.actionSession = actionSession
         , A.actionShooting = actionShooting
+        , A.actionCameras = actionCameras
         , A.actionPhotographer = actionPhotographer
         , A.actionDagsdato = actionDagsdato
         , A.actionDagsdatoBackup = actionDagsdatoBackup
@@ -162,6 +171,7 @@ main = do
         , A.photographee = Nothing
         , A.photographees = []
         , A.shootings = noShootings 
+        , A.cameras = noCameras
         , A.sessions = noSessions 
         , A.location = noLocation 
         , A.grades = noGrades
