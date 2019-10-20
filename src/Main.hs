@@ -394,7 +394,7 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
             DumpFiles xs ->
                 show $ length $ fmap fst xs
             DumpFilesError ->
-                "Camera ikke valgt korrekt"
+                "Kamera ikke valgt korrekt"
             NoDump ->
                 "Igen dump mappe"
             NoCamera ->
