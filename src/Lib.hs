@@ -352,15 +352,18 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 build <- getBuild shakeConfig
                 let app'' = E._setBuild app' build
+                cameras <- getCameras shakeConfig
+                let dump = E._dump app''
+                dumpFiles <- getDumpFiles dump cameras
+                let app''' = E._setDumpFiles app'' dumpFiles
 
-
-                app''' <- subs manager msgs app''
+                app'''' <- subs manager msgs app'''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
-                    redoLayout body msgs app'''
+                    redoLayout body msgs app''''
 
-                putMVar app app'''
+                putMVar app app''''
 
             Msg.Build -> do                
                 putStrLn "build"
@@ -380,11 +383,18 @@ receive manager msgs app w = do
             Msg.InsertPhotographee id name-> do                
                 putStrLn "insertPhotographee"
                 app' <- takeMVar app 
+                putStrLn "insertPhotographee"
                 --REAL SHITTY all the way
                 let shakeConfig = E._shakeConfig app'
                 location <- getLocationFile shakeConfig --wrong naming
                 grades <- getGrades shakeConfig
                 let res = Grade.grades Nothing (\g -> Photographee.insert location (focus g) id name) grades
+                case res of
+                    Nothing -> return ()
+                    Just x -> x
+                putStrLn "insertPhotographee"
+                --whatthefuck
+                initialMessage msgs
                 putMVar app app'
 
             Msg.GetStates -> do                
@@ -608,12 +618,15 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 cameras <- getCameras shakeConfig
                 let app'' = E._setCameras app' cameras 
-                app''' <- subs manager msgs app''
+                let dump = E._dump app''
+                dumpFiles <- getDumpFiles dump cameras
+                let app''' = E._setDumpFiles app'' dumpFiles
+                app'''' <- subs manager msgs app'''
                 runUI w $ do
                     _ <- addStyleSheet w "" "bulma.min.css" --delete me
                     body <- getBody w
-                    redoLayout body msgs app'''
-                putMVar app app'''
+                    redoLayout body msgs app''''
+                putMVar app app''''
 
             Msg.SetShootings shootings -> do
                 putStrLn "setshootings"

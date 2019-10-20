@@ -394,11 +394,14 @@ mainSectionSchool body msgs states grades id dumpFiles build photographee photog
             DumpFiles xs ->
                 show $ length $ fmap fst xs
             DumpFilesError ->
-                "Cr2 og jpg stemmer ikke overens"
+                "Camera ikke valgt korrekt"
             NoDump ->
                 "Igen dump mappe"
+            NoCamera ->
+                "Ikke valgt kameratype"
 
     let dumpFilesCount x = case x of
+            NoCamera -> 0
             DumpFilesError -> 0
             NoDump -> 0
             DumpFiles xs -> length $ fmap fst xs
