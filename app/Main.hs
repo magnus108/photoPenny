@@ -51,94 +51,94 @@ main = do
 
     actionLocation <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getLocation
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionDumpFiles <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getDumpFiles
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionGetBuild <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getBuild
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionGrades <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getGrades
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionGrades2 <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getGrades
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
     
     actionId <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getId
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionLocation <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getLocation
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
     actionSession <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getSessions
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
     actionShooting <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getShootings
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionCameras <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getCameras
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionPhotographer <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getPhotographers
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
              
     actionDagsdato <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getDagsdato
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
     actionDagsdatoBackup <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getDagsdatoBackup
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
              
     actionDoneshooting <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getDoneshooting
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionDump <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getDump
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
 
     actionState <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getStates
-             , debounceFreq = 300000 -- 5 seconds
+             , debounceFreq = 1000000 -- 5 seconds
              , debounceEdge = trailingEdge -- Trigger on the trailing edge
              }
              
@@ -187,7 +187,7 @@ main = do
         , A.cancelLocation = return ()
         }
 
-    manager <- FSN.startManagerConf $ FSN.defaultConfig { FSN.confUsePolling = True, FSN.confDebounce = FSN.NoDebounce, FSN.confPollInterval = 300000 }
+    manager <- FSN.startManagerConf $ FSN.defaultConfig { FSN.confUsePolling = False, FSN.confDebounce = FSN.NoDebounce }
     _ <- L.initialMessage messages
 
     L.main (read port) manager messages app 
