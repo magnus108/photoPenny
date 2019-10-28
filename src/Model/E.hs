@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Model.E
     ( E
+    , Sub(..)
     , production
     , test
     , unApp
@@ -94,6 +95,7 @@ import Utils.Comonad
 import Prelude hiding (id)
 
 import PhotoShake.State
+import qualified System.FSNotify as Notify
 
 import Data.Function ((&))
 import Utils.FP
@@ -118,6 +120,23 @@ import Control.Concurrent
 import qualified Control.Concurrent.Chan as Chan
 import System.FSNotify hiding (defaultConfig)
 import qualified Message as Msg
+
+
+data Sub = Sub
+    { _stateCancel :: IO Notify.StopListening
+    , _dumpCancel :: IO Notify.StopListening
+    , _doneshootingCancel :: IO Notify.StopListening
+    , _dagsdatoCancel :: IO Notify.StopListening
+    , _dagsdatoBackupCancel :: IO Notify.StopListening
+    , _photographerCancel :: IO Notify.StopListening
+    , _shootingCancel :: IO Notify.StopListening
+    , _camerasCancel :: IO Notify.StopListening
+    , _sessionCancel :: IO Notify.StopListening
+    , _locationCancel :: IO Notify.StopListening
+    , _gradeCancel :: IO Notify.StopListening
+    , _idCancel :: IO Notify.StopListening
+    , _buildCancel :: IO Notify.StopListening
+    }
 
 
 data E = Production | Test
@@ -180,8 +199,8 @@ data Model = Model
     , control :: Control.Result -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
-    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening, StopListening) -- ??? 
-    , cancel :: StopListening
+    , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO (Sub, StopListening, StopListening, StopListening) -- ??? 
+    , cancel :: Sub
     , cancelDumpFiles :: StopListening
     , cancelControl :: StopListening
     , cancelLocation :: StopListening
@@ -206,7 +225,7 @@ _root :: App Model -> FP -- deleteme
 _root = root . extract . unApp
 
 
-_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO (StopListening, StopListening, StopListening, StopListening)) -- ???
+_subscriptions :: App Model -> (WatchManager -> Chan Msg.Message -> App Model -> IO (Sub, StopListening, StopListening, StopListening)) -- ???
 _subscriptions = subscriptions . extract . unApp
 
 
@@ -274,7 +293,7 @@ _location = location . extract . unApp
 _build :: App Model -> Build.Build -- deleteme
 _build = build . extract . unApp
 
-_cancel :: App Model -> StopListening -- deleteme
+_cancel :: App Model -> Sub -- delet
 _cancel = cancel . extract . unApp
 
 _cancelDumpFiles :: App Model -> StopListening -- deleteme
@@ -291,7 +310,7 @@ _setStates :: App Model -> Maybe States -> App Model -- deleteme
 _setStates x (Just s) = App $ (unApp x) =>> (\x -> (extract x) { states = Just s } )
 _setStates x Nothing = App $ (unApp x) =>> (\x -> (extract x) { states = Nothing } )
 
-_setCancel :: App Model -> StopListening -> App Model -- deleteme
+_setCancel :: App Model -> Sub -> App Model -- deleteme
 _setCancel x y = App $ (unApp x) =>> (\x -> (extract x) { cancel = y } )
 
 

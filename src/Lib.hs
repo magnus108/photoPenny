@@ -254,7 +254,28 @@ initialMessage msgs = do
     _ <- writeChan msgs Msg.getBuild
     return ()
 
-subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (Notify.StopListening, Notify.StopListening, Notify.StopListening, Notify.StopListening)
+
+cancelSub :: E.Sub -> IO ()
+cancelSub x = do 
+    putStrLn "bobG"
+    _ <- E._stateCancel x
+    putStrLn "bobG2"
+    _ <- E._dumpCancel x 
+    putStrLn "bobG2"
+    _ <- E._doneshootingCancel x
+    _ <- E._dagsdatoCancel x
+    _ <- E._dagsdatoBackupCancel x
+    _ <- E._photographerCancel x
+    _ <- E._shootingCancel x
+    _ <- E._camerasCancel x
+    _ <- E._sessionCancel x
+    _ <- E._locationCancel x
+    _ <- E._gradeCancel x
+    _ <- E._idCancel x
+    _ <- E._buildCancel x
+    return ()
+
+subscriptions :: Notify.WatchManager -> Chan Msg.Message -> E.App E.Model -> IO (E.Sub, Notify.StopListening, Notify.StopListening, Notify.StopListening)
 subscriptions manager msgs app = do
     let actionDumpFiles = E._actionDumpFiles app
     let actionGetBuild = E._actionGetBuild app
@@ -277,37 +298,39 @@ subscriptions manager msgs app = do
     let actionDump = E._actionDump app
     let actionState = E._actionState app
 
-    state <- setupStateListener manager msgs app actionState
-    dump <- setupDumpListener manager msgs app actionDump
-    doneshooting <- setupDoneshootingListener manager msgs app actionDoneshooting
-    dagsdato <- setupDagsdatoListener manager msgs app actionDagsdato
-    dagsdatoBackup <- setupDagsdatoBackupListener manager msgs app actionDagsdatoBackup
-    photographer <- setupPhotographerListener manager msgs app actionPhotographer
-    shooting <- setupShootingListener manager msgs app actionShooting
-    cameras <- setupCamerasListener manager msgs app actionCameras
-    session <- setupSessionListener manager msgs app actionSession
-    location <- setupLocationListener manager msgs app actionLocation
+    let state = setupStateListener manager msgs app actionState
+    let dump = setupDumpListener manager msgs app actionDump
+    let doneshooting = setupDoneshootingListener manager msgs app actionDoneshooting
+    let dagsdato = setupDagsdatoListener manager msgs app actionDagsdato
+    let dagsdatoBackup = setupDagsdatoBackupListener manager msgs app actionDagsdatoBackup
+    let photographer = setupPhotographerListener manager msgs app actionPhotographer
+    let shooting = setupShootingListener manager msgs app actionShooting
+    let cameras = setupCamerasListener manager msgs app actionCameras
+    let session = setupSessionListener manager msgs app actionSession
+    let location = setupLocationListener manager msgs app actionLocation
     locationFile <- setupLocationFileListener manager msgs app actionLocation
-    grade <- setupGradesListener manager msgs app actionGrades 
-    id <- setupIdListener manager msgs app actionId
+    let grade = setupGradesListener manager msgs app actionGrades 
+    let id = setupIdListener manager msgs app actionId
     control <- setupControlListener manager msgs app actionGrades2
     dumpFiles <- setupDumpFilesListener manager msgs app actionDumpFiles
-    build <- setupBuildListener manager msgs app actionGetBuild
-    return $ (msum 
-        [ state
-        , dump
-        , doneshooting
-        , dagsdato
-        , dagsdatoBackup
-        , photographer
-        , shooting
-        , cameras
-        , session
-        , location
-        , grade
-        , id
-        , build
-        ]
+    let build = setupBuildListener manager msgs app actionGetBuild
+
+    return $ (
+        E.Sub 
+        { E._stateCancel = state
+        , E._dumpCancel = dump
+        , E._doneshootingCancel = doneshooting
+        , E._dagsdatoCancel = dagsdato
+        , E._dagsdatoBackupCancel = dagsdatoBackup
+        , E._photographerCancel = photographer
+        , E._shootingCancel = shooting
+        , E._camerasCancel = cameras
+        , E._sessionCancel = session
+        , E._locationCancel = location
+        , E._gradeCancel = grade
+        , E._idCancel = id
+        , E._buildCancel = build
+        }
         , dumpFiles
         , control
         , locationFile
@@ -345,7 +368,7 @@ receive manager msgs app w = do
             Msg.GetBuild -> do                
                 putStrLn "bobGetBuild"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -400,7 +423,9 @@ receive manager msgs app w = do
             Msg.GetStates -> do                
                 putStrLn "bobGetStates"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                putStrLn "bobGetStates2"
+                _ <- cancelSub $ E._cancel app'
+                putStrLn "bobGetStates3"
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -436,7 +461,7 @@ receive manager msgs app w = do
             Msg.GetDump -> do
                 putStrLn "bobGetDump"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -458,7 +483,7 @@ receive manager msgs app w = do
             Msg.GetDumpFiles -> do
                 putStrLn "bobGetDumpFiles"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
                 _ <- E._cancelDumpFiles app'
@@ -487,7 +512,7 @@ receive manager msgs app w = do
             Msg.GetDoneshooting -> do
                 putStrLn "bobGetDoneshooting"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app' 
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -512,7 +537,7 @@ receive manager msgs app w = do
             Msg.GetDagsdatoBackup -> do
                 putStrLn "bobGetDasdatoBackup"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -537,7 +562,7 @@ receive manager msgs app w = do
             Msg.GetDagsdato -> do
                 putStrLn "bobGetDagsdato"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -562,7 +587,7 @@ receive manager msgs app w = do
             Msg.GetPhotographers -> do
                 putStrLn "bobGetPhotographers"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -587,7 +612,7 @@ receive manager msgs app w = do
             Msg.GetSessions -> do
                 putStrLn "bobGetSessions"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -611,7 +636,7 @@ receive manager msgs app w = do
             Msg.GetCameras -> do
                 putStrLn "bobGetCameras"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -638,7 +663,7 @@ receive manager msgs app w = do
             Msg.GetShootings -> do
                 putStrLn "bobGetShootings"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -662,7 +687,7 @@ receive manager msgs app w = do
             Msg.GetId -> do
                 putStrLn "bobGetId"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -690,7 +715,7 @@ receive manager msgs app w = do
             Msg.GetLocation -> do
                 putStrLn "bobGetLocation"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
@@ -720,7 +745,7 @@ receive manager msgs app w = do
             Msg.GetGrades -> do
                 putStrLn "bobGetGrades"
                 app' <- takeMVar app 
-                _ <- E._cancel app'
+                _ <- cancelSub $ E._cancel app'
                 _ <- E._cancelDumpFiles app'
                 _ <- E._cancelControl app'
                 _ <- E._cancelLocation app'
