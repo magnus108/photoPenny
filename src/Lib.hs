@@ -752,7 +752,9 @@ receive manager msgs app w = do
                 let shakeConfig = E._shakeConfig app'
                 grades <- getGrades shakeConfig
                 location <- getLocationFile shakeConfig --wrong naming
-                control <- Grade.grades (return Control.Empty) (\zipper -> Control.controlXMP shakeConfig (extract zipper)) grades -- POORLY optimized
+                putStrLn "SLOW"
+                control <- Control.controlXMP shakeConfig -- POORLY optimized
+                putStrLn "SLOWER"
                 photographees <- Photographee.fromGrade location grades
                 let app'' = E._setGrades app' grades
                 let app''' = E._setControl app'' control

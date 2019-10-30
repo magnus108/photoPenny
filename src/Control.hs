@@ -37,7 +37,7 @@ import qualified Utils.ListZipper as ListZipper
 
 --controlSection :: FilePath -> MVar States -> MVar ShakeConfig ->  UI Element
 --controlSection root states'' config'  = do
-controlSection :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Control.Result -> UI () -- måske lidt dumt med result hvis ikke der er grades
+controlSection :: Element -> Chan.Chan Msg.Message -> ListZipper.ListZipper State.State -> Grade.Grades -> Control.Results -> UI () -- måske lidt dumt med result hvis ikke der er grades
 controlSection body msgs states grades result = do
     view <- Grade.grades ( UI.div #. "field" #+
                         [ UI.label #. "label has-text-dark" # set UI.text "Find elev. Der er ingen Stuer/Klasser"
@@ -87,7 +87,21 @@ controlSection body msgs states grades result = do
                                     -- tilsluttet men kun aktiv hvis state er
                                     -- korret og der er en grade.
 
-                                    control <- case result of 
+                                    control <- case result of
+                                        Results [] ->
+                                            UI.div #+ [ mkLabel "Control"
+                                                      , string "xmp tjek er ok"
+                                                      ]
+                                        Results xs ->
+                                            UI.div #+ (fmap (\(Errors sys ys) -> 
+                                                    UI.div #+
+                                                        ([mkLabel sys # set (attr "id") sys
+                                                        ] ++ (fmap (\e -> string $ show e) ys))
+                                                        
+                                                    ) xs)
+                                            
+                                    
+                                    {-case result of 
                                         NoErrors ->
                                             UI.div #+ [ mkLabel "Control"
                                                       , string "xmp tjek er ok"
@@ -105,6 +119,7 @@ controlSection body msgs states grades result = do
                                                         , if one then UI.p #. "has-text-success" #+ [string "antal 1 stjerner ok"] else UI.p #. "has-text-danger" #+ [string "antal 1 stjerner ikke ok"]
                                                         ]
                                                     ) xs)
+                                                    -}
 
 
 

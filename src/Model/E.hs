@@ -196,7 +196,7 @@ data Model = Model
 
     , dir1 :: FilePath -- deleteme
     , root :: FP -- deleteme
-    , control :: Control.Result -- deleteme
+    , control :: Control.Results -- deleteme
 
     , shakeConfig :: ShakeConfig --question me
     , subscriptions :: WatchManager -> Chan Msg.Message -> App Model -> IO (Sub, StopListening, StopListening, StopListening) -- ??? 
@@ -331,7 +331,7 @@ _setDumpFiles:: App Model -> DumpFiles -> App Model -- deleteme
 _setDumpFiles x y = App $ (unApp x) =>> (\x -> (extract x) { dumpFiles = y } )
 
 
-_setControl :: App Model -> Control.Result -> App Model -- deleteme
+_setControl :: App Model -> Control.Results -> App Model -- deleteme
 _setControl x y = App $ (unApp x) =>> (\x -> (extract x) { control = y } )
 
 _setDump :: App Model -> D.Dump -> App Model -- deleteme
@@ -378,7 +378,7 @@ _setGrades x y = App $ (unApp x) =>> (\x -> (extract x) { grades = y } )
 _dump :: App Model -> D.Dump -- deleteme
 _dump = dump . extract . unApp
 
-_control :: App Model -> Control.Result -- deleteme
+_control :: App Model -> Control.Results -- deleteme
 _control = control . extract . unApp
 
 _doneshooting :: App Model -> DO.Doneshooting -- deleteme
