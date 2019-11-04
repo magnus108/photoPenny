@@ -256,6 +256,9 @@ setDagsdatoBackup = do
         liftBase $ takeMVar empty
         waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
         )
+
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -289,6 +292,8 @@ setGrades = do
 
         liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "A" ["B","C"]
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 controlXMP :: WD ()
@@ -334,6 +339,8 @@ controlXMP = do
         liftBase $ takeMVar empty
         )
 
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 counter :: WD ()
@@ -380,6 +387,8 @@ counter = do
         liftBase $ takeMVar empty
 
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 setPhotoId :: WD ()
@@ -421,6 +430,8 @@ setPhotoId = do
         )
 
     
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -464,6 +475,8 @@ setLocation = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -512,6 +525,8 @@ setShooting = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -558,6 +573,8 @@ setSession = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 setPhotographers :: WD ()
@@ -604,6 +621,8 @@ setPhotographers = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 setDagsdato :: WD ()
@@ -647,6 +666,8 @@ setDagsdato = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -691,6 +712,8 @@ setDoneshooting = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
             
 
@@ -735,6 +758,8 @@ setDump = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 setState :: WD ()
@@ -772,6 +797,8 @@ setState = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -812,6 +839,8 @@ setGradeDropDown = do
 
         waitUntil 50000 $ findElem ( ById "ggg" ) >>= click 
         )
+    win <- getCurrentWindow
+    closeWindow win 
     liftBase $ killThread thread
 
 
@@ -822,44 +851,31 @@ setGradeDropDown = do
 main :: IO ()
 main = do
     runSessionThenClose $ do
-        liftBase $ putStrLn "15"
-        controlXMP 
-    runSessionThenClose $ do
         liftBase $ putStrLn "11"
-        setDagsdatoBackup 
-    runSessionThenClose $ do
-        liftBase $ putStrLn "12"
         setDoneshooting
-    runSessionThenClose $ do
+        liftBase $ putStrLn "12"
+        setDump
         liftBase $ putStrLn "2"
         counter
-    runSessionThenClose $ do
         liftBase $ putStrLn "5"
         setPhotoId
-    runSessionThenClose $ do
         liftBase $ putStrLn "6"
         setLocation
-    runSessionThenClose $ do
         liftBase $ putStrLn "7"
         setShooting
-    runSessionThenClose $ do
         liftBase $ putStrLn "8"
         setSession
-    runSessionThenClose $ do
         liftBase $ putStrLn "9"
         setPhotographers
-    runSessionThenClose $ do
         liftBase $ putStrLn "10"
         setDagsdato
-    runSessionThenClose $ do
         liftBase $ putStrLn "13"
         setState
-    runSessionThenClose $ do
         liftBase $ putStrLn "14"
         setGradeDropDown 
-    runSessionThenClose $ do
         liftBase $ putStrLn "BADNESS"
-        setDump
-    runSessionThenClose $ do
         setGrades
+        liftBase $ putStrLn "15"
+        controlXMP 
+        setDagsdatoBackup 
         return ()
