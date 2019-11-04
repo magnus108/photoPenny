@@ -333,6 +333,7 @@ controlXMP = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+
     liftBase $ killThread thread
 
 counter :: WD ()
@@ -418,6 +419,8 @@ setPhotoId = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+
+    
     liftBase $ killThread thread
 
 
@@ -821,29 +824,42 @@ main = do
     runSessionThenClose $ do
         liftBase $ putStrLn "15"
         controlXMP 
-        setDagsdatoBackup 
+    runSessionThenClose $ do
         liftBase $ putStrLn "11"
-        setDoneshooting
+        setDagsdatoBackup 
+    runSessionThenClose $ do
         liftBase $ putStrLn "12"
-        setDump
+        setDoneshooting
+    runSessionThenClose $ do
         liftBase $ putStrLn "2"
         counter
+    runSessionThenClose $ do
         liftBase $ putStrLn "5"
         setPhotoId
+    runSessionThenClose $ do
         liftBase $ putStrLn "6"
         setLocation
+    runSessionThenClose $ do
         liftBase $ putStrLn "7"
         setShooting
+    runSessionThenClose $ do
         liftBase $ putStrLn "8"
         setSession
+    runSessionThenClose $ do
         liftBase $ putStrLn "9"
         setPhotographers
+    runSessionThenClose $ do
         liftBase $ putStrLn "10"
         setDagsdato
+    runSessionThenClose $ do
         liftBase $ putStrLn "13"
         setState
+    runSessionThenClose $ do
         liftBase $ putStrLn "14"
         setGradeDropDown 
+    runSessionThenClose $ do
         liftBase $ putStrLn "BADNESS"
+        setDump
+    runSessionThenClose $ do
         setGrades
         return ()
