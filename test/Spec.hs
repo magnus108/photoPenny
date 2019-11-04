@@ -230,7 +230,7 @@ setDagsdatoBackup = do
     messages <- liftBase $ Chan.newChan
     empty <- liftBase newEmptyMVar
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] DagsdatoBackup []
-    liftBase $ forkIO $ setupApp messages 9000
+    thread <- liftBase $ forkIO $ setupApp messages 9000
     liftBase $ threadDelay 5000000
 
     openPage "http://localhost:9000"
@@ -256,6 +256,7 @@ setDagsdatoBackup = do
         liftBase $ takeMVar empty
         waitUntil 10000000 $ findElem ( ById "dagsdatoBackupMissing" )
         )
+    liftBase $ killThread thread
 
 
 setGrades :: WD ()
@@ -265,7 +266,7 @@ setGrades = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Control []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9001 
+    thread <- liftBase $ forkIO $ setupApp messages 9001 
 
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9001"
@@ -288,6 +289,7 @@ setGrades = do
 
         liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "A" ["B","C"]
         )
+    liftBase $ killThread thread
 
 controlXMP :: WD ()
 controlXMP = do
@@ -299,7 +301,7 @@ controlXMP = do
     liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper [] "PKB" [] 
     liftBase $ writeChan messages $ Message.setDoneshooting $ DO.yesDoneshooting "test/doneshooting"
 
-    liftBase $ forkIO $ setupApp messages 9002 
+    thread <- liftBase $ forkIO $ setupApp messages 9002 
 
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9002"
@@ -313,9 +315,7 @@ controlXMP = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
-        liftBase $ putStrLn "what"
         liftBase $ writeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
-        liftBase $ putStrLn "what2"
 
         liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
@@ -333,6 +333,7 @@ controlXMP = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 counter :: WD ()
 counter = do
@@ -343,7 +344,7 @@ counter = do
     liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
     liftBase $ writeChan messages $ Message.setCameras $ Camera.yesCameras $ ListZipper [] Camera.jpgCr2 []
 
-    liftBase $ forkIO $ setupApp messages 9003
+    thread <- liftBase $ forkIO $ setupApp messages 9003
     liftBase $ threadDelay 5000000
 
     openPage "http://localhost:9003"
@@ -378,6 +379,7 @@ counter = do
         liftBase $ takeMVar empty
 
         )
+    liftBase $ killThread thread
 
 setPhotoId :: WD ()
 setPhotoId = do
@@ -386,7 +388,7 @@ setPhotoId = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9004
+    thread <- liftBase $ forkIO $ setupApp messages 9004
 
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9004"
@@ -416,6 +418,7 @@ setPhotoId = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 
 
@@ -426,7 +429,7 @@ setLocation = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Location []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
         
-    liftBase $ forkIO $ setupApp messages 9005
+    thread <- liftBase $ forkIO $ setupApp messages 9005
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9005"
     liftBase $ threadDelay 1000000
@@ -458,6 +461,7 @@ setLocation = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 
 setShooting :: WD ()
@@ -467,7 +471,7 @@ setShooting = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Shooting []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9006
+    thread <- liftBase $ forkIO $ setupApp messages 9006
 
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9006"
@@ -505,6 +509,7 @@ setShooting = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 
 setSession :: WD ()
@@ -514,7 +519,7 @@ setSession = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Session []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9007
+    thread <- liftBase $ forkIO $ setupApp messages 9007
 
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9007"
@@ -550,7 +555,7 @@ setSession = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
-
+    liftBase $ killThread thread
 
 setPhotographers :: WD ()
 setPhotographers = do
@@ -559,7 +564,7 @@ setPhotographers = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Photographer []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9008
+    thread <- liftBase $ forkIO $ setupApp messages 9008
 
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9008"
@@ -596,6 +601,7 @@ setPhotographers = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 setDagsdato :: WD ()
 setDagsdato = do
@@ -604,7 +610,7 @@ setDagsdato = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dagsdato []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9009
+    thread <- liftBase $ forkIO $ setupApp messages 9009
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9009"
 
@@ -638,6 +644,7 @@ setDagsdato = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 
 setDoneshooting :: WD ()
@@ -647,8 +654,7 @@ setDoneshooting = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Doneshooting []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    session <- WD.getSession 
-    liftBase $ forkIO $ (setupApp messages 9010)
+    thread <- liftBase $ forkIO $ (setupApp messages 9010)
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9010"
 
@@ -682,6 +688,7 @@ setDoneshooting = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
             
 
 setDump :: WD ()
@@ -691,7 +698,7 @@ setDump = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Dump []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     
-    liftBase $ forkIO $ setupApp messages 9011
+    thread <- liftBase $ forkIO $ setupApp messages 9011
     liftBase $ threadDelay 500000
     openPage "http://localhost:9011"
     
@@ -725,6 +732,7 @@ setDump = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 setState :: WD ()
 setState = do
@@ -733,7 +741,7 @@ setState = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [Dump] Photographer []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
 
-    liftBase $ forkIO $ setupApp messages 9012
+    thread <- liftBase $ forkIO $ setupApp messages 9012
             
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9012"
@@ -761,6 +769,7 @@ setState = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
         )
+    liftBase $ killThread thread
 
 
 
@@ -772,7 +781,7 @@ setGradeDropDown = do
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     liftBase $ writeChan messages $ Message.setGrades $ Grade.yesGrades $ ListZipper ["stue"] "ggg" ["ccc"]
 
-    liftBase $ forkIO $ setupApp messages 9013
+    thread <- liftBase $ forkIO $ setupApp messages 9013
     liftBase $ threadDelay 5000000
     openPage "http://localhost:9013"
 
@@ -800,6 +809,7 @@ setGradeDropDown = do
 
         waitUntil 50000 $ findElem ( ById "ggg" ) >>= click 
         )
+    liftBase $ killThread thread
 
 
 
