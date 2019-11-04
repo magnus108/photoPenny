@@ -25,6 +25,7 @@ import PhotoShake.State
 import qualified PhotoShake.ShakeConfig as Config
 import PhotoShake.Photographee
 import qualified PhotoShake.Build as Build
+import PhotoShake.Camera
 
 
 import Control.Monad
@@ -51,6 +52,7 @@ import qualified PhotoShake.Location as Location
 import qualified PhotoShake.Grade as Grade
 import qualified PhotoShake.Control as Control
 import qualified PhotoShake.Id as Id
+import qualified PhotoShake.Camera as Camera
 
 import Utils.Debounce
 import qualified Message as Msg
@@ -65,6 +67,12 @@ runSessionThenClose action = runSession chromeConfig .  closeOnException $ actio
 setupApp :: Chan Msg.Message -> Int -> IO ()
 setupApp messages port = do
     config <- Config.toShakeConfig Nothing "test/config.cfg" -- Bad and unsafe
+
+    actionCameras <- mkDebounce defaultDebounceSettings
+             { debounceAction = writeChan messages Msg.getCameras
+             , debounceFreq = 300000 -- 5 seconds
+             , debounceEdge = trailingEdge -- Trigger on the trailing edge
+             }
 
     actionLocation <- mkDebounce defaultDebounceSettings
              { debounceAction = writeChan messages Msg.getLocation
@@ -187,8 +195,24 @@ setupApp messages port = do
         , A.root = fp (start "")  -- deletem
         , A.shakeConfig = config 
         , A.subscriptions = L.subscriptions
-        , A.control = Control.Empty
-        , A.cancel = return ()
+        , A.control = Control.empty
+        , A.actionCameras = actionCameras
+        , A.cameras = noCameras
+        , A.cancel = A.Sub 
+            { A._stateCancel = return $ return () 
+            , A._dumpCancel = return $ return () 
+            , A._doneshootingCancel = return $ return () 
+            , A._dagsdatoCancel = return $ return () 
+            , A._dagsdatoBackupCancel = return $ return () 
+            , A._photographerCancel = return $ return () 
+            , A._shootingCancel = return $ return () 
+            , A._camerasCancel = return $ return () 
+            , A._sessionCancel = return $ return () 
+            , A._locationCancel = return $ return () 
+            , A._gradeCancel = return $ return () 
+            , A._idCancel = return $ return () 
+            , A._buildCancel = return $ return () 
+            }
         , A.cancelLocation = return ()
         , A.cancelDumpFiles = return ()
         , A.cancelControl = return ()
@@ -289,7 +313,9 @@ controlXMP = do
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
 
+        liftBase $ putStrLn "what"
         liftBase $ writeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
+        liftBase $ putStrLn "what2"
 
         liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
@@ -315,6 +341,7 @@ counter = do
     liftBase $ writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
     liftBase $ writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     liftBase $ writeChan messages $ Message.setDump $ D.yesDump "test/dump"
+    liftBase $ writeChan messages $ Message.setCameras $ Camera.yesCameras $ ListZipper [] Camera.jpgCr2 []
 
     liftBase $ forkIO $ setupApp messages 9003
     liftBase $ threadDelay 5000000
@@ -782,6 +809,8 @@ setGradeDropDown = do
 main :: IO ()
 main = do
     runSessionThenClose $ do
+        liftBase $ putStrLn "15"
+        controlXMP 
         setDagsdatoBackup 
         liftBase $ putStrLn "11"
         setDoneshooting
@@ -805,8 +834,6 @@ main = do
         setState
         liftBase $ putStrLn "14"
         setGradeDropDown 
-        liftBase $ putStrLn "15"
-        controlXMP 
         liftBase $ putStrLn "BADNESS"
         setGrades
         return ()
