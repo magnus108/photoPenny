@@ -235,7 +235,7 @@ setDagsdatoBackup = do
 
     openPage "http://localhost:9000"
 
-    forM_ [1..5] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -276,7 +276,7 @@ setGrades = do
     liftBase $ takeMVar empty
 
 
-    forM_ [1..10] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -310,7 +310,7 @@ controlXMP = do
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
-    forM_ [1..10] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -354,7 +354,7 @@ counter = do
     liftBase $ takeMVar empty
 
 
-    forM_ [1..10] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 3000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -398,7 +398,7 @@ setPhotoId = do
     liftBase $ takeMVar empty
 
 
-    forM_ [1..10] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 2000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -436,7 +436,7 @@ setLocation = do
     liftBase $ writeChan messages (Message.block empty)
     liftBase $ takeMVar empty
 
-    forM_ [1..5] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 1000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -751,7 +751,7 @@ setState = do
     liftBase $ takeMVar empty
 
 
-    forM_ [1..10] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 5000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
@@ -790,7 +790,7 @@ setGradeDropDown = do
     liftBase $ takeMVar empty
 
 
-    forM_ [1..10] (\x -> do
+    forM_ [1..2] (\x -> do
         liftBase $ threadDelay 5000000
         liftBase $ writeChan messages (Message.block empty)
         liftBase $ takeMVar empty
