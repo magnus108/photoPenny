@@ -210,9 +210,9 @@ setupControlListener manager msgChan app action = do -- THIS BAD
         (\l -> Doneshooting.doneshooting (return cancelControl)
             (\d -> Grade.grades (return cancelControl)
                 (\g -> do
-                    b <- doesDirectoryExist (d </> (takeBaseName l) </> "cr2" </> (extract g))
+                    b <- doesDirectoryExist (d </> (takeBaseName l) </> "cr3" </> (extract g))
                     if b then
-                        Notify.watchDir manager (d </> (takeBaseName l) </> "cr2" </> (extract g)) 
+                        Notify.watchDir manager (d </> (takeBaseName l) </> "cr3" </> (extract g)) 
                             (\x -> (eventNotModified x && (not (Notify.eventIsDirectory x)))) (\_ -> action)
                     else
                         return (cancelControl)) grades ) doneshooting) location
