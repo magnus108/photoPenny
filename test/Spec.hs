@@ -316,7 +316,7 @@ controlXMP = do
             liftBase $ writeChan messages (Message.block empty)
             liftBase $ takeMVar empty
 
-            liftBase $ writeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2" ""
+            liftBase $ writeFile "test/doneshooting/cis/cr3/PKB/10.SYS_77201.1.CC.001.cr3" ""
 
             liftBase $ threadDelay 1000000
             liftBase $ writeChan messages (Message.block empty)
@@ -328,7 +328,7 @@ controlXMP = do
             liftBase $ writeChan messages (Message.block empty)
             liftBase $ takeMVar empty
 
-            liftBase $ removeFile "test/doneshooting/cis/cr2/PKB/10.SYS_77201.1.CC.001.cr2"
+            liftBase $ removeFile "test/doneshooting/cis/cr3/PKB/10.SYS_77201.1.CC.001.cr3"
 
             liftBase $ threadDelay 1000000
             liftBase $ writeChan messages (Message.block empty)
@@ -344,7 +344,7 @@ counter = do
     writeChan messages $ Message.setStates $ States $ ListZipper [] Main []
     writeChan messages $ Message.setSessions $ Session.yesSessions $ ListZipper [] Session.school []
     writeChan messages $ Message.setDump $ D.yesDump "test/dump"
-    writeChan messages $ Message.setCameras $ Camera.yesCameras $ ListZipper [] Camera.jpgCr2 []
+    writeChan messages $ Message.setCameras $ Camera.yesCameras $ ListZipper [] Camera.jpgCr3 []
 
     race_ (setupApp messages 9003) (runSessionThenClose $ do
         liftBase $ threadDelay 5000000
